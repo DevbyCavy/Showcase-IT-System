@@ -30,6 +30,10 @@ Showcase IT is a stock/inventory and order-management system for a signage/print
 - There is no automated test suite. Verify changes by loading the affected page in a browser and exercising the relevant form/DataTable/AJAX flow directly.
 - No linter is configured; rely on your own PHP/JS syntax care since there's no CI to catch mistakes.
 
+## Adding New Features or Fixing Bugs
+
+**IMPORTANT**: When you work on a new feature or bug, create a git branch first. Then work on changes in that branch for the reminder of the session.
+
 ## Additional Documentation
 
 - `.claude/docs/architectural_patterns.md` — request/response conventions, auth/session pattern, DataTables+AJAX CRUD pattern, file upload handling, and where the codebase is inconsistent (raw SQL vs prepared statements, password hashing schemes, mismatched role strings) — read this before adding or modifying any `php_action/` endpoint or role-gated page.
