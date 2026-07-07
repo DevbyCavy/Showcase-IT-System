@@ -4,7 +4,7 @@ require_once 'db_connection.php';
 // ======================================================
 // LOAD DOMPDF
 // ======================================================
-require_once '../vendor/dompdf/autoload.inc.php';
+require_once '../vendor/autoload.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
