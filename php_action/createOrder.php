@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_submit'])) {
 
         <div class="mb-3">
             <label class="form-label">Deadline (Date &amp; Time)</label>
-            <input type="datetime-local" name="deadline_datetime" class="form-control" required>
+            <input type="datetime-local" name="deadline_datetime" class="form-control" value="<?= date('Y-m-d\TH:i') ?>" required>
         </div>
 
         <!-- Multi User Assignment -->
