@@ -14,7 +14,7 @@ $row = $query->fetch_assoc();
 $nextOrderNo = $row['max_no'] ? str_pad($row['max_no'] + 1, 3, '0', STR_PAD_LEFT) : '001';
 
 // Handle Form Submit
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_submit'])) {
 
     $order_number    = $nextOrderNo;
     $order_name      = trim($_POST['order_name']);
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="file" name="artwork_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.ai,.eps,.svg">
         </div>
 
-        <button type="submit" class="btn w-100" style="background:#ff9100; color:white; font-weight:bold;">
+        <button type="submit" name="order_submit" class="btn w-100" style="background:#ff9100; color:white; font-weight:bold;">
             <i class="fas fa-plus me-2"></i>Add Order
         </button>
 

@@ -17,6 +17,9 @@ $allUsers = [];
 while ($u = $usersResult->fetch_assoc()) {
     $allUsers[] = $u;
 }
+
+// Keep the user on the tab whose form they just submitted
+$activeTab = isset($_POST['boq_submit']) ? 'bill-of-quantities' : 'add-order';
 ?>
 
 <!DOCTYPE html>
@@ -120,7 +123,7 @@ body { background-color: #f8f9fa; }
             <!-- Tabs -->
             <ul class="nav nav-tabs modern-tabs">
                 <li class="nav-item">
-                    <button class="nav-link modern-tab-btn active" data-bs-toggle="tab" data-bs-target="#add-order">Add New Order</button>
+                    <button class="nav-link modern-tab-btn<?= $activeTab === 'add-order' ? ' active' : '' ?>" data-bs-toggle="tab" data-bs-target="#add-order">Add New Order</button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#edit-order">Edit Order</button>
@@ -129,19 +132,19 @@ body { background-color: #f8f9fa; }
                     <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#view-order">View Order</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#bill-of-quantities">Bill Of Quantities</button>
+                    <button class="nav-link modern-tab-btn<?= $activeTab === 'bill-of-quantities' ? ' active' : '' ?>" data-bs-toggle="tab" data-bs-target="#bill-of-quantities">Bill Of Quantities</button>
                 </li>
             </ul>
 
             <!-- Tab Content -->
             <div class="tab-content p-3">
                 <!-- ADD NEW ORDER -->
-                <div class="tab-pane fade show active" id="add-order">
+                <div class="tab-pane fade<?= $activeTab === 'add-order' ? ' show active' : '' ?>" id="add-order">
                     <?php include 'php_action/createOrder.php'; ?>
                 </div>
-                
+
                 <!-- ADD NEW BOQ -->
-                <div class="tab-pane fade show active" id="bill-of-quantities">
+                <div class="tab-pane fade<?= $activeTab === 'bill-of-quantities' ? ' show active' : '' ?>" id="bill-of-quantities">
                     <?php include 'php_action/createBOQ.php'; ?>
                 </div>
 
