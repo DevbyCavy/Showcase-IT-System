@@ -103,6 +103,7 @@ $calResult = $conn->query("
 $markedDates = [];
 while ($row = $calResult->fetch_assoc()) $markedDates[$row['d']] = true;
 
+$pageTitle = 'Super Admin Dashboard';
 require_once 'includes/sidebarSuper.php';
 ?>
 
@@ -241,4 +242,4 @@ require_once 'includes/sidebarSuper.php';
 
 </div>
 
-<?php require_once 'includes/footerSuper.php'; ?>
+<?php require_once 'includes/footerDashboard.php'; ?>

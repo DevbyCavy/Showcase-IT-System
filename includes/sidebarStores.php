@@ -2,11 +2,16 @@
 require_once __DIR__ . '/../php_action/auth_guard.php';
 require_once __DIR__ . '/../php_action/db_connection.php';
 
-$pendingReqCount = $conn->query("SELECT COUNT(*) AS c FROM requisitions WHERE status = 'Pending'")->fetch_assoc()['c'];
+$loggedUserId = $_SESSION['user_id'] ?? 0;
 $currentPage = basename($_SERVER['PHP_SELF']);
 
+$myPendingReqStmt = $conn->prepare("SELECT COUNT(*) AS c FROM requisitions WHERE submitted_by = ? AND status = 'Pending'");
+$myPendingReqStmt->bind_param("i", $loggedUserId);
+$myPendingReqStmt->execute();
+$myPendingReqCount = $myPendingReqStmt->get_result()->fetch_assoc()['c'];
+$myPendingReqStmt->close();
+
 $selfEmailStmt = $conn->prepare("SELECT email FROM users WHERE user_id = ?");
-$loggedUserId = $_SESSION['user_id'] ?? 0;
 $selfEmailStmt->bind_param("i", $loggedUserId);
 $selfEmailStmt->execute();
 $selfEmail = $selfEmailStmt->get_result()->fetch_assoc()['email'] ?? '';
@@ -17,7 +22,7 @@ $selfEmailStmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle ?? 'Super Admin Dashboard') ?> - Showcase IT</title>
+    <title><?= htmlspecialchars($pageTitle ?? 'Stores Dashboard') ?> - Showcase IT</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
@@ -55,31 +60,34 @@ $selfEmailStmt->close();
         </div>
 
         <nav class="sidebar-nav">
-            <a href="superDashboard.php" class="<?= $currentPage === 'superDashboard.php' ? 'active' : '' ?>">
+            <a href="storesDashboard.php" class="<?= $currentPage === 'storesDashboard.php' ? 'active' : '' ?>">
                 <i class="fas fa-grip"></i> Dashboard
             </a>
-            <a href="storesManagement.php" class="<?= $currentPage === 'storesManagement.php' ? 'active' : '' ?>">
-                <i class="fas fa-store"></i> Stores
+            <a href="store.php" class="<?= $currentPage === 'store.php' ? 'active' : '' ?>">
+                <i class="fas fa-store"></i> Store
             </a>
-            <a href="manageOrder.php" class="<?= $currentPage === 'manageOrder.php' ? 'active' : '' ?>">
-                <i class="fas fa-clipboard-list"></i> Manage Orders
+            <a href="brand.php" class="<?= $currentPage === 'brand.php' ? 'active' : '' ?>">
+                <i class="fas fa-building"></i> Brand
             </a>
-            <a href="processRequisitions.php" class="<?= $currentPage === 'processRequisitions.php' ? 'active' : '' ?>">
+            <a href="categories.php" class="<?= $currentPage === 'categories.php' ? 'active' : '' ?>">
+                <i class="fas fa-boxes"></i> Category
+            </a>
+            <a href="product.php" class="<?= $currentPage === 'product.php' ? 'active' : '' ?>">
+                <i class="fas fa-box"></i> Product
+            </a>
+            <a href="requisitions.php" class="<?= $currentPage === 'requisitions.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-signature"></i> Requisitions
-                <?php if ($pendingReqCount > 0): ?>
-                    <span class="nav-badge"><?= $pendingReqCount ?></span>
+                <?php if ($myPendingReqCount > 0): ?>
+                    <span class="nav-badge"><?= $myPendingReqCount ?></span>
                 <?php endif; ?>
             </a>
             <a href="IssueProductReport.php?o=add" class="<?= $currentPage === 'IssueProductReport.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-alt"></i> Reports
             </a>
-            <a href="manage_users.php" class="<?= $currentPage === 'manage_users.php' ? 'active' : '' ?>">
-                <i class="fas fa-users-cog"></i> Users
-            </a>
         </nav>
 
         <div class="sidebar-footer">
-            <a href="signup.php"><i class="fas fa-user-plus"></i> Add New User</a>
+            <a href="setting.php"><i class="fas fa-cog"></i> Settings</a>
             <a href="logout.php"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
         </div>
     </aside>
@@ -89,7 +97,7 @@ $selfEmailStmt->close();
         <div class="app-topbar">
             <div class="topbar-search">
                 <i class="fas fa-search"></i>
-                <input type="text" id="globalSearch" placeholder="Search orders, requisitions...">
+                <input type="text" id="globalSearch" placeholder="Search products, brands, categories...">
             </div>
             <div class="topbar-icons">
                 <?php if ($selfEmail): ?>
@@ -101,9 +109,9 @@ $selfEmailStmt->close();
                         <i class="fas fa-comment-dots"></i>
                     </a>
                 <?php endif; ?>
-                <a href="processRequisitions.php" title="Notifications">
+                <a href="requisitions.php" title="Your pending requisitions">
                     <i class="fas fa-bell"></i>
-                    <?php if ($pendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
+                    <?php if ($myPendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
                 </a>
             </div>
         </div>

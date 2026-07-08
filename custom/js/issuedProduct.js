@@ -67,8 +67,8 @@ function adjustQuantity(productId, delta) {
     });
 }
 
-// 🔹 Live Search Filter
-document.getElementById("productSearch").addEventListener("keyup", function() {
+// 🔹 Live Search Filter (uses the shared sidebar's search input)
+document.getElementById("globalSearch").addEventListener("keyup", function() {
   const searchText = this.value.toLowerCase();
   const productCards = document.querySelectorAll(".product-card");
 

@@ -4,41 +4,19 @@
 <?php
 
 require_once 'php_action/db_connection.php';
-require_once 'includes/headerStores.php';
+$pageTitle = 'Store';
+require_once 'includes/sidebarStores.php';
 ?>
 
-<!-- Custom CSS -->
-<link rel="stylesheet" href="custom/css/custom.css">
-
-<div class="container-fluid px-3">
-  <div class="col-12">
-
-    <!-- Breadcrumb in faint orange box -->
-    <div class="p-3 mx-4 mb-2 mt-3 rounded d-flex justify-content-between align-items-center"
-         style="background-color: rgba(255, 165, 0, 0.1);">
-      <nav aria-label="breadcrumb" class="mb-0">
-        <ol class="breadcrumb mb-0 d-flex align-items-center">
-          <li class="breadcrumb-item">
-            <a href="dashboard.php">Home</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">Store</li>
-        </ol>
-      </nav>
-
-      <!-- 🔍 Search Bar (Top Right) -->
-      <div class="input-group shadow-sm" style="width: 280px;">
-        <span class="input-group-text bg-white">
-          <i class="fas fa-search text-muted"></i>
-        </span>
-        <input type="text" id="productSearch" class="form-control" placeholder="Search...">
-      </div>
+<div class="dash-card">
+    <div class="dash-card-head">
+        <h5>Store Inventory</h5>
     </div>
 
-    <!-- Products Grid -->
-    <div class="row g-3 mx-4" id="productGrid">
+    <div class="product-grid" id="productGrid">
       <?php
-      $sql = "SELECT p.*, c.categories_name, b.brand_name 
-              FROM product p 
+      $sql = "SELECT p.*, c.categories_name, b.brand_name
+              FROM product p
               LEFT JOIN category c ON p.categories_id = c.categories_id
               LEFT JOIN brand b ON p.brand_id = b.brand_id
               WHERE p.active = 1 AND p.status = 1";
@@ -47,43 +25,33 @@ require_once 'includes/headerStores.php';
       while ($row = $result->fetch_assoc()) {
           $productImage = $row['product_image'] ?: 'images/images.png';
           $statusText = ($row['status'] == 1) ? "Available" : "Not Available";
+          $statusClass = ($row['status'] == 1) ? "available" : "unavailable";
       ?>
-      <div class="col-sm-6 col-md-4 col-lg-3 product-card">
-        <div class="card h-100 shadow-sm border-0">
-          <!-- Image Container -->
-          <div class="d-flex justify-content-center align-items-center p-2" style="height:220px; overflow:hidden;">
-            <img src="<?php echo $productImage; ?>" class="img-fluid"
-                 alt="<?php echo $row['product_name']; ?>"
-                 style="object-fit:cover; max-height:100%; border-radius:8px;">
-          </div>
+      <div class="product-tile product-card">
+        <span class="status-pill <?php echo $statusClass; ?>"><?php echo $statusText; ?></span>
 
-          <div class="card-body d-flex flex-column">
-            <h6 class="fw-bold text-dark mb-1"><?php echo $row['product_name']; ?></h6>
-            <p class="mb-1 text-secondary small"><strong>Brand:</strong> <?php echo $row['brand_name']; ?></p>
-            <p class="mb-1 text-secondary small"><strong>Category:</strong> <?php echo $row['categories_name']; ?></p>
-            <p class="mb-1 text-secondary small"><strong>Status:</strong> <?php echo $statusText; ?></p>
-            <p class="mb-1 text-secondary small">
-              <strong>Quantity:</strong>
-              <span id="qty-<?php echo $row['product_id']; ?>"><?php echo $row['quantity']; ?></span>
-            </p>
+        <div class="product-thumb">
+          <img src="<?php echo $productImage; ?>" alt="<?php echo htmlspecialchars($row['product_name']); ?>">
+        </div>
 
-            <div class="mt-auto d-flex justify-content-between">
-              <button class="btn btn-sm btn-outline-danger"
-                    onclick="openIssueModal(<?php echo $row['product_id']; ?>, '<?php echo htmlspecialchars($row['product_name'], ENT_QUOTES); ?>')">
-                    <i class="fas fa-minus"></i>
-              </button>
+        <h6><?php echo htmlspecialchars($row['product_name']); ?></h6>
+        <div class="product-meta"><?php echo htmlspecialchars($row['brand_name']); ?> &middot; <?php echo htmlspecialchars($row['categories_name']); ?></div>
 
-              <button class="btn btn-sm btn-outline-success" onclick="adjustQuantity(<?php echo $row['product_id']; ?>, 1)">
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
+        <div class="qty-row">
+          <span>Qty: <span class="qty-value" id="qty-<?php echo $row['product_id']; ?>"><?php echo htmlspecialchars($row['quantity']); ?></span></span>
+          <div class="qty-actions d-flex gap-2">
+            <button class="btn-issue" title="Issue product"
+                  onclick="openIssueModal(<?php echo $row['product_id']; ?>, '<?php echo htmlspecialchars($row['product_name'], ENT_QUOTES); ?>')">
+                  <i class="fas fa-minus"></i>
+            </button>
+            <button class="btn-add" title="Add stock" onclick="adjustQuantity(<?php echo $row['product_id']; ?>, 1)">
+              <i class="fas fa-plus"></i>
+            </button>
           </div>
         </div>
       </div>
       <?php } ?>
     </div>
-
-  </div>
 </div>
 
 <!-- Issue Product Modal -->
@@ -150,4 +118,4 @@ require_once 'includes/headerStores.php';
 
 <script src="custom/js/issuedProduct.js"></script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once 'includes/footerDashboard.php'; ?>
