@@ -755,6 +755,34 @@ body.modern-dash {
     transform: translateY(-2px);
 }
 
+/* ---------- Tab count badge + KPI pill (processRequisitions.php) ---------- */
+.tab-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--brand-purple);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.count-pill {
+    background: var(--brand-purple);
+    color: #fff;
+    font-weight: 700;
+    font-size: .8rem;
+    padding: 6px 16px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
 /* ---------- Team roster panel (manageOrder.php) ---------- */
 .team-card {
     background: #F8F8FC;

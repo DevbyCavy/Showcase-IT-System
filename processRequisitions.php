@@ -1,33 +1,22 @@
 <?php
 require_once 'php_action/auth_guard.php';
 requireRole('Super Admin');
-require_once 'includes/header.php';
 require_once 'php_action/db_connection.php';
+
+$pendingCount = $conn->query("SELECT COUNT(*) AS c FROM requisitions WHERE status = 'Pending'")->fetch_assoc()['c'];
+
+$pageTitle = 'Process Requisitions';
+require_once 'includes/sidebarSuper.php';
 ?>
 
-<link rel="stylesheet" href="custom/css/custom.css">
-
-<div class="container-fluid px-4 mt-3">
-
-    <!-- Breadcrumb -->
-    <div class="p-3 mb-3 rounded d-flex justify-content-between align-items-center breadcrumb-custom">
-        <nav aria-label="breadcrumb" class="mb-0">
-            <ol class="breadcrumb mb-0 d-flex align-items-center">
-                <li class="breadcrumb-item"><a href="superDashboard.php">Home</a></li>
-                <li class="breadcrumb-item"><a href="requisitions.php">Requisitions</a></li>
-                <li class="breadcrumb-item active">Process Requisitions</li>
-            </ol>
-        </nav>
-        <?php
-        $pendingCount = $conn->query("SELECT COUNT(*) AS c FROM requisitions WHERE status = 'Pending'")->fetch_assoc()['c'];
-        ?>
-        <span class="badge fs-6" style="background:#ff7b00;">
-            <?= $pendingCount ?> Pending
-        </span>
+<div class="dash-card">
+    <div class="dash-card-head">
+        <h5>Process Requisitions</h5>
+        <span class="count-pill"><?= $pendingCount ?> Pending</span>
     </div>
 
     <!-- Tabs: Pending | All -->
-    <ul class="nav nav-tabs modern-tabs mb-0">
+    <ul class="nav nav-tabs modern-tabs">
         <li class="nav-item position-relative">
             <button class="nav-link modern-tab-btn active" data-bs-toggle="tab" data-bs-target="#pending-tab">
                 <i class="fas fa-clock me-1"></i> Pending
@@ -41,181 +30,165 @@ require_once 'php_action/db_connection.php';
         </li>
     </ul>
 
-    <div class="tab-content">
+    <div class="tab-content pt-3">
 
         <!-- ── PENDING TAB ── -->
         <div class="tab-pane fade show active" id="pending-tab">
-            <div class="card shadow-sm" style="border-top: 4px solid #ff7b00; border-radius: 0 0 8px 8px;">
-                <div class="card-header d-flex justify-content-between align-items-center"
-                     style="background:#fff3e0;">
-                    <span class="fw-bold text-dark">
-                        <i class="fas fa-hourglass-half me-2 text-warning"></i>Awaiting Processing
-                    </span>
-                    <input type="text" class="form-control form-control-sm" id="pendingSearch"
-                           placeholder="Search..." style="max-width:200px;">
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="pendingTable">
-                            <thead style="background:#fff3e0;">
-                                <tr>
-                                    <th class="ps-3">Req #</th>
-                                    <th>Project Manager</th>
-                                    <th>Event</th>
-                                    <th>Location</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Submitted by</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pending-tbody">
-                            <?php
-                            $pending = $conn->query("
-                                SELECT r.*, u.name AS sub_name, u.surname AS sub_surname
-                                FROM requisitions r
-                                LEFT JOIN users u ON r.submitted_by = u.user_id
-                                WHERE r.status = 'Pending'
-                                ORDER BY r.created_at ASC
-                            ");
+            <div class="d-flex justify-content-end mb-2">
+                <input type="text" class="form-control form-control-sm" id="pendingSearch"
+                       placeholder="Search..." style="max-width:200px;">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="pendingTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Req #</th>
+                            <th>Project Manager</th>
+                            <th>Event</th>
+                            <th>Location</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Submitted by</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-tbody">
+                    <?php
+                    $pending = $conn->query("
+                        SELECT r.*, u.name AS sub_name, u.surname AS sub_surname
+                        FROM requisitions r
+                        LEFT JOIN users u ON r.submitted_by = u.user_id
+                        WHERE r.status = 'Pending'
+                        ORDER BY r.created_at ASC
+                    ");
 
-                            if ($pending && $pending->num_rows > 0):
-                                while ($r = $pending->fetch_assoc()):
-                            ?>
-                            <tr id="req-row-<?= $r['requisition_id'] ?>">
-                                <td class="ps-3 fw-bold"><?= htmlspecialchars($r['req_number']) ?></td>
-                                <td><?= htmlspecialchars($r['project_manager']) ?></td>
-                                <td><?= htmlspecialchars($r['event_name']) ?></td>
-                                <td><?= htmlspecialchars($r['location']) ?></td>
-                                <td><?= date('d M Y', strtotime($r['event_date'])) ?></td>
-                                <td>
-                                    <span class="badge bg-secondary">
-                                        <?= htmlspecialchars($r['req_type']) ?>
-                                    </span>
-                                </td>
-                                <td><?= htmlspecialchars(trim($r['sub_name'] . ' ' . $r['sub_surname'])) ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary me-1"
-                                            onclick="viewRequisition(<?= $r['requisition_id'] ?>)"
-                                            title="View details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-success process-btn"
-                                            data-id="<?= $r['requisition_id'] ?>"
-                                            data-ref="<?= htmlspecialchars($r['req_number']) ?>"
-                                            title="Mark as Processed">
-                                        <i class="fas fa-check me-1"></i> Process
-                                    </button>
-                                </td>
-                            </tr>
-                            <?php
-                                endwhile;
-                            else:
-                            ?>
-                            <tr id="no-pending-row">
-                                <td colspan="8" class="text-center text-muted py-5">
-                                    <i class="fas fa-check-circle fa-3x d-block mb-2 text-success"></i>
-                                    All requisitions have been processed.
-                                </td>
-                            </tr>
-                            <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    if ($pending && $pending->num_rows > 0):
+                        while ($r = $pending->fetch_assoc()):
+                    ?>
+                    <tr id="req-row-<?= $r['requisition_id'] ?>">
+                        <td class="ps-3 fw-bold"><?= htmlspecialchars($r['req_number']) ?></td>
+                        <td><?= htmlspecialchars($r['project_manager']) ?></td>
+                        <td><?= htmlspecialchars($r['event_name']) ?></td>
+                        <td><?= htmlspecialchars($r['location']) ?></td>
+                        <td><?= date('d M Y', strtotime($r['event_date'])) ?></td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                <?= htmlspecialchars($r['req_type']) ?>
+                            </span>
+                        </td>
+                        <td><?= htmlspecialchars(trim($r['sub_name'] . ' ' . $r['sub_surname'])) ?></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary me-1"
+                                    onclick="viewRequisition(<?= $r['requisition_id'] ?>)"
+                                    title="View details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-success process-btn"
+                                    data-id="<?= $r['requisition_id'] ?>"
+                                    data-ref="<?= htmlspecialchars($r['req_number']) ?>"
+                                    title="Mark as Processed">
+                                <i class="fas fa-check me-1"></i> Process
+                            </button>
+                        </td>
+                    </tr>
+                    <?php
+                        endwhile;
+                    else:
+                    ?>
+                    <tr id="no-pending-row">
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="fas fa-check-circle fa-3x d-block mb-2 text-success"></i>
+                            All requisitions have been processed.
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- ── ALL REQUISITIONS TAB ── -->
         <div class="tab-pane fade" id="all-tab">
-            <div class="card shadow-sm" style="border-top: 4px solid #ff7b00; border-radius: 0 0 8px 8px;">
-                <div class="card-header d-flex justify-content-between align-items-center"
-                     style="background:#fff3e0;">
-                    <span class="fw-bold text-dark">
-                        <i class="fas fa-list me-2"></i>All Requisitions
-                    </span>
-                    <input type="text" class="form-control form-control-sm" id="allSearch"
-                           placeholder="Search..." style="max-width:200px;">
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="allTable">
-                            <thead style="background:#fff3e0;">
-                                <tr>
-                                    <th class="ps-3">Req #</th>
-                                    <th>Project Manager</th>
-                                    <th>Event</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Submitted by</th>
-                                    <th>Status</th>
-                                    <th>Processed by</th>
-                                    <th class="text-center">View</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                            $all = $conn->query("
-                                SELECT r.*,
-                                       u.name AS sub_name, u.surname AS sub_surname,
-                                       p.name AS proc_name, p.surname AS proc_surname
-                                FROM requisitions r
-                                LEFT JOIN users u ON r.submitted_by = u.user_id
-                                LEFT JOIN users p ON r.processed_by = p.user_id
-                                ORDER BY r.created_at DESC
-                            ");
+            <div class="d-flex justify-content-end mb-2">
+                <input type="text" class="form-control form-control-sm" id="allSearch"
+                       placeholder="Search..." style="max-width:200px;">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="allTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Req #</th>
+                            <th>Project Manager</th>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Submitted by</th>
+                            <th>Status</th>
+                            <th>Processed by</th>
+                            <th class="text-center">View</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    $all = $conn->query("
+                        SELECT r.*,
+                               u.name AS sub_name, u.surname AS sub_surname,
+                               p.name AS proc_name, p.surname AS proc_surname
+                        FROM requisitions r
+                        LEFT JOIN users u ON r.submitted_by = u.user_id
+                        LEFT JOIN users p ON r.processed_by = p.user_id
+                        ORDER BY r.created_at DESC
+                    ");
 
-                            if ($all && $all->num_rows > 0):
-                                while ($r = $all->fetch_assoc()):
-                                    $statusClass = match($r['status']) {
-                                        'Processed' => 'bg-success',
-                                        'Approved'  => 'bg-primary',
-                                        'Rejected'  => 'bg-danger',
-                                        default     => 'bg-warning text-dark',
-                                    };
-                            ?>
-                            <tr>
-                                <td class="ps-3 fw-bold"><?= htmlspecialchars($r['req_number']) ?></td>
-                                <td><?= htmlspecialchars($r['project_manager']) ?></td>
-                                <td>
-                                    <?= htmlspecialchars($r['event_name']) ?>
-                                    <div class="text-muted small">
-                                        <i class="fas fa-map-marker-alt me-1"></i><?= htmlspecialchars($r['location']) ?>
-                                    </div>
-                                </td>
-                                <td><?= date('d M Y', strtotime($r['event_date'])) ?></td>
-                                <td><span class="badge bg-secondary"><?= htmlspecialchars($r['req_type']) ?></span></td>
-                                <td><?= htmlspecialchars(trim($r['sub_name'] . ' ' . $r['sub_surname'])) ?></td>
-                                <td><span class="badge <?= $statusClass ?>"><?= htmlspecialchars($r['status']) ?></span></td>
-                                <td>
-                                    <?php if ($r['proc_name']): ?>
-                                        <?= htmlspecialchars(trim($r['proc_name'] . ' ' . $r['proc_surname'])) ?>
-                                        <div class="text-muted small">
-                                            <?= $r['processed_at'] ? date('d M Y H:i', strtotime($r['processed_at'])) : '' ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                            onclick="viewRequisition(<?= $r['requisition_id'] ?>)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <?php
-                                endwhile;
-                            else:
-                            ?>
-                            <tr>
-                                <td colspan="9" class="text-center text-muted py-4">No requisitions found.</td>
-                            </tr>
+                    if ($all && $all->num_rows > 0):
+                        while ($r = $all->fetch_assoc()):
+                            $statusClass = match($r['status']) {
+                                'Processed' => 'bg-success',
+                                'Approved'  => 'bg-primary',
+                                'Rejected'  => 'bg-danger',
+                                default     => 'bg-warning text-dark',
+                            };
+                    ?>
+                    <tr>
+                        <td class="ps-3 fw-bold"><?= htmlspecialchars($r['req_number']) ?></td>
+                        <td><?= htmlspecialchars($r['project_manager']) ?></td>
+                        <td>
+                            <?= htmlspecialchars($r['event_name']) ?>
+                            <div class="text-muted small">
+                                <i class="fas fa-map-marker-alt me-1"></i><?= htmlspecialchars($r['location']) ?>
+                            </div>
+                        </td>
+                        <td><?= date('d M Y', strtotime($r['event_date'])) ?></td>
+                        <td><span class="badge bg-secondary"><?= htmlspecialchars($r['req_type']) ?></span></td>
+                        <td><?= htmlspecialchars(trim($r['sub_name'] . ' ' . $r['sub_surname'])) ?></td>
+                        <td><span class="badge <?= $statusClass ?>"><?= htmlspecialchars($r['status']) ?></span></td>
+                        <td>
+                            <?php if ($r['proc_name']): ?>
+                                <?= htmlspecialchars(trim($r['proc_name'] . ' ' . $r['proc_surname'])) ?>
+                                <div class="text-muted small">
+                                    <?= $r['processed_at'] ? date('d M Y H:i', strtotime($r['processed_at'])) : '' ?>
+                                </div>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
                             <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    onclick="viewRequisition(<?= $r['requisition_id'] ?>)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php
+                        endwhile;
+                    else:
+                    ?>
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">No requisitions found.</td>
+                    </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -226,7 +199,7 @@ require_once 'php_action/db_connection.php';
 <div class="modal fade" id="reqDetailModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header text-white" style="background:#ff7b00;">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange), var(--brand-orange-dark));">
                 <h5 class="modal-title">
                     <i class="fas fa-file-signature me-2"></i>
                     Requisition Details
@@ -249,7 +222,7 @@ require_once 'php_action/db_connection.php';
 <div class="modal fade" id="confirmProcessModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header" style="background:#ff7b00; color:#fff;">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange), var(--brand-orange-dark));">
                 <h5 class="modal-title"><i class="fas fa-tasks me-2"></i>Confirm Processing</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -269,28 +242,6 @@ require_once 'php_action/db_connection.php';
         </div>
     </div>
 </div>
-
-<style>
-.modern-tabs { border-bottom: none; gap: 10px; }
-.modern-tab-btn {
-    border: none; background: #f1f1f1; color: #444;
-    padding: 12px 20px; border-radius: 15px 15px 0 0;
-    font-weight: 600; transition: all 0.25s ease;
-}
-.modern-tab-btn:hover { background: #e0e0e0; }
-.modern-tab-btn.active {
-    background: #ff7b00 !important; color: #fff !important;
-    box-shadow: 0px -2px 10px rgba(0,0,0,0.15); transform: translateY(-3px);
-}
-.nav-tabs { border-bottom: 0 !important; }
-.tab-badge {
-    position: absolute; top: -5px; right: -5px;
-    background: #ff3b3b; color: #fff; font-size: 0.7rem; font-weight: bold;
-    width: 20px; height: 20px; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
-}
-.breadcrumb-custom { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-</style>
 
 <script>
 // ── Live search ──
@@ -435,4 +386,4 @@ document.getElementById('confirmProcessBtn').addEventListener('click', function 
 });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once 'includes/footerDashboard.php'; ?>
