@@ -4,8 +4,17 @@ require_once 'php_action/db_connection.php';
 
 $loggedUserId = $_SESSION['user_id'];
 
-// Fetch all orders
-$result = $conn->query("SELECT * FROM orders ORDER BY order_id DESC");
+// Fetch all orders, with assigned team names/ids via order_assignments
+$result = $conn->query("
+    SELECT o.*,
+           GROUP_CONCAT(CONCAT(u.name, ' ', u.surname) ORDER BY u.name SEPARATOR '||') AS assigned_names,
+           GROUP_CONCAT(u.user_id ORDER BY u.name SEPARATOR ',')                        AS assigned_user_ids
+    FROM orders o
+    LEFT JOIN order_assignments oa ON o.order_id = oa.order_id
+    LEFT JOIN users u ON oa.user_id = u.user_id
+    GROUP BY o.order_id
+    ORDER BY o.order_id DESC
+");
 $orders = [];
 while ($row = $result->fetch_assoc()) {
     $orders[] = $row;
@@ -17,6 +26,9 @@ $allUsers = [];
 while ($u = $usersResult->fetch_assoc()) {
     $allUsers[] = $u;
 }
+
+// Keep the user on the tab whose form they just submitted
+$activeTab = isset($_POST['boq_submit']) ? 'bill-of-quantities' : 'add-order';
 ?>
 
 <!DOCTYPE html>
@@ -120,7 +132,7 @@ body { background-color: #f8f9fa; }
             <!-- Tabs -->
             <ul class="nav nav-tabs modern-tabs">
                 <li class="nav-item">
-                    <button class="nav-link modern-tab-btn active" data-bs-toggle="tab" data-bs-target="#add-order">Add New Order</button>
+                    <button class="nav-link modern-tab-btn<?= $activeTab === 'add-order' ? ' active' : '' ?>" data-bs-toggle="tab" data-bs-target="#add-order">Add New Order</button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#edit-order">Edit Order</button>
@@ -129,19 +141,19 @@ body { background-color: #f8f9fa; }
                     <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#view-order">View Order</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link modern-tab-btn" data-bs-toggle="tab" data-bs-target="#bill-of-quantities">Bill Of Quantities</button>
+                    <button class="nav-link modern-tab-btn<?= $activeTab === 'bill-of-quantities' ? ' active' : '' ?>" data-bs-toggle="tab" data-bs-target="#bill-of-quantities">Bill Of Quantities</button>
                 </li>
             </ul>
 
             <!-- Tab Content -->
             <div class="tab-content p-3">
                 <!-- ADD NEW ORDER -->
-                <div class="tab-pane fade show active" id="add-order">
+                <div class="tab-pane fade<?= $activeTab === 'add-order' ? ' show active' : '' ?>" id="add-order">
                     <?php include 'php_action/createOrder.php'; ?>
                 </div>
-                
+
                 <!-- ADD NEW BOQ -->
-                <div class="tab-pane fade show active" id="bill-of-quantities">
+                <div class="tab-pane fade<?= $activeTab === 'bill-of-quantities' ? ' show active' : '' ?>" id="bill-of-quantities">
                     <?php include 'php_action/createBOQ.php'; ?>
                 </div>
 
@@ -169,16 +181,7 @@ body { background-color: #f8f9fa; }
                                 <td><?= $order['location'] ?></td>
                                 <td><?= date('Y-m-d H:i', strtotime($order['deadline_datetime'])) ?></td>
                                 <td>
-                                    <?php
-                                    $assignedIds = explode(',', $order['assigned_users']);
-                                    $assignedNames = [];
-                                    foreach ($allUsers as $u) {
-                                        if (in_array($u['user_id'], $assignedIds)) {
-                                            $assignedNames[] = $u['name'].' '.$u['surname'];
-                                        }
-                                    }
-                                    echo implode(', ', $assignedNames);
-                                    ?>
+                                    <?= !empty($order['assigned_names']) ? htmlspecialchars(implode(', ', explode('||', $order['assigned_names']))) : '' ?>
                                 </td>
                                 <td>
                                     <a href="editOrder.php?id=<?= $order['order_id'] ?>" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Edit</a>
@@ -205,7 +208,7 @@ body { background-color: #f8f9fa; }
                         </thead>
                         <tbody>
                         <?php foreach ($orders as $order):
-                            $assignedIds = explode(',', $order['assigned_users']);
+                            $assignedIds = !empty($order['assigned_user_ids']) ? explode(',', $order['assigned_user_ids']) : [];
                             if (in_array($loggedUserId, $assignedIds)):
                         ?>
                             <tr>
@@ -215,15 +218,7 @@ body { background-color: #f8f9fa; }
                                 <td><?= $order['location'] ?></td>
                                 <td><?= date('Y-m-d H:i', strtotime($order['deadline_datetime'])) ?></td>
                                 <td>
-                                    <?php
-                                    $assignedNames = [];
-                                    foreach ($allUsers as $u) {
-                                        if (in_array($u['user_id'], $assignedIds)) {
-                                            $assignedNames[] = $u['name'].' '.$u['surname'];
-                                        }
-                                    }
-                                    echo implode(', ', $assignedNames);
-                                    ?>
+                                    <?= !empty($order['assigned_names']) ? htmlspecialchars(implode(', ', explode('||', $order['assigned_names']))) : '' ?>
                                 </td>
                             </tr>
                         <?php endif; endforeach; ?>

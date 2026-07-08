@@ -12,6 +12,16 @@ $assignedNames = !empty($order['assigned_names'])
 $boqPath     = !empty($order['boq_file'])     ? htmlspecialchars($order['boq_file'])     : '';
 $artworkPath = !empty($order['artwork_file']) ? htmlspecialchars($order['artwork_file']) : '';
 
+// System-generated BOQ (from the Bill Of Quantities tab), separate from an uploaded boq_file
+$systemBoq = null;
+if (!empty($order['order_id'])) {
+    $boqStmt = $conn->prepare("SELECT boq_id, boq_number FROM boq WHERE order_id = ? ORDER BY boq_id DESC LIMIT 1");
+    $boqStmt->bind_param("i", $order['order_id']);
+    $boqStmt->execute();
+    $systemBoq = $boqStmt->get_result()->fetch_assoc();
+    $boqStmt->close();
+}
+
 $badgeClass = match($order['status']) {
     'New'       => 'bg-primary',
     'Assigned'  => 'bg-info text-dark',
@@ -29,7 +39,13 @@ $completionDeadline = $ongoingSince
 
 <div class="col-md-6 col-lg-4"
      data-order-id="<?= $order['order_id'] ?>"
-     data-status="<?= htmlspecialchars($order['status']) ?>">
+     data-status="<?= htmlspecialchars($order['status']) ?>"
+     data-order-number="<?= htmlspecialchars($order['order_number']) ?>"
+     data-order-name="<?= htmlspecialchars($order['order_name']) ?>"
+     data-description="<?= htmlspecialchars($order['description'] ?? '') ?>"
+     data-location="<?= htmlspecialchars($order['location']) ?>"
+     data-deadline="<?= htmlspecialchars(date('Y-m-d H:i', strtotime($order['deadline_datetime']))) ?>"
+     data-team="<?= htmlspecialchars(implode(', ', $assignedNames)) ?>">
     <div class="card shadow-sm order-card h-100">
         <div class="card-body d-flex flex-column">
 
@@ -67,8 +83,34 @@ $completionDeadline = $ongoingSince
             <!-- Action buttons -->
             <div class="d-flex flex-wrap gap-2 mt-auto align-items-center">
 
-                <?php if ($boqPath): ?>
+                <?php if ($boqPath && $systemBoq): ?>
+                    <div class="dropdown" style="position: static;">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="true"
+                                data-bs-reference="toggle">
+                            <i class="fas fa-file-alt me-1"></i> B.O.Q
+                        </button>
+                        <ul class="dropdown-menu" style="z-index: 9999;">
+                            <li>
+                                <a class="dropdown-item" href="<?= $boqPath ?>" target="_blank">
+                                    <i class="fas fa-paperclip me-2 text-secondary"></i>Uploaded File
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="php_action/downloadBOQ.php?id=<?= $systemBoq['boq_id'] ?>" target="_blank">
+                                    <i class="fas fa-database me-2 text-secondary"></i>System BOQ #<?= htmlspecialchars($systemBoq['boq_number']) ?>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                <?php elseif ($boqPath): ?>
                     <a href="<?= $boqPath ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-alt me-1"></i> B.O.Q
+                    </a>
+                <?php elseif ($systemBoq): ?>
+                    <a href="php_action/downloadBOQ.php?id=<?= $systemBoq['boq_id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-file-alt me-1"></i> B.O.Q
                     </a>
                 <?php else: ?>
@@ -113,7 +155,7 @@ $completionDeadline = $ongoingSince
                     </ul>
                 </div>
 
-                <!-- Done button — only for On Going orders -->
+                <!-- Done button ï¿½ only for On Going orders -->
                 <?php if ($order['status'] === 'On Going'): ?>
                     <button class="btn btn-sm btn-success ms-auto btn-done"
                             onclick="markComplete(<?= $order['order_id'] ?>)"
@@ -132,6 +174,16 @@ $completionDeadline = $ongoingSince
     const id     = <?= $order['order_id'] ?>;
     const status = <?= json_encode($order['status']) ?>;
     const el     = document.getElementById('countdown' + id);
+
+    // Click anywhere on the card (outside buttons/links/dropdowns) to view order details
+    const cardOuter = document.querySelector('[data-order-id="' + id + '"]');
+    const cardEl     = cardOuter ? cardOuter.querySelector('.order-card') : null;
+    if (cardEl) {
+        cardEl.addEventListener('click', function (e) {
+            if (e.target.closest('.btn, a, .dropdown-menu')) return;
+            if (typeof showOrderDetails === 'function') showOrderDetails(cardOuter);
+        });
+    }
 
     <?php if ($order['status'] === 'On Going' && $completionDeadline): ?>
     // 24hr completion countdown

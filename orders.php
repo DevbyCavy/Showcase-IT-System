@@ -73,8 +73,8 @@ while ($row = $result->fetch_assoc()) {
     display: flex; justify-content: center; align-items: center;
     box-shadow: 0 0 6px rgba(0,0,0,0.3);
 }
-.order-card { transition: transform 0.2s, opacity 0.3s; }
-.order-card:hover { transform: translateY(-2px); }
+.order-card { transition: box-shadow 0.2s, opacity 0.3s; cursor: pointer; }
+.order-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
 </style>
 
 <div class="container-fluid p-4">
@@ -142,11 +142,49 @@ while ($row = $result->fetch_assoc()) {
     </div>
 </div>
 
+<!-- Order Details Modal (shared, populated on card click) -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-borderless mb-0">
+          <tbody>
+            <tr><th style="width:160px">Order #</th><td id="odOrderNumber"></td></tr>
+            <tr><th>Name</th><td id="odOrderName"></td></tr>
+            <tr><th>Description</th><td id="odDescription"></td></tr>
+            <tr><th>Location</th><td id="odLocation"></td></tr>
+            <tr><th>Deadline</th><td id="odDeadline"></td></tr>
+            <tr><th>Status</th><td id="odStatus"></td></tr>
+            <tr><th>Team</th><td id="odTeam"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============================================================
      SHARED JS — defined ONCE, used by all cards
      ============================================================ -->
 <script>
 const ORDER_STATUS_URL = 'php_action/update_order_status.php';
+
+function showOrderDetails(card) {
+    document.getElementById('odOrderNumber').textContent = card.dataset.orderNumber || '';
+    document.getElementById('odOrderName').textContent   = card.dataset.orderName || '';
+    document.getElementById('odDescription').textContent = card.dataset.description || '(none)';
+    document.getElementById('odLocation').textContent    = card.dataset.location || '';
+    document.getElementById('odDeadline').textContent    = card.dataset.deadline || '';
+    document.getElementById('odStatus').textContent      = card.dataset.status || '';
+    document.getElementById('odTeam').textContent        = card.dataset.team || 'No team assigned';
+
+    const modalEl = document.getElementById('orderDetailsModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
 
 function orderUpdateStatus(orderId, newStatus) {
     fetch(ORDER_STATUS_URL, {
