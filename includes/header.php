@@ -51,7 +51,7 @@ require_once __DIR__ . '/../php_action/auth_guard.php';
             <ul class="navbar-nav align-items-center">
 
                 <li class="nav-item">
-                    <a class="nav-link" href="superDashboard.php">
+                    <a class="nav-link" href="<?= ($_SESSION['user_type'] ?? '') === 'Marketer' ? 'marketingDashboard.php' : 'superDashboard.php' ?>">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
                 </li>
@@ -67,6 +67,14 @@ require_once __DIR__ . '/../php_action/auth_guard.php';
                         <i class="fas fa-circle-plus"></i> Manage Orders
                     </a>
                 </li>
+
+                <?php if (($_SESSION['user_type'] ?? '') === 'Marketer'): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="makeQuotation.php">
+                        <i class="fas fa-file-invoice-dollar"></i> Make Quotation
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <!-- Requisitions Dropdown -->
                 <li class="nav-item dropdown">

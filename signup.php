@@ -139,7 +139,7 @@ if ($_POST) {
                             <option value="">Select Job Title</option>
                             <option value="Stores Admin" <?= $usertype=="Stores Admin"?"selected":"" ?>>Stores Admin</option>
                             <option value="Project Manager" <?= $usertype=="Project Management"?"selected":"" ?>>Project Manager</option>
-                            <option value="Marketer" <?= $usertype=="Marketers"?"selected":"" ?>>Marketer</option>
+                            <option value="Marketer" <?= $usertype=="Marketer"?"selected":"" ?>>Marketer</option>
                             <option value="Accountant" <?= $usertype=="Accounts"?"selected":"" ?>>Accountant</option>
                             <option value="Graphic Designer" <?= $usertype=="Graphics"?"selected":"" ?>>Graphic Designer</option>
                             <option value="Production Team" <?= $usertype=="Production"?"selected":"" ?>>Technician</option>
@@ -156,7 +156,7 @@ if ($_POST) {
                             <option value="">Select Department</option>
                             <option value="Stores" <?= $department=="Stores Admin"?"selected":"" ?>>Stores</option>
                             <option value="Management" <?= $department=="Project Management"?"selected":"" ?>>Project Management</option>
-                            <option value="Marketing" <?= $department=="Marketers"?"selected":"" ?>>Marketing</option>
+                            <option value="Marketing" <?= $department=="Marketing"?"selected":"" ?>>Marketing</option>
                             <option value="Accounts" <?= $department=="Accounts"?"selected":"" ?>>Accounts/Finance</option>
                             <option value="Graphics Department" <?= $department=="Graphics"?"selected":"" ?>>Graphics</option>
                             <option value="Production" <?= $department=="Production"?"selected":"" ?>>Production</option>

@@ -76,6 +76,45 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    /* ---------- Pending quotations quick "Approve" action ---------- */
+    document.querySelectorAll('.quo-approve-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var row = btn.closest('.quo-row');
+            var quoId = btn.dataset.quotationId;
+            btn.disabled = true;
+            btn.textContent = 'Approving...';
+
+            fetch('php_action/processQuotation.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'quotation_id=' + encodeURIComponent(quoId)
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        row.style.transition = 'opacity .25s';
+                        row.style.opacity = '0';
+                        setTimeout(function () {
+                            row.remove();
+                            var list = document.getElementById('quoList');
+                            if (list && !list.querySelector('.quo-row')) {
+                                list.innerHTML = '<div class="req-empty">No pending quotations right now.</div>';
+                            }
+                        }, 250);
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = 'Approve';
+                        alert(data.error || 'Could not approve quotation.');
+                    }
+                })
+                .catch(function () {
+                    btn.disabled = false;
+                    btn.textContent = 'Approve';
+                    alert('Network error while approving quotation.');
+                });
+        });
+    });
+
     /* ---------- Calendar widget ---------- */
     var calRoot = document.getElementById('dashCalendar');
     if (calRoot) {

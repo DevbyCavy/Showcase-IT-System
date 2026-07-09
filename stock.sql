@@ -470,6 +470,49 @@ INSERT INTO `product` (`product_id`, `product_name`, `product_image`, `brand_id`
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `quotations`
+--
+
+CREATE TABLE `quotations` (
+  `quotation_id` int(11) NOT NULL AUTO_INCREMENT,
+  `quotation_number` varchar(20) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_id` varchar(100) DEFAULT NULL,
+  `project_name` varchar(255) DEFAULT NULL,
+  `order_number` varchar(100) DEFAULT NULL,
+  `quote_date` date NOT NULL,
+  `terms_conditions` text DEFAULT NULL,
+  `design_file` varchar(255) DEFAULT NULL,
+  `subtotal` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `status` enum('Pending','Approved') NOT NULL DEFAULT 'Pending',
+  `submitted_by` int(11) DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`quotation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quotation_items`
+--
+
+CREATE TABLE `quotation_items` (
+  `item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `quotation_id` int(11) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `unit_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `line_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `requisitions`
 --
 
@@ -853,6 +896,19 @@ ALTER TABLE `maintenance_logs`
 ALTER TABLE `order_assignments`
   ADD CONSTRAINT `order_assignments_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_assignments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `quotations`
+--
+ALTER TABLE `quotations`
+  ADD CONSTRAINT `quo_submitted_by_fk` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `quo_approved_by_fk` FOREIGN KEY (`approved_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  ADD CONSTRAINT `quotation_items_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`quotation_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `requisitions`

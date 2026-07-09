@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             header("Location: proj_manDashboard.php");
                             break;
 
-                        case 'Marketers':
-                            header("Location: dashboards/marketingDashboard.php");
+                        case 'Marketer':
+                            header("Location: marketingDashboard.php");
                             break;
 
                         case 'Accountant':

@@ -3,7 +3,16 @@ require_once __DIR__ . '/../php_action/auth_guard.php';
 require_once __DIR__ . '/../php_action/db_connection.php';
 
 $pendingReqCount = $conn->query("SELECT COUNT(*) AS c FROM requisitions WHERE status = 'Pending'")->fetch_assoc()['c'];
+$pendingQuoCount = $conn->query("SELECT COUNT(*) AS c FROM quotations WHERE status = 'Pending'")->fetch_assoc()['c'];
 $currentPage = basename($_SERVER['PHP_SELF']);
+
+$pendingQuotes = $conn->query("
+    SELECT quotation_id, quotation_number, customer_name, project_name, created_at
+    FROM quotations
+    WHERE status = 'Pending'
+    ORDER BY created_at DESC
+    LIMIT 5
+");
 
 $selfEmailStmt = $conn->prepare("SELECT email FROM users WHERE user_id = ?");
 $loggedUserId = $_SESSION['user_id'] ?? 0;
@@ -70,6 +79,12 @@ $selfEmailStmt->close();
                     <span class="nav-badge"><?= $pendingReqCount ?></span>
                 <?php endif; ?>
             </a>
+            <a href="processQuotations.php" class="<?= $currentPage === 'processQuotations.php' ? 'active' : '' ?>">
+                <i class="fas fa-file-invoice-dollar"></i> Quotations
+                <?php if ($pendingQuoCount > 0): ?>
+                    <span class="nav-badge"><?= $pendingQuoCount ?></span>
+                <?php endif; ?>
+            </a>
             <a href="IssueProductReport.php?o=add" class="<?= $currentPage === 'IssueProductReport.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-alt"></i> Reports
             </a>
@@ -101,9 +116,38 @@ $selfEmailStmt->close();
                         <i class="fas fa-comment-dots"></i>
                     </a>
                 <?php endif; ?>
-                <a href="processRequisitions.php" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <?php if ($pendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
-                </a>
+                <div class="dropdown d-inline-block">
+                    <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <?php if ($pendingQuoCount > 0 || $pendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" style="min-width:300px;">
+                        <li><h6 class="dropdown-header">New Quotations</h6></li>
+                        <?php if ($pendingQuotes && $pendingQuotes->num_rows > 0): ?>
+                            <?php while ($pq = $pendingQuotes->fetch_assoc()): ?>
+                                <li>
+                                    <a class="dropdown-item" href="processQuotations.php">
+                                        <div class="fw-semibold"><?= htmlspecialchars($pq['quotation_number']) ?> — <?= htmlspecialchars($pq['customer_name']) ?></div>
+                                        <?php if ($pq['project_name']): ?>
+                                            <div class="small text-muted"><?= htmlspecialchars($pq['project_name']) ?></div>
+                                        <?php endif; ?>
+                                    </a>
+                                </li>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <li><span class="dropdown-item-text text-muted small">No pending quotations</span></li>
+                        <?php endif; ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="processQuotations.php"><i class="fas fa-arrow-right me-1"></i>View all quotations</a></li>
+                        <?php if ($pendingReqCount > 0): ?>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="processRequisitions.php">
+                                    <i class="fas fa-file-signature me-1"></i><?= $pendingReqCount ?> pending requisition<?= $pendingReqCount > 1 ? 's' : '' ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
             </div>
         </div>

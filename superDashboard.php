@@ -83,6 +83,17 @@ $reqResult = $conn->query("
 $pendingRequisitions = [];
 while ($row = $reqResult->fetch_assoc()) $pendingRequisitions[] = $row;
 
+/* ---------- Pending quotations ---------- */
+$quoResult = $conn->query("
+    SELECT quotation_id, quotation_number, customer_name, project_name, quote_date
+    FROM quotations
+    WHERE status = 'Pending'
+    ORDER BY created_at DESC
+    LIMIT 6
+");
+$pendingQuotations = [];
+while ($row = $quoResult->fetch_assoc()) $pendingQuotations[] = $row;
+
 /* ---------- Recent BOQs ---------- */
 $boqResult = $conn->query("
     SELECT boq_id, boq_number, order_number, event_name, location, created_at
@@ -174,6 +185,36 @@ require_once 'includes/sidebarSuper.php';
                                 <i class="far fa-calendar"></i> <?= date('d M Y', strtotime($req['event_date'])) ?>
                             </div>
                             <button class="req-process-btn" data-requisition-id="<?= $req['requisition_id'] ?>">Process</button>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Pending Quotations -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <h5>Pending Quotations</h5>
+                <a class="see-all" href="processQuotations.php">See All</a>
+            </div>
+
+            <div id="quoList">
+                <?php if (empty($pendingQuotations)): ?>
+                    <div class="req-empty">No pending quotations right now.</div>
+                <?php else: ?>
+                    <?php foreach ($pendingQuotations as $quo): ?>
+                        <div class="req-row quo-row" data-quotation-id="<?= $quo['quotation_id'] ?>">
+                            <div class="req-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <div class="req-body">
+                                <div class="req-type"><?= htmlspecialchars($quo['quotation_number']) ?></div>
+                                <div class="req-title">
+                                    <?= htmlspecialchars($quo['customer_name']) ?><?= $quo['project_name'] ? ' — ' . htmlspecialchars($quo['project_name']) : '' ?>
+                                </div>
+                            </div>
+                            <div class="req-meta">
+                                <i class="far fa-calendar"></i> <?= date('d M Y', strtotime($quo['quote_date'])) ?>
+                            </div>
+                            <button class="req-process-btn quo-approve-btn" data-quotation-id="<?= $quo['quotation_id'] ?>">Approve</button>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
