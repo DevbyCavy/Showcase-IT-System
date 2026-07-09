@@ -2,14 +2,11 @@
 require_once 'php_action/auth_guard.php';
 requireRole('Marketer');
 
-$pageTitle = 'Make Quotation';
-require_once 'includes/header.php';
-?>
-<link rel="stylesheet" href="custom/css/custom.css">
-<link rel="stylesheet" href="custom/css/modern-dashboard.css">
-<div class="container-fluid px-4 mt-3">
+require_once 'php_action/createQuotation.php';
 
-<?php require_once 'php_action/createQuotation.php'; ?>
+$pageTitle = 'Make Quotation';
+require_once 'includes/sidebarMarketing.php';
+?>
 
 <div class="dash-card mb-4">
     <div class="dash-card-head">
@@ -191,8 +188,6 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-</div>
-
 <style>
 .quote-items-table thead th { font-size: 0.85rem; }
 .quote-items-table tfoot td { background: #f8f9fa; }
@@ -258,4 +253,4 @@ document.getElementById('quoSearch').addEventListener('input', function() {
 });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once 'includes/footerDashboard.php'; ?>
