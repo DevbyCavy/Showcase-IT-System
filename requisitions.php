@@ -258,18 +258,6 @@ require_once 'php_action/createRequisition.php';
     border-color: var(--brand-orange, #F15A2C);
     color: var(--brand-orange, #F15A2C);
 }
-.btn-issue-req {
-    background: linear-gradient(135deg, var(--brand-orange, #F15A2C), var(--brand-orange-dark, #D94E22));
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 10px;
-    font-weight: 700;
-}
-.btn-issue-req:hover {
-    color: #fff;
-    opacity: .92;
-}
 </style>
 
 <script>

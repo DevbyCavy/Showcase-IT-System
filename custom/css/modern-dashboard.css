@@ -755,6 +755,25 @@ body.modern-dash {
     transform: translateY(-2px);
 }
 
+/* ---------- Brand gradient action button (requisitions.php, manage_users.php) ---------- */
+.btn-issue-req {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--brand-orange, #F15A2C), var(--brand-orange-dark, #D94E22));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.btn-issue-req:hover {
+    color: #fff;
+    opacity: .92;
+}
+
 /* ---------- Tab count badge + KPI pill (processRequisitions.php) ---------- */
 .tab-badge {
     position: absolute;
