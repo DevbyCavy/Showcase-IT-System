@@ -95,9 +95,28 @@ $selfEmailStmt->close();
 
         <div class="sidebar-footer">
             <a href="signup.php"><i class="fas fa-user-plus"></i> Add New User</a>
-            <a href="logout.php"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
         </div>
     </aside>
+
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange,#F15A2C), var(--brand-orange-dark,#D94E22));">
+                    <h5 class="modal-title" style="color:#fff;"><i class="fas fa-arrow-right-from-bracket me-2"></i>Confirm Logout</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 fs-5"><i class="fas fa-sign-out-alt text-warning me-2"></i>Are you sure you want to log out?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <a href="logout.php" class="btn btn-danger px-4"><i class="fas fa-arrow-right-from-bracket me-1"></i> Yes, Log Out</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="app-main">
 
