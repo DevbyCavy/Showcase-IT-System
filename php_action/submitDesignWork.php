@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once 'db_connection.php';
+require_once 'notify.php';
 
 $errors  = [];
 $success = '';
@@ -50,6 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_work'])) {
     }
 
     if (empty($errors)) {
+        $jobLookupStmt = $conn->prepare("SELECT marketer_id, job_number FROM design_jobs WHERE design_job_id = ?");
+        $jobLookupStmt->bind_param("i", $jobId);
+        $jobLookupStmt->execute();
+        $jobRow = $jobLookupStmt->get_result()->fetch_assoc();
+        $jobLookupStmt->close();
+
         $stmt = $conn->prepare("
             UPDATE design_jobs
             SET submission_file = ?,
@@ -61,6 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_work'])) {
         $stmt->bind_param("ssii", $submission_file, $submission_notes, $jobId, $designerId);
 
         if ($stmt->execute()) {
+            if ($jobRow) {
+                notifyUser(
+                    $conn, $jobRow['marketer_id'], $designerId, 'design_job_submitted',
+                    "submitted work for {$jobRow['job_number']}",
+                    'assignDesignJob.php'
+                );
+            }
             $success = 'Work submitted for approval!';
         } else {
             $errors[] = 'Failed to submit work.';

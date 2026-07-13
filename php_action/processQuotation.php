@@ -18,6 +18,7 @@ if (($_SESSION['user_type'] ?? '') !== 'Super Admin') {
 }
 
 require_once 'db_connection.php';
+require_once 'notify.php';
 
 $quoId = intval($_POST['quotation_id'] ?? 0);
 
@@ -25,6 +26,12 @@ if ($quoId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Invalid quotation ID.']);
     exit;
 }
+
+$lookupStmt = $conn->prepare("SELECT submitted_by, quotation_number FROM quotations WHERE quotation_id = ?");
+$lookupStmt->bind_param("i", $quoId);
+$lookupStmt->execute();
+$quo = $lookupStmt->get_result()->fetch_assoc();
+$lookupStmt->close();
 
 $stmt = $conn->prepare("
     UPDATE quotations
@@ -37,6 +44,13 @@ $stmt = $conn->prepare("
 $stmt->bind_param("ii", $_SESSION['user_id'], $quoId);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
+    if ($quo) {
+        notifyUser(
+            $conn, $quo['submitted_by'], $_SESSION['user_id'], 'quotation_approved',
+            "approved your quotation {$quo['quotation_number']}",
+            'viewQuotation.php?id=' . $quoId
+        );
+    }
     echo json_encode(['success' => true, 'quotation_id' => $quoId]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Could not approve — already approved or not found.']);

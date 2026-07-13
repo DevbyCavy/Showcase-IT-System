@@ -10,5 +10,43 @@
   color: #fff;
 }
 
+/* Notification bell (legacy navbar shell — modern shell has its own .icon-dot in modern-dashboard.css) */
+.notif-badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e74c3c;
+  border: 1.5px solid #fff;
+}
+
+.notif-menu {
+  padding: 4px 0;
+}
+
+.notif-item {
+  white-space: normal;
+}
+
+.notif-item.notif-unseen {
+  background: #fff7f0;
+}
+
+.notif-item .notif-actor {
+  font-weight: 600;
+  font-size: .85rem;
+}
+
+.notif-item .notif-message {
+  font-size: .85rem;
+}
+
+.notif-item .notif-time {
+  font-size: .72rem;
+  color: #8890A6;
+}
+
 
 

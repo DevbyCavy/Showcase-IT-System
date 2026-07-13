@@ -16,6 +16,12 @@ $selfEmailStmt->bind_param("i", $loggedUserId);
 $selfEmailStmt->execute();
 $selfEmail = $selfEmailStmt->get_result()->fetch_assoc()['email'] ?? '';
 $selfEmailStmt->close();
+
+$notifCountStmt = $conn->prepare("SELECT COUNT(*) AS c FROM notifications WHERE recipient_id = ? AND seen_at IS NULL");
+$notifCountStmt->bind_param("i", $loggedUserId);
+$notifCountStmt->execute();
+$unseenNotifCount = (int) $notifCountStmt->get_result()->fetch_assoc()['c'];
+$notifCountStmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -128,9 +134,14 @@ $selfEmailStmt->close();
                         <i class="fas fa-comment-dots"></i>
                     </a>
                 <?php endif; ?>
-                <a href="requisitions.php" title="Your pending requisitions">
-                    <i class="fas fa-bell"></i>
-                    <?php if ($myPendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
-                </a>
+                <div class="dropdown d-inline-block" id="notifDropdown">
+                    <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <?php if ($unseenNotifCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end notif-menu" id="notifList" style="min-width:320px; max-height:380px; overflow-y:auto;">
+                        <li class="text-center text-muted small py-3">Loading…</li>
+                    </ul>
+                </div>
             </div>
         </div>

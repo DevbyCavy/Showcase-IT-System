@@ -9,6 +9,8 @@
 
     <!-- datatable -->
     <script src="assets/plugins/databases/datatables.min.js"></script>
-    
+
+    <script src="custom/js/notifications.js"></script>
+
 </body>
 </html>

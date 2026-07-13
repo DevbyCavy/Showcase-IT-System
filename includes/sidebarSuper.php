@@ -6,20 +6,19 @@ $pendingReqCount = $conn->query("SELECT COUNT(*) AS c FROM requisitions WHERE st
 $pendingQuoCount = $conn->query("SELECT COUNT(*) AS c FROM quotations WHERE status = 'Pending'")->fetch_assoc()['c'];
 $currentPage = basename($_SERVER['PHP_SELF']);
 
-$pendingQuotes = $conn->query("
-    SELECT quotation_id, quotation_number, customer_name, project_name, created_at
-    FROM quotations
-    WHERE status = 'Pending'
-    ORDER BY created_at DESC
-    LIMIT 5
-");
+$loggedUserId = $_SESSION['user_id'] ?? 0;
 
 $selfEmailStmt = $conn->prepare("SELECT email FROM users WHERE user_id = ?");
-$loggedUserId = $_SESSION['user_id'] ?? 0;
 $selfEmailStmt->bind_param("i", $loggedUserId);
 $selfEmailStmt->execute();
 $selfEmail = $selfEmailStmt->get_result()->fetch_assoc()['email'] ?? '';
 $selfEmailStmt->close();
+
+$notifCountStmt = $conn->prepare("SELECT COUNT(*) AS c FROM notifications WHERE recipient_id = ? AND seen_at IS NULL");
+$notifCountStmt->bind_param("i", $loggedUserId);
+$notifCountStmt->execute();
+$unseenNotifCount = (int) $notifCountStmt->get_result()->fetch_assoc()['c'];
+$notifCountStmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -135,37 +134,13 @@ $selfEmailStmt->close();
                         <i class="fas fa-comment-dots"></i>
                     </a>
                 <?php endif; ?>
-                <div class="dropdown d-inline-block">
+                <div class="dropdown d-inline-block" id="notifDropdown">
                     <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
                         <i class="fas fa-bell"></i>
-                        <?php if ($pendingQuoCount > 0 || $pendingReqCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
+                        <?php if ($unseenNotifCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" style="min-width:300px;">
-                        <li><h6 class="dropdown-header">New Quotations</h6></li>
-                        <?php if ($pendingQuotes && $pendingQuotes->num_rows > 0): ?>
-                            <?php while ($pq = $pendingQuotes->fetch_assoc()): ?>
-                                <li>
-                                    <a class="dropdown-item" href="processQuotations.php">
-                                        <div class="fw-semibold"><?= htmlspecialchars($pq['quotation_number']) ?> — <?= htmlspecialchars($pq['customer_name']) ?></div>
-                                        <?php if ($pq['project_name']): ?>
-                                            <div class="small text-muted"><?= htmlspecialchars($pq['project_name']) ?></div>
-                                        <?php endif; ?>
-                                    </a>
-                                </li>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <li><span class="dropdown-item-text text-muted small">No pending quotations</span></li>
-                        <?php endif; ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="processQuotations.php"><i class="fas fa-arrow-right me-1"></i>View all quotations</a></li>
-                        <?php if ($pendingReqCount > 0): ?>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="processRequisitions.php">
-                                    <i class="fas fa-file-signature me-1"></i><?= $pendingReqCount ?> pending requisition<?= $pendingReqCount > 1 ? 's' : '' ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                    <ul class="dropdown-menu dropdown-menu-end notif-menu" id="notifList" style="min-width:320px; max-height:380px; overflow-y:auto;">
+                        <li class="text-center text-muted small py-3">Loading…</li>
                     </ul>
                 </div>
             </div>

@@ -1,5 +1,13 @@
 <?php
 require_once __DIR__ . '/../php_action/auth_guard.php';
+require_once __DIR__ . '/../php_action/db_connection.php';
+
+$loggedUserId = $_SESSION['user_id'] ?? 0;
+$notifCountStmt = $conn->prepare("SELECT COUNT(*) AS c FROM notifications WHERE recipient_id = ? AND seen_at IS NULL");
+$notifCountStmt->bind_param("i", $loggedUserId);
+$notifCountStmt->execute();
+$unseenNotifCount = (int) $notifCountStmt->get_result()->fetch_assoc()['c'];
+$notifCountStmt->close();
 ?>
 
 
@@ -79,6 +87,17 @@ require_once __DIR__ . '/../php_action/auth_guard.php';
                                 <i class="fas fa-list"></i> Products Report
                             </a>
                         </li>
+                    </ul>
+                </li>
+
+                <!-- Notifications -->
+                <li class="nav-item dropdown" id="notifDropdown">
+                    <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <?php if ($unseenNotifCount > 0): ?><span class="notif-badge-dot"></span><?php endif; ?>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end notif-menu" id="notifList" style="min-width:320px; max-height:380px; overflow-y:auto;">
+                        <li class="text-center text-muted small py-3">Loading…</li>
                     </ul>
                 </li>
 

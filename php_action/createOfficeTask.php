@@ -19,6 +19,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once 'db_connection.php';
+require_once 'notify.php';
 
 $title       = trim($_POST['title']       ?? '');
 $description = trim($_POST['description'] ?? '');
@@ -56,6 +57,11 @@ $stmt = $conn->prepare("
 $stmt->bind_param("sssii", $title, $description, $dueDate, $assignedBy, $assignedTo);
 
 if ($stmt->execute()) {
+    notifyUser(
+        $conn, $assignedTo, $assignedBy, 'office_task_assigned',
+        "assigned you a task: {$title}",
+        null
+    );
     echo json_encode(['success' => true, 'task_id' => $conn->insert_id]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Failed to assign task.']);

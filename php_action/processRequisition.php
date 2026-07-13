@@ -19,6 +19,7 @@ if (($_SESSION['user_type'] ?? '') !== 'Super Admin') {
 }
 
 require_once 'db_connection.php';
+require_once 'notify.php';
 
 $reqId = intval($_POST['requisition_id'] ?? 0);
 
@@ -26,6 +27,12 @@ if ($reqId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Invalid requisition ID.']);
     exit;
 }
+
+$lookupStmt = $conn->prepare("SELECT submitted_by, req_number FROM requisitions WHERE requisition_id = ?");
+$lookupStmt->bind_param("i", $reqId);
+$lookupStmt->execute();
+$req = $lookupStmt->get_result()->fetch_assoc();
+$lookupStmt->close();
 
 $stmt = $conn->prepare("
     UPDATE requisitions
@@ -38,6 +45,13 @@ $stmt = $conn->prepare("
 $stmt->bind_param("ii", $_SESSION['user_id'], $reqId);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
+    if ($req && $req['submitted_by']) {
+        notifyUser(
+            $conn, $req['submitted_by'], $_SESSION['user_id'], 'requisition_processed',
+            "processed your requisition {$req['req_number']}",
+            'requisitions.php'
+        );
+    }
     echo json_encode(['success' => true, 'requisition_id' => $reqId]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Could not process — already processed or not found.']);

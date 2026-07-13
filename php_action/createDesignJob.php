@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once 'db_connection.php';
+require_once 'notify.php';
 
 $errors  = [];
 $success = '';
@@ -70,6 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['design_job_submit']))
         );
 
         if ($stmt->execute()) {
+            notifyUser(
+                $conn, $designer_id, $marketer_id, 'design_job_assigned',
+                "assigned you a new design job {$nextJobNo}",
+                'myDesignJobs.php'
+            );
             $success   = "Design job $nextJobNo assigned successfully!";
             $nextJobNo = 'JOB-' . str_pad(($row['max_no'] ?? 0) + 2, 3, '0', STR_PAD_LEFT);
         } else {

@@ -294,6 +294,25 @@ CREATE TABLE `maintenance_logs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `notification_id` int(11) NOT NULL AUTO_INCREMENT,
+  `recipient_id` int(11) NOT NULL,
+  `actor_id` int(11) DEFAULT NULL,
+  `type` varchar(50) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `link` varchar(255) DEFAULT NULL,
+  `seen_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`notification_id`),
+  KEY `recipient_seen` (`recipient_id`,`seen_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `office_tasks`
 --
 
@@ -988,6 +1007,13 @@ ALTER TABLE `issued_tools`
 --
 ALTER TABLE `maintenance_logs`
   ADD CONSTRAINT `fk_maintenance_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`vehicle_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `notif_recipient_fk` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `notif_actor_fk` FOREIGN KEY (`actor_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `office_tasks`
