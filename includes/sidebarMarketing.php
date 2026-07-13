@@ -69,6 +69,9 @@ $selfEmailStmt->close();
             <a href="marketingDashboard.php" class="<?= $currentPage === 'marketingDashboard.php' ? 'active' : '' ?>">
                 <i class="fas fa-grip"></i> Dashboard
             </a>
+            <a href="manageOrder.php" class="<?= $currentPage === 'manageOrder.php' ? 'active' : '' ?>">
+                <i class="fas fa-clipboard-list"></i> Manage Orders
+            </a>
             <a href="makeQuotation.php" class="<?= $currentPage === 'makeQuotation.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-invoice-dollar"></i> Make Quotation
                 <?php if ($myPendingQuoCount > 0): ?>

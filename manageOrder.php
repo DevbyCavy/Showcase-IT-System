@@ -42,7 +42,11 @@ $statusBadgeClass = [
 ];
 
 $pageTitle = 'Manage Orders';
-require_once 'includes/sidebarSuper.php';
+if (($_SESSION['user_type'] ?? '') === 'Marketer') {
+    require_once 'includes/sidebarMarketing.php';
+} else {
+    require_once 'includes/sidebarSuper.php';
+}
 ?>
 
 <div class="dash-grid">

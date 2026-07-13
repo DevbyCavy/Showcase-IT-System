@@ -30,6 +30,43 @@ $statsStmt->execute();
 $quoStats = $statsStmt->get_result()->fetch_assoc();
 $statsStmt->close();
 
+/* ---------- Orders (auto-advance statuses, then group for the carousel) ---------- */
+$conn->query("
+    UPDATE orders
+    SET status = 'On Going', ongoing_since = NOW()
+    WHERE status IN ('New','Assigned')
+      AND deadline_datetime IS NOT NULL
+      AND deadline_datetime <= NOW()
+      AND ongoing_since IS NULL
+");
+$conn->query("
+    UPDATE orders
+    SET status = 'Completed'
+    WHERE status = 'On Going'
+      AND ongoing_since IS NOT NULL
+      AND ongoing_since <= NOW() - INTERVAL 24 HOUR
+");
+
+$ordersResult = $conn->query("
+    SELECT order_id, order_number, order_name, location, deadline_datetime, status
+    FROM orders
+    ORDER BY created_at DESC
+");
+$tabOrders = ['new' => [], 'ongoing' => [], 'completed' => []];
+while ($row = $ordersResult->fetch_assoc()) {
+    switch ($row['status']) {
+        case 'New':
+        case 'Assigned':  $tabOrders['new'][]       = $row; break;
+        case 'On Going':  $tabOrders['ongoing'][]   = $row; break;
+        case 'Completed': $tabOrders['completed'][] = $row; break;
+    }
+}
+$orderTabsMeta = [
+    'new'       => ['label' => 'New Orders',  'icon' => 'fa-bolt',          'tile' => ''],
+    'ongoing'   => ['label' => 'On Going',    'icon' => 'fa-person-digging','tile' => 'tile-ongoing'],
+    'completed' => ['label' => 'Completed',   'icon' => 'fa-circle-check',  'tile' => 'tile-completed'],
+];
+
 /* ---------- This marketer's pending requisitions ---------- */
 $reqStmt = $conn->prepare("
     SELECT requisition_id, event_name, project_manager, location, event_date, req_type
@@ -80,13 +117,67 @@ require_once 'includes/sidebarMarketing.php';
     <!-- ============ Main column ============ -->
     <div class="dash-col-main">
 
-        <div class="d-flex justify-content-end gap-2 mb-1">
-            <a href="requisitions.php" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-file-signature me-1"></i> New Requisition
-            </a>
-            <a href="makeQuotation.php" class="btn btn-sm" style="background:var(--brand-orange,#F15A2C); color:#fff;">
-                <i class="fas fa-file-invoice-dollar me-1"></i> New Quotation
-            </a>
+        <div class="d-flex justify-content-end mb-1">
+            <div class="dropdown">
+                <button class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        style="width:38px; height:38px; background:var(--brand-orange,#F15A2C); color:#fff;"
+                        title="New...">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="makeQuotation.php">
+                            <i class="fas fa-file-invoice-dollar me-2 text-warning"></i>New Quotation
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="requisitions.php">
+                            <i class="fas fa-file-signature me-2 text-secondary"></i>New Requisition
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <h5>Orders</h5>
+                <div class="orders-nav">
+                    <button class="orders-arrow" id="ordersPrevBtn" title="Previous"><i class="fas fa-chevron-left"></i></button>
+                    <span class="orders-nav-label" id="ordersTabLabel"></span>
+                    <button class="orders-arrow" id="ordersNextBtn" title="Next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="orders-panels">
+                <?php foreach ($orderTabsMeta as $tabKey => $meta): ?>
+                    <div class="orders-panel<?= $tabKey === 'new' ? ' active' : '' ?>"
+                         data-label="<?= htmlspecialchars($meta['label']) ?> (<?= count($tabOrders[$tabKey]) ?>)">
+                        <?php if (empty($tabOrders[$tabKey])): ?>
+                            <div class="orders-empty">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>Nothing here yet.
+                            </div>
+                        <?php else: ?>
+                            <?php foreach (array_slice($tabOrders[$tabKey], 0, 6) as $order): ?>
+                                <div class="order-tile <?= $meta['tile'] ?>">
+                                    <div class="tile-icon"><i class="fas <?= $meta['icon'] ?>"></i></div>
+                                    <h6><?= htmlspecialchars($order['order_name']) ?></h6>
+                                    <div class="tile-meta">
+                                        <?= htmlspecialchars($order['order_number']) ?> &middot; <?= htmlspecialchars($order['location']) ?>
+                                    </div>
+                                    <div class="tile-meta">
+                                        <i class="far fa-clock me-1"></i>
+                                        <?= $order['deadline_datetime'] ? date('d M, H:i', strtotime($order['deadline_datetime'])) : 'No deadline' ?>
+                                    </div>
+                                    <a class="tile-cta" href="manageOrder.php">Manage</a>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <!-- Pending Requisitions -->
