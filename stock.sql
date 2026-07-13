@@ -540,6 +540,24 @@ CREATE TABLE `design_jobs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `memos`
+--
+
+CREATE TABLE `memos` (
+  `memo_id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `due_date` datetime NOT NULL,
+  `status` enum('Pending','Done') NOT NULL DEFAULT 'Pending',
+  `acknowledged_at` datetime DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`memo_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `requisitions`
 --
 
@@ -950,6 +968,12 @@ ALTER TABLE `requisitions`
 ALTER TABLE `design_jobs`
   ADD CONSTRAINT `dj_marketer_fk` FOREIGN KEY (`marketer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `dj_designer_fk` FOREIGN KEY (`designer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `memos`
+--
+ALTER TABLE `memos`
+  ADD CONSTRAINT `memo_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `vehicles`
