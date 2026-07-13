@@ -840,6 +840,15 @@ body.modern-dash {
     font-size: .85rem;
 }
 
+.dj-assignee {
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* ---------- Modern tabs (manageOrder.php) ---------- */
 .modern-tabs {
     border-bottom: none;

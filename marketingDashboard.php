@@ -100,6 +100,21 @@ $calUsersResult = $conn->query("SELECT user_id, name, surname, department FROM u
 $calUsers = [];
 while ($row = $calUsersResult->fetch_assoc()) $calUsers[] = $row;
 
+/* ---------- Design Jobs: recently assigned ---------- */
+$newDesignJobsStmt = $conn->prepare("
+    SELECT dj.design_job_id, dj.job_number, dj.title, dj.deadline, u.name AS des_name, u.surname AS des_surname
+    FROM design_jobs dj
+    LEFT JOIN users u ON dj.designer_id = u.user_id
+    WHERE dj.marketer_id = ? AND dj.status = 'Assigned'
+    ORDER BY dj.created_at DESC
+    LIMIT 6
+");
+$newDesignJobsStmt->bind_param("i", $loggedUserId);
+$newDesignJobsStmt->execute();
+$newDesignJobs = [];
+$njRes = $newDesignJobsStmt->get_result();
+while ($row = $njRes->fetch_assoc()) $newDesignJobs[] = $row;
+
 $pageTitle = 'Marketer Dashboard';
 require_once 'includes/sidebarMarketing.php';
 ?>
@@ -269,7 +284,31 @@ require_once 'includes/sidebarMarketing.php';
             <div class="cal-grid" id="calGrid"></div>
             <div class="cal-day-panel">
                 <div id="calDayPanelBody"></div>
-            </div>        </div>
+            </div>
+        </div>
+
+        <!-- Design Jobs activity -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <h5>Design Jobs</h5>
+                <a class="see-all" href="assignDesignJob.php">See All</a>
+            </div>
+
+            <?php if (empty($newDesignJobs)): ?>
+                <div class="req-empty">No new jobs assigned yet.</div>
+            <?php else: ?>
+                <?php foreach ($newDesignJobs as $nj): ?>
+                    <a href="assignDesignJob.php" class="req-row" style="text-decoration:none; color:inherit;">
+                        <div class="req-icon"><i class="fas fa-paper-plane"></i></div>
+                        <div class="req-body">
+                            <div class="req-type"><?= htmlspecialchars($nj['job_number']) ?></div>
+                            <div class="req-title"><?= htmlspecialchars($nj['title']) ?></div>
+                            <div class="dj-assignee"><i class="far fa-user"></i> <?= htmlspecialchars(trim($nj['des_name'] . ' ' . $nj['des_surname'])) ?></div>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
 
     </div>
 
