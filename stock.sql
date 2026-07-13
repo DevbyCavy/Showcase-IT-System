@@ -294,6 +294,24 @@ CREATE TABLE `maintenance_logs` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `office_tasks`
+--
+
+CREATE TABLE `office_tasks` (
+  `task_id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `due_date` date NOT NULL,
+  `status` enum('Pending','Completed') NOT NULL DEFAULT 'Pending',
+  `assigned_by` int(11) DEFAULT NULL,
+  `assigned_to` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`task_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `orders`
 --
 
@@ -970,6 +988,13 @@ ALTER TABLE `issued_tools`
 --
 ALTER TABLE `maintenance_logs`
   ADD CONSTRAINT `fk_maintenance_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`vehicle_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `office_tasks`
+--
+ALTER TABLE `office_tasks`
+  ADD CONSTRAINT `ot_assigned_by_fk` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `ot_assigned_to_fk` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `order_assignments`

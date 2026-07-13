@@ -115,65 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    /* ---------- Calendar widget ---------- */
-    var calRoot = document.getElementById('dashCalendar');
-    if (calRoot) {
-        var markedDates = {};
-        try {
-            markedDates = JSON.parse(calRoot.dataset.marked || '{}');
-        } catch (e) { /* ignore malformed data */ }
-
-        var monthLabelEl = document.getElementById('calMonthLabel');
-        var gridEl = document.getElementById('calGrid');
-        var view = new Date();
-        view.setDate(1);
-
-        var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'];
-        var dow = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-        function toKey(d) {
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-
-        function renderCalendar() {
-            var year = view.getFullYear();
-            var month = view.getMonth();
-            monthLabelEl.textContent = monthNames[month] + ' ' + year;
-
-            var firstDay = new Date(year, month, 1);
-            var startOffset = (firstDay.getDay() + 6) % 7; // Monday-first grid
-            var gridStart = new Date(year, month, 1 - startOffset);
-
-            var today = new Date();
-            var todayKey = toKey(today);
-
-            var html = dow.map(function (d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
-
-            for (var i = 0; i < 42; i++) {
-                var cellDate = new Date(gridStart);
-                cellDate.setDate(gridStart.getDate() + i);
-                var key = toKey(cellDate);
-                var inMonth = cellDate.getMonth() === month;
-                var classes = 'cal-day' + (inMonth ? ' in-month' : '') + (key === todayKey ? ' today' : '');
-                var dot = markedDates[key] ? '<span class="dot"></span>' : '';
-                html += '<div class="' + classes + '">' + cellDate.getDate() + dot + '</div>';
-            }
-
-            gridEl.innerHTML = html;
-        }
-
-        document.getElementById('calPrevBtn').addEventListener('click', function () {
-            view.setMonth(view.getMonth() - 1);
-            renderCalendar();
-        });
-        document.getElementById('calNextBtn').addEventListener('click', function () {
-            view.setMonth(view.getMonth() + 1);
-            renderCalendar();
-        });
-
-        renderCalendar();
-    }
+    /* ---------- Office Task Calendar widget: see custom/js/task-calendar.js ---------- */
 
     /* ---------- Global search (client-side filter of order tiles + requisition rows) ---------- */
     var searchInput = document.getElementById('globalSearch');

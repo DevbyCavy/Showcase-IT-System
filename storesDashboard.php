@@ -58,15 +58,10 @@ $issuedResult = $conn->query("
 $recentIssued = [];
 while ($row = $issuedResult->fetch_assoc()) $recentIssued[] = $row;
 
-/* ---------- Calendar marker dates (order deadlines, +/-2 months) ---------- */
-$calResult = $conn->query("
-    SELECT DISTINCT DATE(deadline_datetime) d
-    FROM orders
-    WHERE deadline_datetime IS NOT NULL
-      AND deadline_datetime BETWEEN (NOW() - INTERVAL 2 MONTH) AND (NOW() + INTERVAL 2 MONTH)
-");
-$markedDates = [];
-while ($row = $calResult->fetch_assoc()) $markedDates[$row['d']] = true;
+/* ---------- All users, for the task calendar's department/assignee picker ---------- */
+$calUsersResult = $conn->query("SELECT user_id, name, surname, department FROM users ORDER BY department, name");
+$calUsers = [];
+while ($row = $calUsersResult->fetch_assoc()) $calUsers[] = $row;
 
 $pageTitle = 'Stores Dashboard';
 require_once 'includes/sidebarStores.php';
@@ -156,15 +151,23 @@ require_once 'includes/sidebarStores.php';
             </div>
         </div>
 
-        <!-- Calendar -->
-        <div class="cal-card" id="dashCalendar" data-marked='<?= json_encode($markedDates) ?>'>
+        <!-- Office Task Calendar -->
+        <div class="cal-card" id="dashCalendar" data-users='<?= json_encode($calUsers) ?>'>
             <div class="cal-head">
-                <button id="calPrevBtn"><i class="fas fa-chevron-left"></i></button>
-                <span id="calMonthLabel"></span>
-                <button id="calNextBtn"><i class="fas fa-chevron-right"></i></button>
+                <div class="cal-head-nav">
+                    <button class="cal-nav-btn" id="calPrevBtn"><i class="fas fa-chevron-left"></i></button>
+                    <span id="calMonthLabel"></span>
+                    <button class="cal-nav-btn" id="calNextBtn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-view-toggle">
+                    <button type="button" id="calWeekViewBtn">Week</button>
+                    <button type="button" id="calMonthViewBtn" class="active">Month</button>
+                </div>
             </div>
             <div class="cal-grid" id="calGrid"></div>
-        </div>
+            <div class="cal-day-panel">
+                <div id="calDayPanelBody"></div>
+            </div>        </div>
 
         <!-- Recently Issued Products -->
         <div class="dash-card">
@@ -193,6 +196,73 @@ require_once 'includes/sidebarStores.php';
 
     </div>
 
+</div>
+
+<!-- Assign Task/To-Do Modal -->
+<div class="modal fade" id="taskCalModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange,#F15A2C), var(--brand-orange-dark,#D94E22));">
+                <h5 class="modal-title" style="color:#fff;"><i class="fas fa-calendar-plus me-2"></i>Add to <span id="taskCalDateLabel"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div class="btn-group w-100 mb-3" role="group">
+                    <input type="radio" class="btn-check" name="taskCalType" id="taskCalTypeTodo" checked>
+                    <label class="btn btn-outline-secondary" for="taskCalTypeTodo"><i class="fas fa-note-sticky me-1"></i>To-Do</label>
+                    <input type="radio" class="btn-check" name="taskCalType" id="taskCalTypeJob">
+                    <label class="btn btn-outline-secondary" for="taskCalTypeJob"><i class="fas fa-briefcase me-1"></i>Job</label>
+                </div>
+
+                <div id="taskCalTodoFields">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="taskCalTodoTitle" placeholder="e.g. Follow up with printer">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Time</label>
+                        <input type="time" class="form-control" id="taskCalTodoTime" value="09:00">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Notes</label>
+                        <textarea class="form-control" id="taskCalTodoNotes" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div id="taskCalJobFields" class="d-none">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                        <select class="form-select" id="taskCalDept">
+                            <option value="">Select department...</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Assign To <span class="text-danger">*</span></label>
+                        <select class="form-select" id="taskCalAssignee" disabled>
+                            <option value="">Select department first...</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Task <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="taskCalJobTitle" placeholder="e.g. Prepare signage artwork">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" id="taskCalJobNotes" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <input type="hidden" id="taskCalDate">
+                <div class="text-danger small mt-2 d-none" id="taskCalError"></div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn text-white px-4" id="taskCalSaveBtn" style="background:var(--brand-orange,#F15A2C);">
+                    <i class="fas fa-check me-1"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php require_once 'includes/footerDashboard.php'; ?>

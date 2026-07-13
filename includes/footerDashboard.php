@@ -12,6 +12,7 @@
 
 <!-- dashboard interactions -->
 <script src="custom/js/modern-dashboard.js"></script>
+<script src="custom/js/task-calendar.js"></script>
 
 </body>
 </html>
