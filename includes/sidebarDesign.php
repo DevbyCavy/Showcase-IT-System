@@ -11,6 +11,12 @@ $myOpenJobStmt->execute();
 $myOpenJobCount = $myOpenJobStmt->get_result()->fetch_assoc()['c'];
 $myOpenJobStmt->close();
 
+$myPendingReqStmt = $conn->prepare("SELECT COUNT(*) AS c FROM requisitions WHERE submitted_by = ? AND status = 'Pending'");
+$myPendingReqStmt->bind_param("i", $loggedUserId);
+$myPendingReqStmt->execute();
+$myPendingReqCount = $myPendingReqStmt->get_result()->fetch_assoc()['c'];
+$myPendingReqStmt->close();
+
 $selfEmailStmt = $conn->prepare("SELECT email FROM users WHERE user_id = ?");
 $selfEmailStmt->bind_param("i", $loggedUserId);
 $selfEmailStmt->execute();
@@ -73,6 +79,12 @@ $notifCountStmt->close();
                 <i class="fas fa-pen-ruler"></i> My Design Jobs
                 <?php if ($myOpenJobCount > 0): ?>
                     <span class="nav-badge"><?= $myOpenJobCount ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="requisitions.php" class="<?= $currentPage === 'requisitions.php' ? 'active' : '' ?>">
+                <i class="fas fa-file-signature"></i> Requisitions
+                <?php if ($myPendingReqCount > 0): ?>
+                    <span class="nav-badge"><?= $myPendingReqCount ?></span>
                 <?php endif; ?>
             </a>
         </nav>

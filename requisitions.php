@@ -10,6 +10,8 @@ if ($userType === 'Super Admin') {
     require_once 'includes/sidebarStores.php';
 } elseif ($userType === 'Marketer') {
     require_once 'includes/sidebarMarketing.php';
+} elseif ($userType === 'Graphic Designer') {
+    require_once 'includes/sidebarDesign.php';
 } else {
     require_once 'includes/header.php';
     echo '<link rel="stylesheet" href="custom/css/custom.css">';
@@ -290,7 +292,7 @@ document.getElementById('reqSearch').addEventListener('input', function() {
 </script>
 
 <?php
-if (in_array($userType, ['Super Admin', 'Stores Admin', 'Marketer'], true)) {
+if (in_array($userType, ['Super Admin', 'Stores Admin', 'Marketer', 'Graphic Designer'], true)) {
     require_once 'includes/footerDashboard.php';
 } else {
     echo '</div>'; // close the container-fluid opened above
