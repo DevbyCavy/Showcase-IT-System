@@ -134,6 +134,8 @@ require_once 'includes/sidebarStores.php';
             </div>
         </div>
 
+        <?php require_once 'includes/workLogSheet.php'; ?>
+
     </div>
 
     <!-- ============ Side column ============ -->

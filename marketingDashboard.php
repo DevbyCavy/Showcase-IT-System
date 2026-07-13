@@ -180,6 +180,8 @@ require_once 'includes/sidebarMarketing.php';
             </div>
         </div>
 
+        <?php require_once 'includes/workLogSheet.php'; ?>
+
         <!-- Pending Requisitions -->
         <div class="dash-card">
             <div class="dash-card-head">

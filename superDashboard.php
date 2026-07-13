@@ -163,6 +163,8 @@ require_once 'includes/sidebarSuper.php';
             </div>
         </div>
 
+        <?php require_once 'includes/workLogSheet.php'; ?>
+
         <!-- Pending Requisitions (replaces "Recommended Course") -->
         <div class="dash-card">
             <div class="dash-card-head">

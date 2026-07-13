@@ -693,6 +693,42 @@ CREATE TABLE `vehicle_trips` (
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `work_shifts`
+--
+
+CREATE TABLE `work_shifts` (
+  `shift_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `shift_date` date NOT NULL,
+  `login_time` datetime NOT NULL,
+  `evening_shift` tinyint(1) NOT NULL DEFAULT 0,
+  `logout_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`shift_id`),
+  UNIQUE KEY `user_shift_date` (`user_id`,`shift_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `work_tasks`
+--
+
+CREATE TABLE `work_tasks` (
+  `task_id` int(11) NOT NULL AUTO_INCREMENT,
+  `shift_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `task_name` varchar(255) NOT NULL,
+  `task_notes` text DEFAULT NULL,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `status` enum('Running','Completed') NOT NULL DEFAULT 'Running',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`task_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Indexes for dumped tables
 --
@@ -974,6 +1010,19 @@ ALTER TABLE `design_jobs`
 --
 ALTER TABLE `memos`
   ADD CONSTRAINT `memo_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `work_shifts`
+--
+ALTER TABLE `work_shifts`
+  ADD CONSTRAINT `ws_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `work_tasks`
+--
+ALTER TABLE `work_tasks`
+  ADD CONSTRAINT `wt_shift_fk` FOREIGN KEY (`shift_id`) REFERENCES `work_shifts` (`shift_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `wt_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `vehicles`

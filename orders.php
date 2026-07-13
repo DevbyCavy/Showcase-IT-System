@@ -281,3 +281,5 @@ function updateTabBadges() {
     });
 }
 </script>
+
+<?php require_once 'includes/workLogSheet.php'; ?>
