@@ -186,6 +186,24 @@ $notifCountStmt->close();
                 <input type="text" id="globalSearch" placeholder="Search quotations, requisitions...">
             </div>
             <div class="topbar-icons">
+                <div class="dropdown d-inline-block">
+                    <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="New..."
+                       style="background:var(--brand-orange,#F15A2C); color:#fff;">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="makeQuotation.php">
+                                <i class="fas fa-file-invoice-dollar me-2 text-warning"></i>New Quotation
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="requisitions.php">
+                                <i class="fas fa-file-signature me-2 text-secondary"></i>New Requisition
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <?php if ($selfEmail): ?>
                     <a href="mailto:<?= htmlspecialchars($selfEmail) ?>" title="Email <?= htmlspecialchars($selfEmail) ?>">
                         <i class="fas fa-comment-dots"></i>
@@ -204,6 +222,9 @@ $notifCountStmt->close();
                         <li class="text-center text-muted small py-3">Loading…</li>
                     </ul>
                 </div>
+                <a href="setting.php" title="Account Settings">
+                    <i class="fas fa-gear"></i>
+                </a>
             </div>
         </div>
 

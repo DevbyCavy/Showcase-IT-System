@@ -124,29 +124,6 @@ require_once 'includes/sidebarMarketing.php';
     <!-- ============ Main column ============ -->
     <div class="dash-col-main">
 
-        <div class="d-flex justify-content-end mb-1">
-            <div class="dropdown">
-                <button class="btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center"
-                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                        style="width:38px; height:38px; background:var(--brand-orange,#F15A2C); color:#fff;"
-                        title="New...">
-                    <i class="fas fa-plus"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" href="makeQuotation.php">
-                            <i class="fas fa-file-invoice-dollar me-2 text-warning"></i>New Quotation
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="requisitions.php">
-                            <i class="fas fa-file-signature me-2 text-secondary"></i>New Requisition
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
         <!-- Orders -->
         <div class="dash-card">
             <div class="dash-card-head">

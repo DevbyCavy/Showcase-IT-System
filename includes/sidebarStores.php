@@ -143,5 +143,8 @@ $notifCountStmt->close();
                         <li class="text-center text-muted small py-3">Loading…</li>
                     </ul>
                 </div>
+                <a href="setting.php" title="Account Settings">
+                    <i class="fas fa-gear"></i>
+                </a>
             </div>
         </div>
