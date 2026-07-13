@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../php_action/db_connection.php';
 
 $message = '';
@@ -102,300 +101,224 @@ SELECT IFNULL(SUM(fuel_cost),0) total
 FROM fuel_logs
 ")->fetch_assoc()['total'];
 
+$fuelHistory = [];
+
+$historyResult = $conn->query("
+    SELECT
+        fl.*,
+        v.registration_number,
+        v.make,
+        v.model
+    FROM fuel_logs fl
+    JOIN vehicles v ON fl.vehicle_id = v.vehicle_id
+    ORDER BY fl.fuel_date DESC, fl.fuel_id DESC
+    LIMIT 20
+");
+
+while($row = $historyResult->fetch_assoc()){
+    $fuelHistory[] = $row;
+}
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Logistics Management</title>
-
-<link rel="stylesheet" href="/../../assets/bootstrap/css/bootstrap.min.css">
-<link rel="stylesheet" href="/../../assets/font-awesome/css/all.min.css">
-
-<style>
-
-body{
-    background:#f5f6fa;
-    margin: 10px 20px;
-}
-
-.module-card{
-    border:none;
-    border-radius:12px;
-    box-shadow:0 3px 12px rgba(0,0,0,.08);
-}
-
-.modern-tabs{
-    border-bottom:none;
-}
-
-.modern-tab-btn{
-    border:none !important;
-    margin-right:5px;
-    border-radius:10px 10px 0 0 !important;
-    background:#e9ecef;
-    color:#333;
-    font-weight:600;
-}
-
-.modern-tab-btn.active{
-    background:#ff7b00 !important;
-    color:#fff !important;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<?php include 'includes/headerLogistics.php'; ?>
-    
-<!-- Breadcrumb -->
-
-<div class="card module-card mb-3">
-
-    <div class="card-body">
-
-        <nav aria-label="breadcrumb">
-
-            <ol class="breadcrumb mb-0">
-
-                <li class="breadcrumb-item">
-                    <a href="logisticsDashboard.php">Home</a>
-                </li>
-
-                <li class="breadcrumb-item active">
-                    Fuel Log
-                </li>
-
-            </ol>
-
-        </nav>
-
+<div class="dash-card">
+    <div class="dash-card-head">
+        <h5><i class="fas fa-gas-pump me-2"></i>Fuel Log</h5>
     </div>
 
-</div>
+    <div class="overview-stats mb-4">
 
-<!-- Page Title -->
-
-<h3 class="fw-bold mb-3">
-
-    <i class="fas fa-truck me-2"></i>
-
-    Fuel Log
-
-</h3>
-
-<div class="row mb-4">
-    
-        <div class="col-md-4">
-        
-            <div class="card shadow-sm">
-            
-                <div class="card-body">
-                
-                    <h6>Total Entries</h6>
-                    
-                    <h3><?= $totalFuelEntries ?></h3>
-                
-                </div>
-                
-                </div>
-                
-                </div>
-                
-                <div class="col-md-4">
-                
-                    <div class="card shadow-sm">
-                    
-                            <div class="card-body">
-                            
-                            <h6>Total Litres</h6>
-                            
-                            <h3><?= number_format($totalLitres,2) ?></h3>
-                        
-                        </div>
-                    
-                    </div>
-                
-                </div>
-                
-                <div class="col-md-4">
-                
-                <div class="card shadow-sm">
-                
-                <div class="card-body">
-                
-                <h6>Total Fuel Cost</h6>
-                
-                <h3>$<?= number_format($totalFuelCost,2) ?></h3>
-                
-                </div>
-            
-            </div>
-        
+        <div class="stat-box">
+            <i class="fas fa-list-check"></i>
+            <strong><?= (int)$totalFuelEntries ?></strong>
+            <span>Total Entries</span>
         </div>
-    
-    </div>
-    
-    <div class="card shadow-sm mb-4">
 
-    <div class="card-header">
+        <div class="stat-box">
+            <i class="fas fa-gas-pump"></i>
+            <strong><?= number_format($totalLitres, 2) ?> L</strong>
+            <span>Total Litres</span>
+        </div>
 
-        <h5 class="mb-0">
-
-            <i class="fas fa-gas-pump me-2"></i>
-
-            Add Fuel Entry
-
-        </h5>
+        <div class="stat-box">
+            <i class="fas fa-money-bill-wave"></i>
+            <strong>$<?= number_format($totalFuelCost, 2) ?></strong>
+            <span>Total Fuel Cost</span>
+        </div>
 
     </div>
 
-    <div class="card-body">
+    <div class="dash-card-head">
+        <h5><i class="fas fa-plus me-2"></i>Add Fuel Entry</h5>
+    </div>
 
-        <?= $message ?>
+    <?= $message ?>
 
-        <form method="POST">
+    <form method="POST">
 
-            <div class="row">
+        <div class="row">
 
-                <div class="col-md-4 mb-3">
+            <div class="col-md-4 mb-3">
 
-                    <label>Vehicle</label>
+                <label class="form-label">Vehicle</label>
 
-                    <select
-                        name="vehicle_id"
-                        class="form-select"
-                        required>
+                <select
+                    name="vehicle_id"
+                    class="form-select"
+                    required>
 
-                        <option value="">
-                            Select Vehicle
-                        </option>
+                    <option value="">
+                        Select Vehicle
+                    </option>
 
-                        <?php foreach($vehicles as $v): ?>
+                    <?php foreach($vehicles as $v): ?>
 
-                        <option
-                            value="<?= $v['vehicle_id'] ?>">
+                    <option
+                        value="<?= $v['vehicle_id'] ?>">
 
-                            <?= $v['registration_number'] ?>
-                            -
-                            <?= $v['make'] ?>
-                            <?= $v['model'] ?>
+                        <?= htmlspecialchars($v['registration_number']) ?>
+                        -
+                        <?= htmlspecialchars($v['make']) ?>
+                        <?= htmlspecialchars($v['model']) ?>
 
-                        </option>
+                    </option>
 
-                        <?php endforeach; ?>
+                    <?php endforeach; ?>
 
-                    </select>
-
-                </div>
-
-                <div class="col-md-4 mb-3">
-
-                    <label>Fuel Date</label>
-
-                    <input
-                        type="date"
-                        name="fuel_date"
-                        class="form-control"
-                        required>
-
-                </div>
-
-                <div class="col-md-4 mb-3">
-
-                    <label>Odometer Reading</label>
-
-                    <input
-                        type="number"
-                        step="0.01"
-                        name="odometer_reading"
-                        class="form-control"
-                        required>
-
-                </div>
-
-                <div class="col-md-3 mb-3">
-
-                    <label>Litres</label>
-
-                    <input
-                        type="number"
-                        step="0.01"
-                        name="litres"
-                        class="form-control"
-                        required>
-
-                </div>
-
-                <div class="col-md-3 mb-3">
-
-                    <label>Fuel Cost</label>
-
-                    <input
-                        type="number"
-                        step="0.01"
-                        name="fuel_cost"
-                        class="form-control"
-                        required>
-
-                </div>
-
-                <div class="col-md-3 mb-3">
-
-                    <label>Fuel Station</label>
-
-                    <input
-                        type="text"
-                        name="fuel_station"
-                        class="form-control">
-
-                </div>
-
-                <div class="col-md-3 mb-3">
-
-                    <label>Receipt Number</label>
-
-                    <input
-                        type="text"
-                        name="receipt_number"
-                        class="form-control">
-
-                </div>
-
-                <div class="col-md-12 mb-3">
-
-                    <label>Notes</label>
-
-                    <textarea
-                        name="notes"
-                        class="form-control"></textarea>
-
-                </div>
+                </select>
 
             </div>
 
-            <button
-                class="btn btn-success"
-                name="save_fuel">
+            <div class="col-md-4 mb-3">
 
-                Save Fuel Entry
+                <label class="form-label">Fuel Date</label>
 
-            </button>
+                <input
+                    type="date"
+                    name="fuel_date"
+                    class="form-control"
+                    required>
 
-        </form>
+            </div>
 
+            <div class="col-md-4 mb-3">
+
+                <label class="form-label">Odometer Reading</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="odometer_reading"
+                    class="form-control"
+                    required>
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+                <label class="form-label">Litres</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="litres"
+                    class="form-control"
+                    required>
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+                <label class="form-label">Fuel Cost</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="fuel_cost"
+                    class="form-control"
+                    required>
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+                <label class="form-label">Fuel Station</label>
+
+                <input
+                    type="text"
+                    name="fuel_station"
+                    class="form-control">
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+                <label class="form-label">Receipt Number</label>
+
+                <input
+                    type="text"
+                    name="receipt_number"
+                    class="form-control">
+
+            </div>
+
+            <div class="col-md-12 mb-3">
+
+                <label class="form-label">Notes</label>
+
+                <textarea
+                    name="notes"
+                    class="form-control"></textarea>
+
+            </div>
+
+        </div>
+
+        <button
+            type="submit"
+            class="btn text-white" style="background:var(--brand-orange,#F15A2C);"
+            name="save_fuel">
+            <i class="fas fa-save me-1"></i> Save Fuel Entry
+        </button>
+
+    </form>
+
+    <hr class="my-4">
+
+    <div class="dash-card-head">
+        <h5><i class="fas fa-clock-rotate-left me-2"></i>Recent Fuel Entries</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="mini-table">
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Date</th>
+                    <th>Odometer</th>
+                    <th>Litres</th>
+                    <th>Cost</th>
+                    <th>Station</th>
+                    <th>Receipt #</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($fuelHistory)): ?>
+                    <tr class="table-empty"><td colspan="7">No fuel entries logged yet.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($fuelHistory as $f): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($f['registration_number']) ?> &middot; <?= htmlspecialchars($f['make']) ?> <?= htmlspecialchars($f['model']) ?></td>
+                            <td><?= date('d M Y', strtotime($f['fuel_date'])) ?></td>
+                            <td><?= number_format($f['odometer_reading'], 2) ?></td>
+                            <td><?= number_format($f['litres'], 2) ?> L</td>
+                            <td>$<?= number_format($f['fuel_cost'], 2) ?></td>
+                            <td><?= htmlspecialchars($f['fuel_station'] ?: '—') ?></td>
+                            <td><?= htmlspecialchars($f['receipt_number'] ?: '—') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 
 </div>
-
-<script src="assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>

@@ -1097,6 +1097,158 @@ body.modern-dash {
     color: #E53935;
 }
 
+/* ---------- KPI stat row (Logistics) ---------- */
+.overview-stats .stat-box .stat-sub {
+    display: block;
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.overview-stats .stat-box .stat-sub.up {
+    color: #12805A;
+}
+
+.overview-stats .stat-box .stat-bar {
+    height: 4px;
+    border-radius: 4px;
+    background: #ECE9F7;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.overview-stats .stat-box .stat-bar span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-purple), var(--brand-orange));
+    border-radius: 4px;
+}
+
+/* ---------- Donut chart (Vehicle Usage Summary) ---------- */
+.donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.donut-chart {
+    width: 168px;
+    height: 168px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.donut-chart::after {
+    content: '';
+    position: absolute;
+    inset: 28px;
+    background: #fff;
+    border-radius: 50%;
+}
+
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.donut-legend-item .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.donut-legend-item .legend-label {
+    font-size: .78rem;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.donut-legend-item strong {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+/* ---------- Mini dashboard tables (Shipment Tracking / Active Orders) ---------- */
+.mini-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mini-table thead th {
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--muted);
+    font-weight: 700;
+    text-align: left;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid #EFEFF5;
+    white-space: nowrap;
+}
+
+.mini-table tbody td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #F5F5FA;
+    font-size: .84rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.mini-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.mini-table .table-empty td {
+    text-align: center;
+    color: var(--muted);
+    padding: 26px 10px;
+    white-space: normal;
+}
+
+.row-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 9px;
+    background: #F1F1F6;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s ease, color .15s ease;
+    margin-right: 4px;
+}
+
+.row-action:hover {
+    background: var(--brand-orange);
+    color: #fff;
+}
+
+.mini-badge {
+    display: inline-block;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: capitalize;
+}
+
+.mini-badge.badge-transit     { background: rgba(139,92,246,.14); color: #6D28D9; }
+.mini-badge.badge-delivered   { background: rgba(34,179,126,.14); color: #12805A; }
+.mini-badge.badge-delayed     { background: rgba(229,57,53,.14);  color: #E53935; }
+.mini-badge.badge-pending     { background: rgba(136,144,166,.16); color: #5B6072; }
+.mini-badge.badge-maintenance { background: rgba(241,158,44,.16); color: #B7791F; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
     .dash-grid {

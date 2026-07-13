@@ -22,9 +22,9 @@ if(isset($_FILES['document_file']) &&
             PATHINFO_EXTENSION
         )
     );
-    
+
     $uploadDir = __DIR__ . '/../../uploads/vehicle_documents/';
-    
+
     if(in_array($ext,$allowed)){
 
         $fileName = time().'_'.$_FILES['document_file']['name'];
@@ -34,19 +34,8 @@ if(isset($_FILES['document_file']) &&
             $uploadDir . $fileName
         );
 
-
-
-        $destination =
-        'uploads/vehicle_documents/'.
-        $fileName;
-
-        move_uploaded_file(
-            $_FILES['document_file']['tmp_name'],
-            $destination
-        );
-
         $uploadedFile = 'uploads/vehicle_documents/' . $fileName;
-        
+
     }
 }
 
@@ -58,7 +47,6 @@ if(isset($_POST['save_document'])){
     $issue_date      = $_POST['issue_date'];
     $expiry_date     = $_POST['expiry_date'];
     $reminder_days   = (int)$_POST['reminder_days'];
-    $notes           = trim($_POST['notes']);
 
     $status = 'Valid';
 
@@ -84,17 +72,16 @@ if(isset($_POST['save_document'])){
             expiry_date,
             reminder_days,
             status,
-            uploaded_file,
-            notes
+            uploaded_file
         )
         VALUES
         (
-            ?,?,?,?,?,?,?,?,?
+            ?,?,?,?,?,?,?,?
         )
     ");
 
     $stmt->bind_param(
-        "issssisss",
+        "issssiss",
         $vehicle_id,
         $document_type,
         $document_number,
@@ -102,8 +89,7 @@ if(isset($_POST['save_document'])){
         $expiry_date,
         $reminder_days,
         $status,
-        $uploadeFile,
-        $notes
+        $uploadedFile
     );
 
     if($stmt->execute()){
@@ -122,33 +108,6 @@ if(isset($_POST['save_document'])){
     }
 }
 
-if($daysRemaining < 0){
-
-    echo '<span class="badge bg-danger">
-            Expired '.abs($daysRemaining).' Days Ago
-          </span>';
-
-}
-elseif($daysRemaining <= 30){
-
-    echo '<span class="badge bg-warning">
-            '.$daysRemaining.' Days Left
-          </span>';
-
-}
-else{
-
-    echo '<span class="badge bg-success">
-            '.$daysRemaining.' Days Left
-          </span>';
-}
-
-
-?>
-
-
-<?php
-
 $vehicles = [];
 
 $result = $conn->query("
@@ -165,9 +124,6 @@ while($row = $result->fetch_assoc()){
 
     $vehicles[] = $row;
 }
-?>
-
-<?php
 
 $totalDocs =
 $conn->query("
@@ -189,10 +145,6 @@ FROM vehicle_documents
 WHERE status='Expiring Soon'
 ")->fetch_assoc()['total'];
 
-?>
-
-<?php
-
 $documents = $conn->query("
 SELECT
     d.*,
@@ -204,241 +156,186 @@ ORDER BY d.expiry_date ASC
 ");
 ?>
 
+<div class="dash-card">
+    <div class="dash-card-head">
+        <h5><i class="fas fa-file-shield me-2"></i>Vehicle Documents</h5>
+    </div>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
+    <div class="overview-stats mb-4">
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+        <div class="stat-box">
+            <i class="fas fa-file-lines"></i>
+            <strong><?= (int)$totalDocs ?></strong>
+            <span>Total Documents</span>
+        </div>
 
-<title>Logistics Management</title>
+        <div class="stat-box">
+            <i class="fas fa-circle-xmark"></i>
+            <strong><?= (int)$expiredDocs ?></strong>
+            <span>Expired</span>
+        </div>
 
-<link rel="stylesheet" href="/../../assets/bootstrap/css/bootstrap.min.css">
-<link rel="stylesheet" href="/../../assets/font-awesome/css/all.min.css">
-
-<style>
-
-body{
-    background:#f5f6fa;
-    margin: 10px 20px;
-}
-
-.module-card{
-    border:none;
-    border-radius:12px;
-    box-shadow:0 3px 12px rgba(0,0,0,.08);
-}
-
-.modern-tabs{
-    border-bottom:none;
-}
-
-.modern-tab-btn{
-    border:none !important;
-    margin-right:5px;
-    border-radius:10px 10px 0 0 !important;
-    background:#e9ecef;
-    color:#333;
-    font-weight:600;
-}
-
-.modern-tab-btn.active{
-    background:#ff7b00 !important;
-    color:#fff !important;
-}
-
-</style>
-
-</head>
-
-<?php include 'includes/headerLogistics.php'; ?>
-
-<body>
-
-
-    
-<!-- Breadcrumb -->
-
-<div class="card module-card mb-3">
-
-    <div class="card-body">
-
-        <nav aria-label="breadcrumb">
-
-            <ol class="breadcrumb mb-0">
-
-                <li class="breadcrumb-item">
-                    <a href="dashboard.php">Home</a>
-                </li>
-
-                <li class="breadcrumb-item active">
-                    Fuel Log
-                </li>
-
-            </ol>
-
-        </nav>
+        <div class="stat-box">
+            <i class="fas fa-triangle-exclamation"></i>
+            <strong><?= (int)$expiringDocs ?></strong>
+            <span>Expiring Soon</span>
+        </div>
 
     </div>
 
-</div>
+    <div class="dash-card-head">
+        <h5><i class="fas fa-plus me-2"></i>Add Document</h5>
+    </div>
 
-<!-- Page Title -->
+    <?= $message ?>
 
-<h3 class="fw-bold mb-3">
+    <form method="POST" enctype="multipart/form-data">
 
-    <i class="fas fa-truck me-2"></i>
+        <div class="row">
 
-    Fuel Log
+            <div class="col-md-4 mb-3">
 
-</h3>
+                <label class="form-label">Vehicle</label>
 
+                <select name="vehicle_id" class="form-select" required>
+                    <option value="">Select Vehicle</option>
+                    <?php foreach($vehicles as $vehicle): ?>
+                        <option value="<?= $vehicle['vehicle_id'] ?>">
+                            <?= htmlspecialchars($vehicle['registration_number']) ?>
+                            -
+                            <?= htmlspecialchars($vehicle['make']) ?>
+                            <?= htmlspecialchars($vehicle['model']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
 
-<div class="row mb-4">
+            </div>
 
-<div class="col-md-4">
-<div class="card shadow-sm">
-<div class="card-body">
+            <div class="col-md-4 mb-3">
 
-<h6>Total Documents</h6>
-<h3><?= $totalDocs ?></h3>
+                <label class="form-label">Document Type</label>
 
-</div>
-</div>
-</div>
+                <select name="document_type" class="form-select" required>
+                    <option value="">Select Document</option>
+                    <option>Vehicle Licence</option>
+                    <option>Insurance</option>
+                    <option>Fitness Certificate</option>
+                    <option>Road Tax</option>
+                    <option>Registration Book</option>
+                    <option>Other</option>
+                </select>
 
-<div class="col-md-4">
-<div class="card shadow-sm">
-<div class="card-body">
+            </div>
 
-<h6>Expired</h6>
-<h3 class="text-danger">
-<?= $expiredDocs ?>
-</h3>
+            <div class="col-md-4 mb-3">
 
-</div>
-</div>
-</div>
+                <label class="form-label">Document Number</label>
 
-<div class="col-md-4">
-<div class="card shadow-sm">
-<div class="card-body">
+                <input type="text" name="document_number" class="form-control" required>
 
-<h6>Expiring Soon</h6>
-<h3 class="text-warning">
-<?= $expiringDocs ?>
-</h3>
+            </div>
 
-</div>
-</div>
-</div>
+            <div class="col-md-3 mb-3">
 
-</div>
+                <label class="form-label">Issue Date</label>
 
-<form method="POST" enctype="multipart/form-data">
+                <input type="date" name="issue_date" class="form-control">
 
-    <select name="document_type" class="form-select" required>
-        <option value="">Select Document</option>
-        <option>Vehicle License</option>
-        <option>Insurance</option>
-        <option>Fitness Certificate</option>
-        <option>Radio License</option>
-        <option>Other</option>
-    </select>
+            </div>
 
-    <button class="btn btn-primary mt-2" name="save_document">
-        Save Document
-    </button>
+            <div class="col-md-3 mb-3">
 
-</form>
+                <label class="form-label">Expiry Date</label>
 
-<table class="table table-bordered table-striped">
+                <input type="date" name="expiry_date" class="form-control" required>
 
-    <thead>
-        
-        <tr>
-        
-            <th>Vehicle</th>
-            <th>Type</th>
-            <th>Number</th>
-            <th>Issue Date</th>
-            <th>Expiry Date</th>
-            <th>Status</th>
-            <th>Document</th>
-            <th>Actions</th>
-        
-        </tr>
-    
-    </thead>
-    
-    <tbody>
-    
-        <?php while($row = $documents->fetch_assoc()): ?>
-        
-        <?php
+            </div>
 
-            $daysRemaining =
-            floor(
-                (
-                    strtotime($row['expiry_date'])
-                    -
-                    time()
-                )
-                / 86400
-            );
-        
-        ?>
-        
-        <tr>
+            <div class="col-md-3 mb-3">
 
-            <td><?= $row['registration_number'] ?></td>
-        
-            <td><?= $row['document_type'] ?></td>
-        
-            <td><?= $row['document_number'] ?></td>
-        
-            <td><?= $row['issue_date'] ?></td>
-        
-            <td><?= $row['expiry_date'] ?></td>
-        
-            <td>
-                <?php
-                if ($row['status'] == 'Expired') {
-                    echo '<span class="badge bg-danger">Expired</span>';
-                } elseif ($row['status'] == 'Expiring Soon') {
-                    echo '<span class="badge bg-warning">Expiring Soon</span>';
-                } else {
-                    echo '<span class="badge bg-success">Valid</span>';
-                }
-                ?>
-            </td>
-        
-            <td>
-                <?php if (!empty($row['uploaded_file'])): ?>
-                    <a href="<?= $row['uploaded_file'] ?>" target="_blank" class="btn btn-sm btn-primary">
-                        View
-                    </a>
+                <label class="form-label">Reminder (days before expiry)</label>
+
+                <input type="number" name="reminder_days" class="form-control" value="30" min="1">
+
+            </div>
+
+            <div class="col-md-3 mb-3">
+
+                <label class="form-label">Document File</label>
+
+                <input type="file" name="document_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+
+            </div>
+
+        </div>
+
+        <button
+            type="submit"
+            class="btn text-white" style="background:var(--brand-orange,#F15A2C);"
+            name="save_document">
+            <i class="fas fa-save me-1"></i> Save Document
+        </button>
+
+    </form>
+
+    <hr class="my-4">
+
+    <div class="dash-card-head">
+        <h5><i class="fas fa-clock-rotate-left me-2"></i>All Documents</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="mini-table">
+
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Type</th>
+                    <th>Number</th>
+                    <th>Issue Date</th>
+                    <th>Expiry Date</th>
+                    <th>Status</th>
+                    <th>Document</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <?php if ($documents->num_rows === 0): ?>
+                    <tr class="table-empty"><td colspan="7">No documents on file yet.</td></tr>
+                <?php else: ?>
+                    <?php while($row = $documents->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['registration_number']) ?></td>
+                            <td><?= htmlspecialchars($row['document_type']) ?></td>
+                            <td><?= htmlspecialchars($row['document_number']) ?></td>
+                            <td><?= $row['issue_date'] ? date('d M Y', strtotime($row['issue_date'])) : '—' ?></td>
+                            <td><?= date('d M Y', strtotime($row['expiry_date'])) ?></td>
+                            <td>
+                                <?php if ($row['status'] === 'Expired'): ?>
+                                    <span class="mini-badge badge-delayed">Expired</span>
+                                <?php elseif ($row['status'] === 'Expiring Soon'): ?>
+                                    <span class="mini-badge badge-maintenance">Expiring Soon</span>
+                                <?php else: ?>
+                                    <span class="mini-badge badge-delivered">Valid</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($row['uploaded_file'])): ?>
+                                    <a href="<?= htmlspecialchars($row['uploaded_file']) ?>" target="_blank" class="row-action" title="View document">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                <?php else: ?>
+                                    &mdash;
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
                 <?php endif; ?>
-            </td>
-        
-            <td>
-                <a href="renewDocument.php?id=<?= $row['document_id'] ?>" class="btn btn-sm btn-warning">
-                    Renew
-                </a>
-            </td>
-        
-        </tr>
-        
-        <?php endwhile; ?>
-        
-    </tbody>
 
-</table>
+            </tbody>
 
+        </table>
+    </div>
 
-
-<script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+</div>

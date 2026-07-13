@@ -328,103 +328,60 @@ while($row = $uQuery->fetch_assoc()){
     
     ?>
     
-    <div class="row mb-4">
-    
-        <div class="col-md-4">
-    
-            <div class="card border-0 shadow-sm">
-    
-                <div class="card-body">
-    
-                    <h6>Total Trips</h6>
-    
-                    <h2>
-                        <?= $totalTrips ?>
-                    </h2>
-    
-                </div>
-    
-            </div>
-    
+    <div class="overview-stats mb-4">
+
+        <div class="stat-box">
+            <i class="fas fa-route"></i>
+            <strong><?= (int)$totalTrips ?></strong>
+            <span>Total Trips</span>
         </div>
-    
-        <div class="col-md-4">
-    
-            <div class="card border-0 shadow-sm">
-    
-                <div class="card-body">
-    
-                    <h6>Active Trips</h6>
-    
-                    <h2>
-                        <?= $activeTripCount ?>
-                    </h2>
-    
-                </div>
-    
-            </div>
-    
+
+        <div class="stat-box">
+            <i class="fas fa-truck-fast"></i>
+            <strong><?= (int)$activeTripCount ?></strong>
+            <span>Active Trips</span>
         </div>
-    
-        <div class="col-md-4">
-    
-            <div class="card border-0 shadow-sm">
-    
-                <div class="card-body">
-    
-                    <h6>Total Distance</h6>
-    
-                    <h2>
-                        <?= number_format($totalDistance,2) ?>
-                        KM
-                    </h2>
-    
-                </div>
-    
-            </div>
-    
+
+        <div class="stat-box">
+            <i class="fas fa-road"></i>
+            <strong><?= number_format($totalDistance, 2) ?> KM</strong>
+            <span>Total Distance</span>
         </div>
-    
+
     </div>
 
-    <ul class="nav nav-tabs mb-4">
+    <ul class="nav nav-tabs modern-tabs mb-3">
 
         <li class="nav-item">
             <button
-                class="nav-link active"
+                class="nav-link modern-tab-btn active"
                 data-bs-toggle="tab"
                 data-bs-target="#newTrip">
-
-                New Trip
-
+                <i class="fas fa-plus me-1"></i> New Trip
             </button>
         </li>
 
         <li class="nav-item">
             <button
-                class="nav-link"
+                class="nav-link modern-tab-btn"
                 data-bs-toggle="tab"
                 data-bs-target="#activeTrips">
-
-                Active Trips
-
+                <i class="fas fa-truck-fast me-1"></i> Active Trips
             </button>
         </li>
 
         <li class="nav-item">
             <button
-                class="nav-link"
+                class="nav-link modern-tab-btn"
                 data-bs-toggle="tab"
                 data-bs-target="#tripHistory">
-
-                Trip History
-
+                <i class="fas fa-clock-rotate-left me-1"></i> Trip History
             </button>
         </li>
 
     </ul>
 
-    <div class="tab-content">
+    <div class="tab-content pt-3">
 
         <!-- ===================================================== -->
         <!-- NEW TRIP -->
@@ -433,21 +390,19 @@ while($row = $uQuery->fetch_assoc()){
         <div class="tab-pane fade show active"
              id="newTrip">
 
-            <div class="card shadow-sm">
+            <div class="dash-card-head">
 
-                <div class="card-header">
+                <h5>
 
-                    <h5 class="mb-0">
+                    <i class="fas fa-route me-2"></i>
 
-                        <i class="fas fa-route me-2"></i>
+                    Create New Trip
 
-                        Create New Trip
+                </h5>
 
-                    </h5>
+            </div>
 
-                </div>
-
-                <div class="card-body">
+            <div>
 
                     <?= $message ?>
 
@@ -580,7 +535,7 @@ while($row = $uQuery->fetch_assoc()){
                         <button
                             type="submit"
                             name="create_trip"
-                            class="btn btn-success">
+                            class="btn text-white" style="background:var(--brand-orange,#F15A2C);">
 
                             <i class="fas fa-save me-1"></i>
 
@@ -592,10 +547,8 @@ while($row = $uQuery->fetch_assoc()){
 
                 </div>
 
-            </div>
-
         </div>
-        
+
         <div class="modal fade"
                  id="endTripModal">
             
@@ -605,16 +558,16 @@ while($row = $uQuery->fetch_assoc()){
             
             <form method="POST">
             
-            <div class="modal-header">
-            
-            <h5>End Trip</h5>
-            
+            <div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange,#F15A2C), var(--brand-orange-dark,#D94E22));">
+
+            <h5 class="modal-title"><i class="fa-solid fa-flag-checkered me-2"></i>End Trip</h5>
+
             <button
             type="button"
-            class="btn-close"
+            class="btn-close btn-close-white"
             data-bs-dismiss="modal">
             </button>
-            
+
             </div>
             
             <div class="modal-body">
@@ -668,15 +621,15 @@ while($row = $uQuery->fetch_assoc()){
             </div>
             
             <div class="modal-footer">
-            
+
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
             <button
             name="end_trip"
-            class="btn btn-success">
-            
-            Complete Trip
-            
+            class="btn text-white" style="background:var(--brand-orange,#F15A2C);">
+            <i class="fa-solid fa-check me-1"></i> Complete Trip
             </button>
-            
+
             </div>
             
             </form>
@@ -694,123 +647,111 @@ while($row = $uQuery->fetch_assoc()){
         <div class="tab-pane fade"
              id="activeTrips">
 
-            <div class="card shadow-sm">
+            <div class="table-responsive">
 
-                <div class="card-header">
+                <table class="mini-table">
 
-                    Active Trips
+                    <thead>
 
-                </div>
+                        <tr>
 
-                <div class="card-body">
+                            <th>Vehicle</th>
+                            <th>Driver</th>
+                            <th>Destination</th>
+                            <th>Departure</th>
+                            <th>Status</th>
+                            <th>Action</th>
 
-                    <table class="table table-bordered">
+                        </tr>
 
-                        <thead>
+                    </thead>
 
-                            <tr>
+                    <tbody>
 
-                                <th>Vehicle</th>
-                                <th>Driver</th>
-                                <th>Destination</th>
-                                <th>Departure</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                        <?php if (empty($activeTrips)): ?>
+                            <tr class="table-empty"><td colspan="6">No active trips right now.</td></tr>
+                        <?php endif; ?>
 
-                            </tr>
+                        <?php foreach($activeTrips as $trip): ?>
 
-                        </thead>
+                        <tr>
 
-                        <tbody>
+                            <td>
 
-                            <?php foreach($activeTrips as $trip): ?>
-                            
-                            <tr>
-                            
-                                <td>
-                            
-                                    <?= $trip['registration_number'] ?>
-                            
-                                </td>
-                            
-                                <td>
-                            
-                                    <?= $trip['driver_name'] ?>
-                            
-                                </td>
-                            
-                                <td>
-                            
-                                    <?= htmlspecialchars($trip['destination']) ?>
-                            
-                                </td>
-                            
-                                <td>
-                            
-                                    <?= date(
-                                        'd M Y H:i',
-                                        strtotime($trip['departure_datetime'])
-                                    ) ?>
-                            
-                                </td>
-                            
-                                <td>
-                            
-                                    <span class="badge bg-primary">
-                            
-                                        Active
-                            
-                                    </span>
-                            
-                                </td>
-                            
-                                <td>
-                            
-                                    <button
-                                        class="btn btn-success btn-sm endTripBtn"
-                                        data-id="<?= $trip['trip_id'] ?>">
-                            
-                                        End Trip
-                            
-                                    </button>
-                            
-                                </td>
-                            
-                            </tr>
-                            
-                            <?php endforeach; ?>
-                            
-                        </tbody>
+                                <?= $trip['registration_number'] ?>
 
-                    </table>
+                            </td>
 
-                </div>
+                            <td>
+
+                                <?= $trip['driver_name'] ?>
+
+                            </td>
+
+                            <td>
+
+                                <?= htmlspecialchars($trip['destination']) ?>
+
+                            </td>
+
+                            <td>
+
+                                <?= date(
+                                    'd M Y H:i',
+                                    strtotime($trip['departure_datetime'])
+                                ) ?>
+
+                            </td>
+
+                            <td>
+
+                                <span class="mini-badge badge-transit">Active</span>
+
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="btn btn-sm text-white endTripBtn" style="background:var(--brand-orange,#F15A2C);"
+                                    data-id="<?= $trip['trip_id'] ?>">
+
+                                    End Trip
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                        <?php endforeach; ?>
+
+                    </tbody>
+
+                </table>
 
             </div>
 
         </div>
-        
-        
 
         <!-- ===================================================== -->
         <!-- TRIP HISTORY -->
         <!-- ===================================================== -->
 
-        <div class="card-body">
+        <div class="tab-pane fade" id="tripHistory">
 
             <input
                 type="text"
                 id="historySearch"
                 class="form-control mb-3"
                 placeholder="Search trips...">
-        
-            <table class="table table-striped table-bordered"
+
+            <table class="mini-table"
                    id="historyTable">
-        
+
                 <thead>
-        
+
                     <tr>
-        
+
                         <th>Vehicle</th>
                         <th>Driver</th>
                         <th>Destination</th>
@@ -818,29 +759,33 @@ while($row = $uQuery->fetch_assoc()){
                         <th>Return</th>
                         <th>Distance (KM)</th>
                         <th>Status</th>
-        
+
                     </tr>
-        
+
                 </thead>
-        
+
                 <tbody>
-        
+
+                <?php if (empty($tripHistory)): ?>
+                    <tr class="table-empty"><td colspan="7">No completed trips yet.</td></tr>
+                <?php endif; ?>
+
                 <?php foreach($tripHistory as $trip): ?>
-        
+
                     <tr>
-        
+
                         <td>
                             <?= $trip['registration_number'] ?>
                         </td>
-        
+
                         <td>
                             <?= htmlspecialchars($trip['driver_name']) ?>
                         </td>
-        
+
                         <td>
                             <?= htmlspecialchars($trip['destination']) ?>
                         </td>
-        
+
                         <td>
                             <?= date(
                                 'd M Y H:i',
@@ -863,7 +808,7 @@ while($row = $uQuery->fetch_assoc()){
                         </td>
         
                         <td>
-                            <span class="badge bg-success">
+                            <span class="mini-badge badge-delivered">
                                 Completed
                             </span>
                         </td>
@@ -873,11 +818,14 @@ while($row = $uQuery->fetch_assoc()){
                 <?php endforeach; ?>
         
                 </tbody>
-        
+
             </table>
-        
+
         </div>
 
+    </div>
+
+</div>
 
 <script>
     document.querySelectorAll('.endTripBtn')

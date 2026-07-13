@@ -211,150 +211,132 @@ while($row = $vehicleQuery->fetch_assoc()) {
 
 ?>
 
-<div class="card shadow-sm border-0">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <input type="text"
+           id="vehicleSearch"
+           class="form-control"
+           style="max-width:320px;"
+           placeholder="Search vehicle...">
 
-    <div class="card-body">
+    <button class="btn text-white flex-shrink-0 ms-3"
+            style="background:var(--brand-orange,#F15A2C);"
+            data-bs-toggle="modal"
+            data-bs-target="#addVehicleModal">
+        <i class="fas fa-plus-circle me-1"></i> Add Vehicle
+    </button>
+</div>
 
-        <div class="d-flex justify-content-between mb-3">
+<?= $message ?>
 
-            <h5 class="fw-bold">
+<div class="table-responsive">
 
-                <i class="fas fa-truck me-2"></i>
+    <table class="table table-bordered table-striped mb-0"
+           id="vehicleTable">
 
-                Vehicle Register
+        <thead class="table-dark">
 
-            </h5>
+            <tr>
+                <th>Reg Number</th>
+                <th>Vehicle</th>
+                <th>Department</th>
+                <th>Assigned User</th>
+                <th>Status</th>
+                <th>Purchase Date</th>
+                <th width="140">Actions</th>
+            </tr>
 
-            <button class="btn btn-success"
-                    data-bs-toggle="modal"
-                    data-bs-target="#addVehicleModal">
+        </thead>
 
-                <i class="fas fa-plus"></i>
+        <tbody>
 
-                Add Vehicle
+        <?php if (empty($vehicles)): ?>
+            <tr><td colspan="7" class="text-center text-muted py-4">No vehicles registered yet.</td></tr>
+        <?php endif; ?>
 
-            </button>
+        <?php foreach($vehicles as $vehicle): ?>
 
-        </div>
+            <tr>
 
-        <?= $message ?>
+                <td>
+                    <?= htmlspecialchars($vehicle['registration_number']) ?>
+                </td>
 
-        <input type="text"
-               id="vehicleSearch"
-               class="form-control mb-3"
-               placeholder="Search vehicle...">
+                <td>
+                    <?= htmlspecialchars($vehicle['make']) ?>
+                    <?= htmlspecialchars($vehicle['model']) ?>
+                </td>
 
-        <div class="table-responsive">
+                <td>
+                    <?= htmlspecialchars($vehicle['department']) ?>
+                </td>
 
-            <table class="table table-bordered table-hover"
-                   id="vehicleTable">
+                <td>
+                    <?= htmlspecialchars($vehicle['assigned_name']) ?>
+                </td>
 
-                <thead class="table-dark">
+                <td>
 
-                    <tr>
-                        <th>Reg Number</th>
-                        <th>Vehicle</th>
-                        <th>Department</th>
-                        <th>Assigned User</th>
-                        <th>Status</th>
-                        <th>Purchase Date</th>
-                        <th width="180">Actions</th>
-                    </tr>
+                <?php
 
-                </thead>
+                switch($vehicle['status']) {
 
-                <tbody>
+                    case 'Available':
+                        echo '<span class="mini-badge badge-delivered">Available</span>';
+                        break;
 
-                <?php foreach($vehicles as $vehicle): ?>
+                    case 'On Trip':
+                        echo '<span class="mini-badge badge-transit">On Trip</span>';
+                        break;
 
-                    <tr>
+                    case 'Under Maintenance':
+                        echo '<span class="mini-badge badge-maintenance">Maintenance</span>';
+                        break;
 
-                        <td>
-                            <?= htmlspecialchars($vehicle['registration_number']) ?>
-                        </td>
+                    case 'Out of Service':
+                        echo '<span class="mini-badge badge-delayed">Out of Service</span>';
+                        break;
+                }
 
-                        <td>
-                            <?= htmlspecialchars($vehicle['make']) ?>
-                            <?= htmlspecialchars($vehicle['model']) ?>
-                        </td>
+                ?>
 
-                        <td>
-                            <?= htmlspecialchars($vehicle['department']) ?>
-                        </td>
+                </td>
 
-                        <td>
-                            <?= htmlspecialchars($vehicle['assigned_name']) ?>
-                        </td>
+                <td>
+                    <?= htmlspecialchars($vehicle['purchase_date']) ?>
+                </td>
 
-                        <td>
+                <td>
 
-                        <?php
+                    <button
+                        class="row-action viewVehicleBtn"
+                        title="View details"
+                        data-id="<?= $vehicle['vehicle_id'] ?>">
+                        <i class="fas fa-eye"></i>
+                    </button>
 
-                        switch($vehicle['status']) {
+                    <button
+                        class="row-action editVehicleBtn"
+                        title="Edit vehicle"
+                        data-id="<?= $vehicle['vehicle_id'] ?>">
+                        <i class="fas fa-pen"></i>
+                    </button>
 
-                            case 'Available':
-                                echo '<span class="badge bg-success">Available</span>';
-                                break;
+                    <a href="php_action/deleteVehicle.php?id=<?= $vehicle['vehicle_id'] ?>"
+                       class="row-action"
+                       title="Delete vehicle"
+                       onclick="return confirm('Delete this vehicle?')">
+                        <i class="fas fa-trash"></i>
+                    </a>
 
-                            case 'On Trip':
-                                echo '<span class="badge bg-primary">On Trip</span>';
-                                break;
+                </td>
 
-                            case 'Under Maintenance':
-                                echo '<span class="badge bg-warning text-dark">Maintenance</span>';
-                                break;
+            </tr>
 
-                            case 'Out of Service':
-                                echo '<span class="badge bg-danger">Out of Service</span>';
-                                break;
-                        }
+        <?php endforeach; ?>
 
-                        ?>
+        </tbody>
 
-                        </td>
-
-                        <td>
-                            <?= htmlspecialchars($vehicle['purchase_date']) ?>
-                        </td>
-                        
-                        <td>
-
-                            <button
-                                class="btn btn-sm btn-info viewVehicleBtn"
-                                data-id="<?= $vehicle['vehicle_id'] ?>">
-                        
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        
-                            <button
-                                class="btn btn-sm btn-warning editVehicleBtn"
-                                data-id="<?= $vehicle['vehicle_id'] ?>">
-                            
-                                <i class="fas fa-edit"></i>
-                            
-                            </button>
-                        
-                            <a href="php_action/deleteVehicle.php?id=<?= $vehicle['vehicle_id'] ?>"
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('Delete this vehicle?')">
-                        
-                               <i class="fas fa-trash"></i>
-                        
-                            </a>
-                        
-                        </td>
-
-                    </tr>
-
-                <?php endforeach; ?>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
+    </table>
 
 </div>
 
@@ -369,12 +351,12 @@ while($row = $vehicleQuery->fetch_assoc()) {
 
 <form method="POST">
 
-<div class="modal-header">
+<div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange,#F15A2C), var(--brand-orange-dark,#D94E22));">
 
-    <h5>Add Vehicle</h5>
+    <h5 class="modal-title"><i class="fa-solid fa-plus me-2"></i>Add Vehicle</h5>
 
     <button type="button"
-            class="btn-close"
+            class="btn-close btn-close-white"
             data-bs-dismiss="modal"></button>
 
 </div>
@@ -514,11 +496,11 @@ Select User
 
 <div class="modal-footer">
 
-<button class="btn btn-success"
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-xmark me-1"></i> Close</button>
+
+<button class="btn text-white" style="background:var(--brand-orange,#F15A2C);"
         name="add_vehicle">
-
-Save Vehicle
-
+<i class="fa-solid fa-check me-1"></i> Save Vehicle
 </button>
 
 </div>
@@ -538,17 +520,17 @@ Save Vehicle
         <div class="modal-content">
         
             <div class="modal-header">
-            
+
                 <h5 class="modal-title">
-                    Vehicle Details
+                    <i class="fa-solid fa-truck me-2"></i>Vehicle Details
                 </h5>
-            
+
                 <button
                     type="button"
                     class="btn-close"
                     data-bs-dismiss="modal">
                 </button>
-            
+
             </div>
             
             <div class="modal-body"
@@ -572,13 +554,13 @@ Save Vehicle
 
 <form method="POST">
 
-<div class="modal-header">
+<div class="modal-header text-white" style="background:linear-gradient(135deg, var(--brand-orange,#F15A2C), var(--brand-orange-dark,#D94E22));">
 
-<h5>Edit Vehicle</h5>
+<h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Vehicle</h5>
 
 <button
 type="button"
-class="btn-close"
+class="btn-close btn-close-white"
 data-bs-dismiss="modal">
 </button>
 
@@ -712,12 +694,12 @@ class="form-control"></textarea>
 
 <div class="modal-footer">
 
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-xmark me-1"></i> Close</button>
+
 <button
 name="update_vehicle"
-class="btn btn-success">
-
-Update Vehicle
-
+class="btn text-white" style="background:var(--brand-orange,#F15A2C);">
+<i class="fa-solid fa-check me-1"></i> Update Vehicle
 </button>
 
 </div>
