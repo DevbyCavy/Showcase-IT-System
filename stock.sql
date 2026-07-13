@@ -513,6 +513,33 @@ CREATE TABLE `quotation_items` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `design_jobs`
+--
+
+CREATE TABLE `design_jobs` (
+  `design_job_id` int(11) NOT NULL AUTO_INCREMENT,
+  `job_number` varchar(20) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `design_type` enum('3D','Artwork') NOT NULL,
+  `deadline` datetime NOT NULL,
+  `brief_file` varchar(255) DEFAULT NULL,
+  `submission_file` varchar(255) DEFAULT NULL,
+  `submission_notes` text DEFAULT NULL,
+  `review_notes` text DEFAULT NULL,
+  `status` enum('Assigned','Submitted','Revision Requested','Approved') NOT NULL DEFAULT 'Assigned',
+  `marketer_id` int(11) DEFAULT NULL,
+  `designer_id` int(11) DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`design_job_id`),
+  UNIQUE KEY `job_number` (`job_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `requisitions`
 --
 
@@ -916,6 +943,13 @@ ALTER TABLE `quotation_items`
 ALTER TABLE `requisitions`
   ADD CONSTRAINT `req_processed_by_fk` FOREIGN KEY (`processed_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
   ADD CONSTRAINT `req_user_fk` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `design_jobs`
+--
+ALTER TABLE `design_jobs`
+  ADD CONSTRAINT `dj_marketer_fk` FOREIGN KEY (`marketer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `dj_designer_fk` FOREIGN KEY (`designer_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `vehicles`

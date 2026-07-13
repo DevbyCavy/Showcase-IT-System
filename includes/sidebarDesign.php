@@ -5,23 +5,11 @@ require_once __DIR__ . '/../php_action/db_connection.php';
 $loggedUserId = $_SESSION['user_id'] ?? 0;
 $currentPage = basename($_SERVER['PHP_SELF']);
 
-$myPendingReqStmt = $conn->prepare("SELECT COUNT(*) AS c FROM requisitions WHERE submitted_by = ? AND status = 'Pending'");
-$myPendingReqStmt->bind_param("i", $loggedUserId);
-$myPendingReqStmt->execute();
-$myPendingReqCount = $myPendingReqStmt->get_result()->fetch_assoc()['c'];
-$myPendingReqStmt->close();
-
-$myPendingQuoStmt = $conn->prepare("SELECT COUNT(*) AS c FROM quotations WHERE submitted_by = ? AND status = 'Pending'");
-$myPendingQuoStmt->bind_param("i", $loggedUserId);
-$myPendingQuoStmt->execute();
-$myPendingQuoCount = $myPendingQuoStmt->get_result()->fetch_assoc()['c'];
-$myPendingQuoStmt->close();
-
-$myPendingJobStmt = $conn->prepare("SELECT COUNT(*) AS c FROM design_jobs WHERE marketer_id = ? AND status = 'Submitted'");
-$myPendingJobStmt->bind_param("i", $loggedUserId);
-$myPendingJobStmt->execute();
-$myPendingJobCount = $myPendingJobStmt->get_result()->fetch_assoc()['c'];
-$myPendingJobStmt->close();
+$myOpenJobStmt = $conn->prepare("SELECT COUNT(*) AS c FROM design_jobs WHERE designer_id = ? AND status IN ('Assigned', 'Revision Requested')");
+$myOpenJobStmt->bind_param("i", $loggedUserId);
+$myOpenJobStmt->execute();
+$myOpenJobCount = $myOpenJobStmt->get_result()->fetch_assoc()['c'];
+$myOpenJobStmt->close();
 
 $selfEmailStmt = $conn->prepare("SELECT email FROM users WHERE user_id = ?");
 $selfEmailStmt->bind_param("i", $loggedUserId);
@@ -34,7 +22,7 @@ $selfEmailStmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle ?? 'Marketer Dashboard') ?> - Showcase IT</title>
+    <title><?= htmlspecialchars($pageTitle ?? 'Designer Dashboard') ?> - Showcase IT</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
@@ -72,28 +60,13 @@ $selfEmailStmt->close();
         </div>
 
         <nav class="sidebar-nav">
-            <a href="marketingDashboard.php" class="<?= $currentPage === 'marketingDashboard.php' ? 'active' : '' ?>">
+            <a href="designDashboard.php" class="<?= $currentPage === 'designDashboard.php' ? 'active' : '' ?>">
                 <i class="fas fa-grip"></i> Dashboard
             </a>
-            <a href="manageOrder.php" class="<?= $currentPage === 'manageOrder.php' ? 'active' : '' ?>">
-                <i class="fas fa-clipboard-list"></i> Manage Orders
-            </a>
-            <a href="makeQuotation.php" class="<?= $currentPage === 'makeQuotation.php' ? 'active' : '' ?>">
-                <i class="fas fa-file-invoice-dollar"></i> Make Quotation
-                <?php if ($myPendingQuoCount > 0): ?>
-                    <span class="nav-badge"><?= $myPendingQuoCount ?></span>
-                <?php endif; ?>
-            </a>
-            <a href="requisitions.php" class="<?= $currentPage === 'requisitions.php' ? 'active' : '' ?>">
-                <i class="fas fa-file-signature"></i> Requisitions
-                <?php if ($myPendingReqCount > 0): ?>
-                    <span class="nav-badge"><?= $myPendingReqCount ?></span>
-                <?php endif; ?>
-            </a>
-            <a href="assignDesignJob.php" class="<?= $currentPage === 'assignDesignJob.php' ? 'active' : '' ?>">
-                <i class="fas fa-pen-ruler"></i> Design Jobs
-                <?php if ($myPendingJobCount > 0): ?>
-                    <span class="nav-badge"><?= $myPendingJobCount ?></span>
+            <a href="myDesignJobs.php" class="<?= $currentPage === 'myDesignJobs.php' ? 'active' : '' ?>">
+                <i class="fas fa-pen-ruler"></i> My Design Jobs
+                <?php if ($myOpenJobCount > 0): ?>
+                    <span class="nav-badge"><?= $myOpenJobCount ?></span>
                 <?php endif; ?>
             </a>
         </nav>
@@ -127,7 +100,7 @@ $selfEmailStmt->close();
         <div class="app-topbar">
             <div class="topbar-search">
                 <i class="fas fa-search"></i>
-                <input type="text" id="globalSearch" placeholder="Search quotations, requisitions...">
+                <input type="text" id="globalSearch" placeholder="Search design jobs...">
             </div>
             <div class="topbar-icons">
                 <?php if ($selfEmail): ?>
@@ -139,9 +112,9 @@ $selfEmailStmt->close();
                         <i class="fas fa-comment-dots"></i>
                     </a>
                 <?php endif; ?>
-                <a href="makeQuotation.php" title="Your pending quotations">
+                <a href="myDesignJobs.php" title="Your open design jobs">
                     <i class="fas fa-bell"></i>
-                    <?php if ($myPendingQuoCount > 0 || $myPendingReqCount > 0 || $myPendingJobCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
+                    <?php if ($myOpenJobCount > 0): ?><span class="icon-dot"></span><?php endif; ?>
                 </a>
             </div>
         </div>
