@@ -1,38 +1,29 @@
 <?php
 require_once 'core.php';
 
-// Initialize response
-$response = [
-    'success' => false,
-    'message' => 'Unknown error occurred.'
-];
+header('Content-Type: application/json');
 
-// Check if productId is provided
-if (!isset($_POST['productId']) || empty($_POST['productId'])) {
+$response = ['success' => false, 'message' => 'Unknown error occurred.'];
+
+$productId = intval($_POST['productId'] ?? 0);
+
+if ($productId <= 0) {
     $response['message'] = 'No product ID provided.';
     echo json_encode($response);
-    exit();
+    exit;
 }
 
-$productId = intval($_POST['productId']); // sanitize input
-
-$sql = "SELECT product_id, product_name, product_image, brand_id, categories_id, quantity, rate, active, status 
-        FROM product 
-        WHERE product_id = $productId";
-
-$result = $conn->query($sql);
+$stmt = $conn->prepare("SELECT product_id, product_name, product_image, brand_id, categories_id, quantity, rate, active, status FROM product WHERE product_id = ?");
+$stmt->bind_param("i", $productId);
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result && $result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-
-    $response = [
-        'success' => true,
-        'data' => $row
-    ];
+    $response = ['success' => true, 'data' => $result->fetch_assoc()];
 } else {
     $response['message'] = 'Product not found.';
 }
-
+$stmt->close();
 $conn->close();
 
 echo json_encode($response);

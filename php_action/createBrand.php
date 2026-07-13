@@ -1,27 +1,30 @@
-<?php 	
-
+<?php
 require_once 'core.php';
 
-$valid['success'] = array('success' => false, 'messages' => array());
+header('Content-Type: application/json');
 
-if($_POST) {	
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-	$brandName = $_POST['brandName'];
-  $brandStatus = $_POST['brandStatus']; 
+$brandName   = trim($_POST['brandName']     ?? '');
+$brandStatus = intval($_POST['brandStatus'] ?? 0);
 
-	$sql = "INSERT INTO brand (brand_name, brand_active, brand_status) VALUES ('$brandName', '$brandStatus', 1)";
+if ($brandName === '') {
+    $response['message'] = 'Brand name is required.';
+    echo json_encode($response);
+    exit;
+}
 
-	if($conn->query($sql) === TRUE) {
-	 	$valid['success'] = true;
-		$valid['messages'] = "Successfully Added";	
-	} else {
-	 	$valid['success'] = false;
-	 	$valid['messages'] = "Error while adding the members";
-	}
-	 
+$stmt = $conn->prepare("INSERT INTO brand (brand_name, brand_active, brand_status) VALUES (?, ?, 1)");
+$stmt->bind_param("si", $brandName, $brandStatus);
 
-	$conn->close();
+if ($stmt->execute()) {
+    $response['success']  = true;
+    $response['brand_id'] = $conn->insert_id;
+    $response['message']  = 'Brand added successfully.';
+} else {
+    $response['message'] = 'Failed to add brand.';
+}
+$stmt->close();
+$conn->close();
 
-	echo json_encode($valid);
- 
-} // /if $_POST
+echo json_encode($response);

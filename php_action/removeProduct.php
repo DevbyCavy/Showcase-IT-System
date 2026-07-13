@@ -1,26 +1,28 @@
-<?php 	
-
+<?php
 require_once 'core.php';
 
+header('Content-Type: application/json');
 
-$valid['success'] = array('success' => false, 'messages' => array());
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-$productId = $_POST['productId'];
+$productId = intval($_POST['productId'] ?? 0);
 
-if($productId) { 
+if ($productId <= 0) {
+    $response['message'] = 'Invalid product ID.';
+    echo json_encode($response);
+    exit;
+}
 
- $sql = "UPDATE product SET active = 2, status = 2 WHERE product_id = {$productId}";
+$stmt = $conn->prepare("UPDATE product SET active = 2, status = 2 WHERE product_id = ?");
+$stmt->bind_param("i", $productId);
 
- if($conn->query($sql) === TRUE) {
- 	$valid['success'] = true;
-	$valid['messages'] = "Successfully Removed";		
- } else {
- 	$valid['success'] = false;
- 	$valid['messages'] = "Error while remove the brand";
- }
- 
- $conn->close();
+if ($stmt->execute()) {
+    $response['success'] = true;
+    $response['message'] = 'Product removed successfully.';
+} else {
+    $response['message'] = 'Error while removing the product.';
+}
+$stmt->close();
+$conn->close();
 
- echo json_encode($valid);
- 
-} // /if $_POST
+echo json_encode($response);

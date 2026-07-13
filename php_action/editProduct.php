@@ -1,31 +1,38 @@
-<?php 	
-
+<?php
 require_once 'core.php';
 
-$valid['success'] = array('success' => false, 'messages' => array());
+header('Content-Type: application/json');
 
-if($_POST) {
-	$productId = $_POST['productId'];
-	$productName 		= $_POST['editProductName']; 
-    $quantity 			= $_POST['editQuantity'];
-    $rate 					= $_POST['editRate'];
-    $brandName 			= $_POST['editBrandName'];
-    $categoryName 	= $_POST['editCategoryName'];
-    $productStatus 	= $_POST['editProductStatus'];
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-				
-	$sql = "UPDATE product SET product_name = '$productName', brand_id = '$brandName', categories_id = '$categoryName', quantity = '$quantity', rate = '$rate', active = '$productStatus', status = 1 WHERE product_id = $productId ";
+$productId     = intval($_POST['productId'] ?? 0);
+$productName   = trim($_POST['editProductName']    ?? '');
+$quantity      = trim($_POST['editQuantity']       ?? '');
+$rate          = trim($_POST['editRate']           ?? '');
+$brandId       = intval($_POST['editBrandName']    ?? 0);
+$categoryId    = intval($_POST['editCategoryName'] ?? 0);
+$productStatus = intval($_POST['editProductStatus'] ?? 0);
 
-	if($conn->query($sql) === TRUE) {
-		$valid['success'] = true;
-		$valid['messages'] = "Successfully Update";	
-	} else {
-		$valid['success'] = false;
-		$valid['messages'] = "Error while updating product info";
-	}
+if ($productId <= 0 || $productName === '') {
+    $response['message'] = 'Product name is required.';
+    echo json_encode($response);
+    exit;
+}
 
-} // /$_POST
-	 
+$stmt = $conn->prepare("
+    UPDATE product
+    SET product_name = ?, brand_id = ?, categories_id = ?, quantity = ?, rate = ?, active = ?, status = 1
+    WHERE product_id = ?
+");
+$stmt->bind_param("siissii", $productName, $brandId, $categoryId, $quantity, $rate, $productStatus, $productId);
+
+if ($stmt->execute()) {
+    $response['success'] = true;
+    $response['message'] = 'Product updated successfully.';
+} else {
+    $response['message'] = 'Failed to update product.';
+}
+$stmt->close();
 $conn->close();
 
-echo json_encode($valid);
+echo json_encode($response);

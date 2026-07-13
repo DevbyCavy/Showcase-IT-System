@@ -1,27 +1,35 @@
-<?php 	
-
+<?php
 require_once 'core.php';
 
-$valid['success'] = array('success' => false, 'messages' => array());
+header('Content-Type: application/json');
 
-if($_POST) {	
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-  $brandName = $_POST['editCategoriesName'] ?? '';
-  $brandStatus = $_POST['editCategoriesStatus'] ?? ''; 
-  $categoriesId = $_POST['editCategoriesId'] ?? '';
+$categoryId     = intval($_POST['editCategoriesId'] ?? 0);
+$categoryName   = trim($_POST['editCategoriesName'] ?? '');
+$categoryStatus = intval($_POST['editCategoriesStatus'] ?? 0);
 
-	$sql = "UPDATE category SET categories_name = '$brandName', categories_active = '$brandStatus' WHERE categories_id = '$categoriesId'";
+if ($categoryId <= 0) {
+    $response['message'] = 'Invalid category ID.';
+    echo json_encode($response);
+    exit;
+}
+if ($categoryName === '') {
+    $response['message'] = 'Category name is required.';
+    echo json_encode($response);
+    exit;
+}
 
-	if($conn->query($sql) === TRUE) {
-	 	$valid['success'] = true;
-		$valid['messages'] = "Successfully Updated";	
-	} else {
-	 	$valid['success'] = false;
-	 	$valid['messages'] = "Error while updating the categories";
-	}
-	 
-	$conn->close();
+$stmt = $conn->prepare("UPDATE category SET categories_name = ?, categories_active = ? WHERE categories_id = ?");
+$stmt->bind_param("sii", $categoryName, $categoryStatus, $categoryId);
 
-	echo json_encode($valid);
- 
-} // /if $_POST
+if ($stmt->execute()) {
+    $response['success'] = true;
+    $response['message'] = 'Category updated successfully.';
+} else {
+    $response['message'] = 'Failed to update category.';
+}
+$stmt->close();
+$conn->close();
+
+echo json_encode($response);

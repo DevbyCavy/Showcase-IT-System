@@ -3,39 +3,27 @@ require_once 'core.php';
 
 header('Content-Type: application/json');
 
-if (isset($_POST['brandId'])) {
-    $brandId = intval($_POST['brandId']); // sanitize input
+$response = ['success' => false, 'message' => 'Unknown error occurred.'];
 
-    $sql = "SELECT brand_id, brand_name, brand_active 
-            FROM brand 
-            WHERE brand_id = ? LIMIT 1";
+$brandId = intval($_POST['brandId'] ?? 0);
 
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("i", $brandId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            echo json_encode($row); // ✅ return one brand only
-        } else {
-            echo json_encode([
-                "error" => true,
-                "message" => "Brand not found"
-            ]);
-        }
-        $stmt->close();
-    } else {
-        echo json_encode([
-            "error" => true,
-            "message" => "Failed to prepare statement"
-        ]);
-    }
-} else {
-    echo json_encode([
-        "error" => true,
-        "message" => "No brand ID provided"
-    ]);
+if ($brandId <= 0) {
+    $response['message'] = 'No brand ID provided.';
+    echo json_encode($response);
+    exit;
 }
 
+$stmt = $conn->prepare("SELECT brand_id, brand_name, brand_active FROM brand WHERE brand_id = ? LIMIT 1");
+$stmt->bind_param("i", $brandId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $response = ['success' => true, 'data' => $result->fetch_assoc()];
+} else {
+    $response['message'] = 'Brand not found.';
+}
+$stmt->close();
 $conn->close();
+
+echo json_encode($response);

@@ -1,34 +1,28 @@
 <?php
 require_once 'core.php';
 
-// Initialize response array
-$valid = array('success' => false, 'messages' => '');
+header('Content-Type: application/json');
 
-if (isset($_POST['brandId'])) {
-    $brandId = intval($_POST['brandId']); // sanitize input
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-    if ($brandId > 0) {
-        // Use prepared statement to prevent SQL injection
-        $stmt = $conn->prepare("UPDATE brand SET brand_status = 2 WHERE brand_id = ?");
-        $stmt->bind_param("i", $brandId);
+$brandId = intval($_POST['brandId'] ?? 0);
 
-        if ($stmt->execute()) {
-            $valid['success'] = true;
-            $valid['messages'] = "Brand successfully removed";
-        } else {
-            $valid['success'] = false;
-            $valid['messages'] = "Error removing brand: " . $stmt->error;
-        }
-
-        $stmt->close();
-    } else {
-        $valid['success'] = false;
-        $valid['messages'] = "Invalid brand ID";
-    }
-} else {
-    $valid['success'] = false;
-    $valid['messages'] = "Brand ID not provided";
+if ($brandId <= 0) {
+    $response['message'] = 'Invalid brand ID.';
+    echo json_encode($response);
+    exit;
 }
 
+$stmt = $conn->prepare("UPDATE brand SET brand_status = 2, brand_active = 2 WHERE brand_id = ?");
+$stmt->bind_param("i", $brandId);
+
+if ($stmt->execute()) {
+    $response['success'] = true;
+    $response['message'] = 'Brand removed successfully.';
+} else {
+    $response['message'] = 'Error removing brand.';
+}
+$stmt->close();
 $conn->close();
-echo json_encode($valid);
+
+echo json_encode($response);

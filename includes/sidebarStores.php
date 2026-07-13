@@ -72,14 +72,11 @@ $notifCountStmt->close();
             <a href="store.php" class="<?= $currentPage === 'store.php' ? 'active' : '' ?>">
                 <i class="fas fa-store"></i> Store
             </a>
-            <a href="brand.php" class="<?= $currentPage === 'brand.php' ? 'active' : '' ?>">
-                <i class="fas fa-building"></i> Brand
-            </a>
-            <a href="categories.php" class="<?= $currentPage === 'categories.php' ? 'active' : '' ?>">
-                <i class="fas fa-boxes"></i> Category
-            </a>
             <a href="product.php" class="<?= $currentPage === 'product.php' ? 'active' : '' ?>">
-                <i class="fas fa-box"></i> Product
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="boq.php" class="<?= $currentPage === 'boq.php' ? 'active' : '' ?>">
+                <i class="fas fa-file-invoice"></i> Bill of Quantities
             </a>
             <a href="requisitions.php" class="<?= $currentPage === 'requisitions.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-signature"></i> Requisitions

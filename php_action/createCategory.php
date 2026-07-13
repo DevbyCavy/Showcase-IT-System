@@ -1,27 +1,30 @@
-<?php 	
-
+<?php
 require_once 'core.php';
 
-$valid['success'] = array('success' => false, 'messages' => array());
+header('Content-Type: application/json');
 
-if($_POST) {	
+$response = ['success' => false, 'message' => 'Something went wrong.'];
 
-	$categoriesName = $_POST['categoryName'];
-  $categoriesStatus = $_POST['categoryStatus']; 
+$categoryName   = trim($_POST['categoryName']     ?? '');
+$categoryStatus = intval($_POST['categoryStatus'] ?? 0);
 
-	$sql = "INSERT INTO category (categories_name, categories_active, categories_status) 
-	VALUES ('$categoriesName', '$categoriesStatus', 1)";
+if ($categoryName === '') {
+    $response['message'] = 'Category name is required.';
+    echo json_encode($response);
+    exit;
+}
 
-	if($conn->query($sql) === TRUE) {
-	 	$valid['success'] = true;
-		$valid['messages'] = "Successfully Added";	
-	} else {
-	 	$valid['success'] = false;
-	 	$valid['messages'] = "Error while adding the members";
-	}
+$stmt = $conn->prepare("INSERT INTO category (categories_name, categories_active, categories_status) VALUES (?, ?, 1)");
+$stmt->bind_param("si", $categoryName, $categoryStatus);
 
-	$conn->close();
+if ($stmt->execute()) {
+    $response['success']     = true;
+    $response['category_id'] = $conn->insert_id;
+    $response['message']     = 'Category added successfully.';
+} else {
+    $response['message'] = 'Failed to add category.';
+}
+$stmt->close();
+$conn->close();
 
-	echo json_encode($valid);
- 
-} // /if $_POST
+echo json_encode($response);
