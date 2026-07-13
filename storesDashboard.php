@@ -30,6 +30,43 @@ $issuedThisMonth = $conn->query("
     WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())
 ")->fetch_assoc()['c'];
 
+/* ---------- Orders (auto-advance statuses, then group for the carousel) ---------- */
+$conn->query("
+    UPDATE orders
+    SET status = 'On Going', ongoing_since = NOW()
+    WHERE status IN ('New','Assigned')
+      AND deadline_datetime IS NOT NULL
+      AND deadline_datetime <= NOW()
+      AND ongoing_since IS NULL
+");
+$conn->query("
+    UPDATE orders
+    SET status = 'Completed'
+    WHERE status = 'On Going'
+      AND ongoing_since IS NOT NULL
+      AND ongoing_since <= NOW() - INTERVAL 24 HOUR
+");
+
+$ordersResult = $conn->query("
+    SELECT order_id, order_number, order_name, location, deadline_datetime, status
+    FROM orders
+    ORDER BY created_at DESC
+");
+$tabOrders = ['new' => [], 'ongoing' => [], 'completed' => []];
+while ($row = $ordersResult->fetch_assoc()) {
+    switch ($row['status']) {
+        case 'New':
+        case 'Assigned':  $tabOrders['new'][]       = $row; break;
+        case 'On Going':  $tabOrders['ongoing'][]   = $row; break;
+        case 'Completed': $tabOrders['completed'][] = $row; break;
+    }
+}
+$orderTabsMeta = [
+    'new'       => ['label' => 'New Orders',  'icon' => 'fa-bolt',          'tile' => ''],
+    'ongoing'   => ['label' => 'On Going',    'icon' => 'fa-person-digging','tile' => 'tile-ongoing'],
+    'completed' => ['label' => 'Completed',   'icon' => 'fa-circle-check',  'tile' => 'tile-completed'],
+];
+
 /* ---------- Low stock alerts ---------- */
 $lowStockThreshold = 5;
 $lowStockStmt = $conn->prepare("
@@ -130,6 +167,46 @@ require_once 'includes/sidebarStores.php';
         </div>
 
         <?php require_once 'includes/workLogSheet.php'; ?>
+
+        <!-- Orders -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <h5>Orders</h5>
+                <div class="orders-nav">
+                    <button class="orders-arrow" id="ordersPrevBtn" title="Previous"><i class="fas fa-chevron-left"></i></button>
+                    <span class="orders-nav-label" id="ordersTabLabel"></span>
+                    <button class="orders-arrow" id="ordersNextBtn" title="Next"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="orders-panels">
+                <?php foreach ($orderTabsMeta as $tabKey => $meta): ?>
+                    <div class="orders-panel<?= $tabKey === 'new' ? ' active' : '' ?>"
+                         data-label="<?= htmlspecialchars($meta['label']) ?> (<?= count($tabOrders[$tabKey]) ?>)">
+                        <?php if (empty($tabOrders[$tabKey])): ?>
+                            <div class="orders-empty">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>Nothing here yet.
+                            </div>
+                        <?php else: ?>
+                            <?php foreach (array_slice($tabOrders[$tabKey], 0, 6) as $order): ?>
+                                <div class="order-tile <?= $meta['tile'] ?>">
+                                    <div class="tile-icon"><i class="fas <?= $meta['icon'] ?>"></i></div>
+                                    <h6><?= htmlspecialchars($order['order_name']) ?></h6>
+                                    <div class="tile-meta">
+                                        <?= htmlspecialchars($order['order_number']) ?> &middot; <?= htmlspecialchars($order['location']) ?>
+                                    </div>
+                                    <div class="tile-meta">
+                                        <i class="far fa-clock me-1"></i>
+                                        <?= $order['deadline_datetime'] ? date('d M, H:i', strtotime($order['deadline_datetime'])) : 'No deadline' ?>
+                                    </div>
+                                    <a class="tile-cta" href="manageOrder.php">Manage</a>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
 
     </div>
 
