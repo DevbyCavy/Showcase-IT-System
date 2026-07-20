@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
         users = JSON.parse(calRoot.dataset.users || '[]');
     } catch (e) { /* ignore malformed data */ }
+    var readOnly = calRoot.dataset.readonly === 'true';
+    var boxedStyle = calRoot.dataset.style === 'boxed';
+    var openTaskModal; // assigned below only when the assign modal exists on this page
 
     var monthLabelEl   = document.getElementById('calMonthLabel');
     var gridEl          = document.getElementById('calGrid');
@@ -83,20 +86,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 (key === selectedDate ? ' selected' : '');
             var items = byDate[key] || [];
 
-            var dotsHtml = '';
+            var indicatorHtml = '';
             var titleAttr = '';
             if (items.length) {
-                var seenTypes = {};
-                items.forEach(function (it) { seenTypes[it.type] = true; });
-                dotsHtml = '<span class="dots">' + Object.keys(seenTypes).map(function (t) {
-                    return '<span class="dot dot-' + t + '"></span>';
-                }).join('') + '</span>';
                 titleAttr = items.map(function (it) { return TYPE_LABELS[it.type] + ': ' + it.title; }).join('\n');
+
+                if (boxedStyle) {
+                    var maxChips = 3;
+                    var shown = items.slice(0, maxChips);
+                    var chips = shown.map(function (it) {
+                        return '<span class="cal-day-chip chip-' + it.type + '">' + it.title.replace(/</g, '&lt;') + '</span>';
+                    }).join('');
+                    var extra = items.length - shown.length;
+                    if (extra > 0) chips += '<span class="cal-day-chip-more">+' + extra + ' more</span>';
+                    indicatorHtml = '<span class="cal-day-chips">' + chips + '</span>';
+                } else {
+                    var seenTypes = {};
+                    items.forEach(function (it) { seenTypes[it.type] = true; });
+                    indicatorHtml = '<span class="dots">' + Object.keys(seenTypes).map(function (t) {
+                        return '<span class="dot dot-' + t + '"></span>';
+                    }).join('') + '</span>';
+                }
             }
 
             html += '<div class="' + classes + '" data-date="' + key + '"' +
                 (titleAttr ? ' title="' + titleAttr.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                '<span class="day-num">' + cellDate.getDate() + '</span>' + dotsHtml + '</div>';
+                '<span class="day-num">' + cellDate.getDate() + '</span>' + indicatorHtml + '</div>';
         });
 
         gridEl.innerHTML = html;
@@ -104,12 +119,18 @@ document.addEventListener('DOMContentLoaded', function () {
         gridEl.querySelectorAll('.cal-day').forEach(function (cell) {
             cell.addEventListener('click', function () {
                 selectDate(cell.dataset.date);
-                openTaskModal(cell.dataset.date);
+                if (!readOnly) openTaskModal(cell.dataset.date);
             });
         });
     }
 
     function renderDayPanel() {
+        var dateLabelPanelEl = document.getElementById('calSelectedDateLabel');
+        if (dateLabelPanelEl) {
+            var selD = new Date(selectedDate + 'T00:00:00');
+            dateLabelPanelEl.textContent = selD.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+
         var items = (byDate[selectedDate] || []).slice().sort(function (a, b) {
             return a.type.localeCompare(b.type);
         });
@@ -197,134 +218,136 @@ document.addEventListener('DOMContentLoaded', function () {
         renderAll();
     });
 
-    /* ---------- Assign modal ---------- */
-    var modalEl        = document.getElementById('taskCalModal');
-    var dateLabelEl     = document.getElementById('taskCalDateLabel');
-    var dateInput        = document.getElementById('taskCalDate');
-    var typeTodoRadio    = document.getElementById('taskCalTypeTodo');
-    var typeJobRadio     = document.getElementById('taskCalTypeJob');
-    var todoFields        = document.getElementById('taskCalTodoFields');
-    var jobFields         = document.getElementById('taskCalJobFields');
-    var deptSelect         = document.getElementById('taskCalDept');
-    var assigneeSelect     = document.getElementById('taskCalAssignee');
-    var errorBox           = document.getElementById('taskCalError');
-    var saveBtn             = document.getElementById('taskCalSaveBtn');
+    /* ---------- Assign modal (only present on pages that allow editing) ---------- */
+    var modalEl = document.getElementById('taskCalModal');
 
-    var departments = [];
-    users.forEach(function (u) {
-        if (u.department && departments.indexOf(u.department) === -1) departments.push(u.department);
-    });
-    deptSelect.innerHTML = '<option value="">Select department...</option>' +
-        departments.map(function (d) { return '<option value="' + d + '">' + d + '</option>'; }).join('');
+    if (modalEl) {
+        var dateLabelEl     = document.getElementById('taskCalDateLabel');
+        var dateInput        = document.getElementById('taskCalDate');
+        var typeTodoRadio    = document.getElementById('taskCalTypeTodo');
+        var typeJobRadio     = document.getElementById('taskCalTypeJob');
+        var todoFields        = document.getElementById('taskCalTodoFields');
+        var jobFields         = document.getElementById('taskCalJobFields');
+        var deptSelect         = document.getElementById('taskCalDept');
+        var assigneeSelect     = document.getElementById('taskCalAssignee');
+        var errorBox           = document.getElementById('taskCalError');
+        var saveBtn             = document.getElementById('taskCalSaveBtn');
 
-    deptSelect.addEventListener('change', function () {
-        var dept = this.value;
-        var matches = users.filter(function (u) { return u.department === dept; });
-        if (!dept) {
-            assigneeSelect.innerHTML = '<option value="">Select department first...</option>';
-            assigneeSelect.disabled = true;
-            return;
-        }
-        assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
-            matches.map(function (u) { return '<option value="' + u.user_id + '">' + u.name + ' ' + u.surname + '</option>'; }).join('');
-        assigneeSelect.disabled = false;
-    });
+        var departments = [];
+        users.forEach(function (u) {
+            if (u.department && departments.indexOf(u.department) === -1) departments.push(u.department);
+        });
+        deptSelect.innerHTML = '<option value="">Select department...</option>' +
+            departments.map(function (d) { return '<option value="' + d + '">' + d + '</option>'; }).join('');
 
-    function toggleType() {
-        var isJob = typeJobRadio.checked;
-        todoFields.classList.toggle('d-none', isJob);
-        jobFields.classList.toggle('d-none', !isJob);
-    }
-    typeTodoRadio.addEventListener('change', toggleType);
-    typeJobRadio.addEventListener('change', toggleType);
-
-    function openTaskModal(dateKey) {
-        dateInput.value = dateKey;
-        var d = new Date(dateKey + 'T00:00:00');
-        dateLabelEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
-
-        typeTodoRadio.checked = true;
-        toggleType();
-
-        document.getElementById('taskCalTodoTitle').value = '';
-        document.getElementById('taskCalTodoTime').value  = '09:00';
-        document.getElementById('taskCalTodoNotes').value = '';
-        deptSelect.value = '';
-        assigneeSelect.innerHTML = '<option value="">Select department first...</option>';
-        assigneeSelect.disabled = true;
-        document.getElementById('taskCalJobTitle').value = '';
-        document.getElementById('taskCalJobNotes').value = '';
-        errorBox.classList.add('d-none');
-
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    }
-
-
-    function showError(msg) {
-        errorBox.textContent = msg;
-        errorBox.classList.remove('d-none');
-    }
-
-    saveBtn.addEventListener('click', function () {
-        var date = dateInput.value;
-        if (!date) return;
-
-        saveBtn.disabled = true;
-
-        if (typeTodoRadio.checked) {
-            var title = document.getElementById('taskCalTodoTitle').value.trim();
-            var time  = document.getElementById('taskCalTodoTime').value || '09:00';
-            var notes = document.getElementById('taskCalTodoNotes').value.trim();
-
-            if (title === '') {
-                showError('Title is required.');
-                saveBtn.disabled = false;
+        deptSelect.addEventListener('change', function () {
+            var dept = this.value;
+            var matches = users.filter(function (u) { return u.department === dept; });
+            if (!dept) {
+                assigneeSelect.innerHTML = '<option value="">Select department first...</option>';
+                assigneeSelect.disabled = true;
                 return;
             }
+            assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
+                matches.map(function (u) { return '<option value="' + u.user_id + '">' + u.name + ' ' + u.surname + '</option>'; }).join('');
+            assigneeSelect.disabled = false;
+        });
 
-            fetch('php_action/quickAddMemo.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'title=' + encodeURIComponent(title) +
-                      '&description=' + encodeURIComponent(notes) +
-                      '&due_date=' + encodeURIComponent(date + 'T' + time)
-            })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                saveBtn.disabled = false;
-                if (!data.success) { showError(data.error || 'Something went wrong.'); return; }
-                bootstrap.Modal.getInstance(modalEl).hide();
-                fetchAndRender();
-            })
-            .catch(function (err) { console.error(err); saveBtn.disabled = false; });
+        var toggleType = function () {
+            var isJob = typeJobRadio.checked;
+            todoFields.classList.toggle('d-none', isJob);
+            jobFields.classList.toggle('d-none', !isJob);
+        };
+        typeTodoRadio.addEventListener('change', toggleType);
+        typeJobRadio.addEventListener('change', toggleType);
 
-        } else {
-            var jobTitle = document.getElementById('taskCalJobTitle').value.trim();
-            var jobNotes = document.getElementById('taskCalJobNotes').value.trim();
-            var assignedTo = assigneeSelect.value;
+        openTaskModal = function (dateKey) {
+            dateInput.value = dateKey;
+            var d = new Date(dateKey + 'T00:00:00');
+            dateLabelEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
-            if (!deptSelect.value) { showError('Please select a department.'); saveBtn.disabled = false; return; }
-            if (!assignedTo)       { showError('Please select who to assign this to.'); saveBtn.disabled = false; return; }
-            if (jobTitle === '')   { showError('Task is required.'); saveBtn.disabled = false; return; }
+            typeTodoRadio.checked = true;
+            toggleType();
 
-            fetch('php_action/createOfficeTask.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'title=' + encodeURIComponent(jobTitle) +
-                      '&description=' + encodeURIComponent(jobNotes) +
-                      '&due_date=' + encodeURIComponent(date) +
-                      '&assigned_to=' + encodeURIComponent(assignedTo)
-            })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                saveBtn.disabled = false;
-                if (!data.success) { showError(data.error || 'Something went wrong.'); return; }
-                bootstrap.Modal.getInstance(modalEl).hide();
-                fetchAndRender();
-            })
-            .catch(function (err) { console.error(err); saveBtn.disabled = false; });
-        }
-    });
+            document.getElementById('taskCalTodoTitle').value = '';
+            document.getElementById('taskCalTodoTime').value  = '09:00';
+            document.getElementById('taskCalTodoNotes').value = '';
+            deptSelect.value = '';
+            assigneeSelect.innerHTML = '<option value="">Select department first...</option>';
+            assigneeSelect.disabled = true;
+            document.getElementById('taskCalJobTitle').value = '';
+            document.getElementById('taskCalJobNotes').value = '';
+            errorBox.classList.add('d-none');
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        };
+
+        var showError = function (msg) {
+            errorBox.textContent = msg;
+            errorBox.classList.remove('d-none');
+        };
+
+        saveBtn.addEventListener('click', function () {
+            var date = dateInput.value;
+            if (!date) return;
+
+            saveBtn.disabled = true;
+
+            if (typeTodoRadio.checked) {
+                var title = document.getElementById('taskCalTodoTitle').value.trim();
+                var time  = document.getElementById('taskCalTodoTime').value || '09:00';
+                var notes = document.getElementById('taskCalTodoNotes').value.trim();
+
+                if (title === '') {
+                    showError('Title is required.');
+                    saveBtn.disabled = false;
+                    return;
+                }
+
+                fetch('php_action/quickAddMemo.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'title=' + encodeURIComponent(title) +
+                          '&description=' + encodeURIComponent(notes) +
+                          '&due_date=' + encodeURIComponent(date + 'T' + time)
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    saveBtn.disabled = false;
+                    if (!data.success) { showError(data.error || 'Something went wrong.'); return; }
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    fetchAndRender();
+                })
+                .catch(function (err) { console.error(err); saveBtn.disabled = false; });
+
+            } else {
+                var jobTitle = document.getElementById('taskCalJobTitle').value.trim();
+                var jobNotes = document.getElementById('taskCalJobNotes').value.trim();
+                var assignedTo = assigneeSelect.value;
+
+                if (!deptSelect.value) { showError('Please select a department.'); saveBtn.disabled = false; return; }
+                if (!assignedTo)       { showError('Please select who to assign this to.'); saveBtn.disabled = false; return; }
+                if (jobTitle === '')   { showError('Task is required.'); saveBtn.disabled = false; return; }
+
+                fetch('php_action/createOfficeTask.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'title=' + encodeURIComponent(jobTitle) +
+                          '&description=' + encodeURIComponent(jobNotes) +
+                          '&due_date=' + encodeURIComponent(date) +
+                          '&assigned_to=' + encodeURIComponent(assignedTo)
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    saveBtn.disabled = false;
+                    if (!data.success) { showError(data.error || 'Something went wrong.'); return; }
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    fetchAndRender();
+                })
+                .catch(function (err) { console.error(err); saveBtn.disabled = false; });
+            }
+        });
+    }
 
     fetchAndRender();
     setInterval(fetchAndRender, 25000);

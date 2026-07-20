@@ -75,6 +75,9 @@ $notifCountStmt->close();
             <a href="vehicleDocuments.php" class="<?= $currentPage === 'vehicleDocuments.php' ? 'active' : '' ?>">
                 <i class="fas fa-file-shield"></i> Documents
             </a>
+            <a href="officeTaskManagement.php" class="<?= $currentPage === 'officeTaskManagement.php' ? 'active' : '' ?>">
+                <i class="fas fa-calendar-days"></i> Office Task Management
+            </a>
         </nav>
 
         <div class="sidebar-footer">

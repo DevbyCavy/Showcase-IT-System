@@ -1249,6 +1249,144 @@ body.modern-dash {
 .mini-badge.badge-pending     { background: rgba(136,144,166,.16); color: #5B6072; }
 .mini-badge.badge-maintenance { background: rgba(241,158,44,.16); color: #B7791F; }
 
+/* ---------- Office Task Management (full-page desk calendar) ---------- */
+.cal-page .cal-head {
+    font-size: 1.1rem;
+}
+
+.cal-page .cal-head button.cal-nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: .85rem;
+}
+
+.cal-page .cal-view-toggle button {
+    font-size: .78rem;
+    padding: 6px 14px;
+}
+
+.cal-page .cal-grid {
+    font-size: .8rem;
+    gap: 8px;
+}
+
+/* Desk-calendar "page" look: each date is its own bordered/shadowed box */
+.cal-page .cal-grid .cal-day {
+    min-height: 100px;
+    padding: 8px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #EFEFF5;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(20,20,50,.04);
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+}
+
+.cal-page .cal-grid .cal-day:not(.in-month) {
+    background: #FAFAFC;
+    color: #C7C7D6;
+}
+
+.cal-page .cal-grid .cal-day.selected {
+    border-color: var(--brand-orange);
+    background: #FFF6F2;
+}
+
+.cal-page .cal-grid.week-view .cal-day {
+    min-height: 140px;
+}
+
+.cal-page .cal-grid .cal-day .day-num {
+    width: auto;
+    height: auto;
+    align-self: flex-start;
+    font-weight: 700;
+    font-size: .82rem;
+}
+
+.cal-page .cal-grid .cal-day.today .day-num {
+    width: 24px;
+    height: 24px;
+}
+
+/* Event chips inside each date box */
+.cal-day-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.cal-day-chip {
+    display: block;
+    font-size: .62rem;
+    font-weight: 600;
+    line-height: 1.5;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-day-chip.chip-memo       { background: #e74c3c; }
+.cal-day-chip.chip-job_to_me  { background: #3498db; }
+.cal-day-chip.chip-job_by_me  { background: #2ecc71; }
+
+.cal-day-chip-more {
+    font-size: .6rem;
+    font-weight: 600;
+    color: var(--muted);
+    padding-left: 6px;
+}
+
+/* Day-detail panel — sits below the grid */
+.cal-page-daypanel {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #EFEFF5;
+}
+
+.cal-page-side-head {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 14px;
+}
+
+.cal-page-daypanel .cal-event-card {
+    padding: 12px 14px;
+}
+
+.cal-page-daypanel .cal-event-title {
+    font-size: .88rem;
+    white-space: normal;
+}
+
+.cal-page-daypanel .cal-event-sub {
+    font-size: .74rem;
+}
+
+.cal-page-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 18px;
+    font-size: .78rem;
+    color: var(--muted);
+}
+
+.cal-page-legend .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
     .dash-grid {
