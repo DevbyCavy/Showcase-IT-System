@@ -247,4 +247,26 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   transaction (the legacy version ran three unguarded separate queries, exposed to race conditions
   under concurrent use — not previously atomic). Verified via curl (stock-check rejection, single
   correct deduction) and a full browser store→issue→report flow.
-- **Module 8 (Orders)** is next.
+- **Module 8 (Orders):** done and verified end-to-end, including file upload, the lazy-cron
+  auto-transitions, and a client-side countdown that mirrors the legacy's responsive UX (calls the
+  status endpoint the moment a deadline/24h window hits zero, without waiting for a reload).
+  Several real findings resolved along the way:
+  - `manageOrder.php` never even `require_once`s `auth_guard.php` (not just missing
+    `requireRole()` — no auth check at all). Applied the same "authenticate only" default used for
+    every other no-`requireRole()` page rather than leaving it fully public.
+  - `manageOrder.php`/`manageOrderP.php`'s "Edit Order" tab links to `editOrder.php`, which has
+    never existed — same class of dead link as Users' edit/delete. **Decided with Calvin: build it**,
+    reusing the create-order field set (`PUT /api/orders/:id`, full reassignment support).
+  - Their "View Order" tab referenced a non-existent `orders.assigned_users` column (assignment is
+    actually via `order_assignments`) — always rendered empty. Fixed outright (unambiguous, same
+    class of fix as `editBrand.php`'s wrong table name) rather than asking, since the correct query
+    was obvious and no real workflow depended on the broken behavior.
+  - `manageOrder.php` and `manageOrderP.php` are byte-for-byte identical apart from which header
+    include they use — consolidated into one `/orders/manage` page per §5's AppShell plan, rather
+    than shipping the same page twice.
+  - `createOrder.php`'s assignee dropdown queries all users with no role restriction, distinct from
+    `manage_users.php`'s Super-Admin-only list — added `GET /api/users/assignable` (any
+    authenticated user) rather than loosening the admin endpoint's gate.
+  Note: `orders.php`'s "New/Assigned" grouping (both land in the New tab) and "OnGoing"/"Completed"
+  split is preserved exactly in `OrdersKanban.tsx`.
+- **Module 9 (BOQ)** is next — scoped from `feature/boq-stock-requisitions` per §2.1.

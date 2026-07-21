@@ -29,6 +29,12 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/reports/issued-products" className="text-sm underline">
         Issued Products Report
       </Link>
+      <Link to="/orders" className="text-sm underline">
+        Orders (Kanban)
+      </Link>
+      <Link to="/orders/manage" className="text-sm underline">
+        Manage Orders
+      </Link>
       {user?.role === 'SuperAdmin' && (
         <Link to="/users" className="text-sm underline">
           Manage Users

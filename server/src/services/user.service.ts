@@ -13,6 +13,14 @@ export async function list() {
   return users.map(toPublicUser)
 }
 
+// Mirrors createOrder.php's `SELECT user_id, name, surname FROM users ORDER BY name ASC` — the
+// assignee dropdown on the Add Order form, open to any authenticated user (unlike the full user
+// management list, which manage_users.php gates to Super Admin).
+export async function listAssignable() {
+  const users = await userRepository.findAllOrderedByName()
+  return users.map((u) => ({ id: u.id, name: u.name, surname: u.surname }))
+}
+
 export async function signup(input: SignupBody) {
   const existing = await userRepository.findByUsername(input.username)
   if (existing) {

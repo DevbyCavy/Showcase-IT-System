@@ -7,6 +7,11 @@ export async function list(_req: Request, res: Response) {
   res.json({ success: true, data: { users } })
 }
 
+export async function listAssignable(_req: Request, res: Response) {
+  const users = await userService.listAssignable()
+  res.json({ success: true, data: { users } })
+}
+
 export async function signup(req: Request, res: Response) {
   const user = await userService.signup(req.body)
   res.status(201).json({ success: true, data: { user } })

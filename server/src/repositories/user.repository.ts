@@ -14,6 +14,11 @@ export function findAll() {
   return prisma.user.findMany({ orderBy: { id: 'desc' } })
 }
 
+// Mirrors createOrder.php: `SELECT user_id, name, surname FROM users ORDER BY name ASC`
+export function findAllOrderedByName() {
+  return prisma.user.findMany({ orderBy: { name: 'asc' } })
+}
+
 export function create(data: Prisma.UserCreateInput) {
   return prisma.user.create({ data })
 }

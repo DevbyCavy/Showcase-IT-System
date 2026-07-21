@@ -30,6 +30,21 @@ export function list() {
   return api.get<UserListResponse>('/users').then((r) => r.data.data.users)
 }
 
+export interface AssignableUser {
+  id: number
+  name: string
+  surname: string
+}
+
+interface AssignableUserListResponse {
+  success: true
+  data: { users: AssignableUser[] }
+}
+
+export function listAssignable() {
+  return api.get<AssignableUserListResponse>('/users/assignable').then((r) => r.data.data.users)
+}
+
 export interface UpdateUserInput {
   name?: string
   surname?: string
