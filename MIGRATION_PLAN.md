@@ -140,7 +140,7 @@ Full column-level detail for the reconstructed tables is in `server/prisma/schem
    to stay behaviorally identical. Preserve the exact 24-hour window and the "self-heals on next
    read" semantics.
 9. **BOQ** — per 2.1, scoped from `feature/boq-stock-requisitions`: `createBOQ.php` (order-linked,
-   multi-row item entry, auto-numbered `BOQ-###`), `downloadBOQ.php` (DOMPDF → Puppeteer PDF,
+   multi-row item entry, auto-numbered like orders: "001", "002", ...), `downloadBOQ.php` (DOMPDF → Puppeteer PDF,
    preserve the exact HTML/CSS layout).
 10. **Requisitions** — `requisitions.php`, `createRequisition.php` (auto-numbered `REQ-###`,
     type-with-"Other" pattern), `processRequisition.php` (Super-Admin-only approval,
@@ -269,4 +269,18 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
     authenticated user) rather than loosening the admin endpoint's gate.
   Note: `orders.php`'s "New/Assigned" grouping (both land in the New tab) and "OnGoing"/"Completed"
   split is preserved exactly in `OrdersKanban.tsx`.
-- **Module 9 (BOQ)** is next — scoped from `feature/boq-stock-requisitions` per §2.1.
+- **Module 9 (BOQ):** done and verified end-to-end, including real Puppeteer PDF generation
+  (checked the actual PDF bytes/layout, not just a 200 response) and a full browser
+  create→download flow. Corrections/notes:
+  - Correction to this doc's Module 9 description above: BOQ numbers are a plain zero-padded
+    sequence ("001", "002", ...) like order numbers — not "BOQ-###" like requisitions. Mixed up
+    the two conventions when first writing this plan.
+  - `puppeteer` (v25+) ships ESM-only while the server is CommonJS; loaded via dynamic `import()`
+    in `utils/boqPdf.ts` rather than switching the whole server to ESM.
+  - The PDF download needs the JWT Bearer token, which a plain `<a href>` can't send (unlike the
+    legacy's cookie-based session, sent automatically on any same-origin link click) — the client
+    fetches the PDF as a blob via axios and triggers the download from an object URL instead.
+  - HTML/CSS layout copied verbatim from `downloadBOQ.php`; only the "Date Created" field was
+    reformatted from a raw ISO timestamp to a readable date, since Puppeteer receives a real `Date`
+    object where DOMPDF received a pre-formatted MySQL datetime string.
+- **Module 10 (Requisitions)** is next.

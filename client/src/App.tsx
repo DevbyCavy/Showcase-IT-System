@@ -9,6 +9,7 @@ import Store from '@/pages/Store'
 import IssuedProductsReport from '@/pages/IssuedProductsReport'
 import OrdersKanban from '@/pages/OrdersKanban'
 import ManageOrders from '@/pages/ManageOrders'
+import BOQ from '@/pages/BOQ'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -45,6 +46,7 @@ function App() {
         <Route path="/reports/issued-products" element={<IssuedProductsReport />} />
         <Route path="/orders" element={<OrdersKanban />} />
         <Route path="/orders/manage" element={<ManageOrders />} />
+        <Route path="/boq" element={<BOQ />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
