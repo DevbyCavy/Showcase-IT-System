@@ -3,6 +3,7 @@ import Login from '@/pages/Login'
 import Signup from '@/pages/Signup'
 import ManageUsers from '@/pages/ManageUsers'
 import Categories from '@/pages/Categories'
+import Brands from '@/pages/Brands'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -33,6 +34,7 @@ function App() {
       {/* categories.php requires only a session, no specific role - matches ProtectedRoute with no `roles`. */}
       <Route element={<ProtectedRoute />}>
         <Route path="/categories" element={<Categories />} />
+        <Route path="/brands" element={<Brands />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>

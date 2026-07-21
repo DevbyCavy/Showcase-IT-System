@@ -17,6 +17,9 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/categories" className="text-sm underline">
         Manage Categories
       </Link>
+      <Link to="/brands" className="text-sm underline">
+        Manage Brands
+      </Link>
       {user?.role === 'SuperAdmin' && (
         <Link to="/users" className="text-sm underline">
           Manage Users

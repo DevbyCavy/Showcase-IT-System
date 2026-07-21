@@ -216,4 +216,10 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   button ever targets — copy-paste residue, not a feature) and replaced the DataTables auto-search
   with one working TanStack Table global filter (the page's own `#categorySearch` input was never
   wired to anything in `categories.js` — only DataTables' own injected search box worked).
-- **Module 5 (Brands)** is next.
+- **Module 5 (Brands):** done and verified end-to-end. Fixed the known `editBrand.php` bug
+  (`UPDATE brands` against a table actually named `brand`, singular — edits 500'd in the legacy
+  app) simply by using the correct Prisma model; verified the fix explicitly (edit now works).
+  Refactored Categories + Brands onto one shared `SimpleCatalogManager` component/pattern since
+  both entities are structurally and behaviorally identical (name + isActive + soft-delete status)
+  — avoids duplicating the CRUD page a third time when Module 6 needs the same shape elsewhere.
+- **Module 6 (Products)** is next.
