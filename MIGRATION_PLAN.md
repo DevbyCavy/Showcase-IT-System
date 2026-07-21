@@ -367,5 +367,12 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   - Verified the status computation (Valid/Expiring Soon/Expired) against the exact legacy formula
     for all three outcomes, and confirmed a renewal correctly recomputes status from the new
     expiry date while leaving the uploaded file untouched when no new one is provided.
-- **Module 16 (Reports)** is next — `report.php` (`IssueProductReport.php` was already covered by
-  Module 7's Issued Products Report).
+- **Module 16 (Reports): skipped, confirmed with Calvin.** `report.php` is a genuinely empty stub —
+  one line (`require_once 'php_action/auth_guard.php';`), no queries, no form, no output — and its
+  companion `custom/js/report.js` is also empty. Unlike every other broken module so far, there
+  was no evidence at all to reconstruct from (no INSERT statement, no dead link, no partial form).
+  `IssueProductReport.php`, the only real reporting feature, was already covered by Module 7's
+  Issued Products Report. Decided not to invent placeholder content for an empty legacy page.
+- **Module 17 (Dashboards)** is next — real per-role dashboard content for all 8 roles, replacing
+  `DashboardPlaceholder` (in place since Module 2) with the actual nav shell and per-role home
+  pages. This is the last module.
