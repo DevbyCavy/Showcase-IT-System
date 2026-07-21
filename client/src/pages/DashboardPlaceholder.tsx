@@ -44,6 +44,9 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/vehicles" className="text-sm underline">
         Vehicle Register
       </Link>
+      <Link to="/fuel-logs" className="text-sm underline">
+        Fuel Log
+      </Link>
       {user?.role === 'SuperAdmin' && (
         <>
           <Link to="/users" className="text-sm underline">

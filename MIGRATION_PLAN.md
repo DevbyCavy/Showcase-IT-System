@@ -315,4 +315,15 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   - Caught and fixed a validation bug via the browser test itself: an unfilled `purchaseDate`
     (empty string from `<input type="date">`) was failing `z.coerce.date()` outright instead of
     falling back to its default — fixed with a preprocess step treating `''` as `undefined`.
-- **Module 12 (Fuel Logs)** is next.
+- **Module 12 (Fuel Logs):** done and verified end-to-end. Confirmed `fuel_logs` is queried nowhere
+  else in the entire codebase — the legacy page genuinely only ever shows three aggregate stat
+  cards (entry count, total litres, total cost) plus an add-entry form; there is no history/list
+  view anywhere, and no dead link suggesting one was ever planned. Not invented here either,
+  per the brief — flagging it because it's a real practical gap (no way to see/audit past entries)
+  Calvin may want addressed later, but that would be a new feature, not a migration task. Caught
+  and fixed a minor validation-message bug via curl: an entirely missing `vehicleId` produced zod's
+  generic "expected number, received NaN" instead of the friendly "Please select a vehicle" —
+  fixed by giving `z.coerce.number()` an explicit base-type error message (the custom message on
+  `.positive()` never runs if the base type check fails first). Same fix applied to the other
+  required numeric fields for consistency.
+- **Module 13 (Maintenance Logs)** is next.

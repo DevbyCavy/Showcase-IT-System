@@ -15,6 +15,7 @@ import { orderRouter } from './routes/order.routes'
 import { boqRouter } from './routes/boq.routes'
 import { requisitionRouter } from './routes/requisition.routes'
 import { vehicleRouter } from './routes/vehicle.routes'
+import { fuelLogRouter } from './routes/fuelLog.routes'
 
 export const app = express()
 
@@ -42,6 +43,7 @@ app.use('/api/orders', orderRouter)
 app.use('/api/boqs', boqRouter)
 app.use('/api/requisitions', requisitionRouter)
 app.use('/api/vehicles', vehicleRouter)
+app.use('/api/fuel-logs', fuelLogRouter)
 
 // Further module routers mount here as they land
 
