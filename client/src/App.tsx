@@ -8,6 +8,7 @@ import Products from '@/pages/Products'
 import Store from '@/pages/Store'
 import IssuedProductsReport from '@/pages/IssuedProductsReport'
 import OrdersKanban from '@/pages/OrdersKanban'
+import SuperAdminDashboard from '@/pages/SuperAdminDashboard'
 import ManageOrders from '@/pages/ManageOrders'
 import BOQ from '@/pages/BOQ'
 import Requisitions from '@/pages/Requisitions'
@@ -21,6 +22,15 @@ import TripLogbook from '@/pages/TripLogbook'
 import VehicleDocuments from '@/pages/VehicleDocuments'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
+import { useAuth } from '@/hooks/useAuth'
+
+// Every role but Super Admin still gets the plain Orders kanban as their dashboard (see
+// MIGRATION_PLAN.md Module 17) — only Super Admin's was rebuilt into the full modern dashboard
+// (orders carousel, Work Log Sheet, quick-actions, profile/calendar/BOQ side column) per §10.
+function Dashboard() {
+  const { user } = useAuth()
+  return user?.role === 'SuperAdmin' ? <SuperAdminDashboard /> : <OrdersKanban />
+}
 
 function AccessDenied() {
   return (
@@ -52,7 +62,7 @@ function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
-          <Route path="/dashboard" element={<OrdersKanban />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/brands" element={<Brands />} />
           <Route path="/products" element={<Products />} />

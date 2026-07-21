@@ -468,6 +468,25 @@ feature/work-log-sheet:<path>` (branch never checked out or modified). Three pie
    generation and visual read-back) and a full Playwright browser pass (submit with file upload,
    pending list, approve modal, pending count drops to 0).
 
-Both new features are being built the same way as the original 17 modules: Prisma model → repo →
+Both new features were built the same way as the original 17 modules: Prisma model → repo →
 service → controller → routes → Zod validation → React page, verified via curl then a real
 browser flow before committing.
+
+4. **Super Admin Dashboard (done).** Translated from `superDashboard.php`: an orders carousel
+   (cycling New/On Going/Completed panels via prev/next arrows, one gradient-tile group visible at
+   a time — a closer match to the legacy's single-active-panel behavior than the plain tabs used
+   elsewhere), the Work Log Sheet widget, a Pending Requisitions quick-process list, a Pending
+   Quotations quick-approve list, a profile card (avatar, role, Total Jobs/Current Jobs/Rating stat
+   tiles), a deadline mini-calendar (marks any date with an order deadline, month-navigable), and a
+   recent-BOQs list with PDF download. `totalJobs`/`currentJobs` are derived client-side from the
+   orders already fetched for the carousel (each order's `assignedUsers` is filtered against the
+   current user) rather than adding a new aggregate endpoint — the data was already on the page.
+   The `4.8` rating is a genuine legacy placeholder (`$dummyRating = 4.8; // placeholder — real
+   rating source TBD`), preserved as-is, not wired to anything real. The legacy's order
+   auto-transition "lazy cron" (New/Assigned → OnGoing at deadline, → Completed 24h later) already
+   lives in `order.repository.ts`'s `autoTransition()` from Module 8 and runs on every `orders.list()`
+   call, so the dashboard gets it for free. `/dashboard` now renders `SuperAdminDashboard` only for
+   the Super Admin role; every other role still gets the plain `OrdersKanban` (unchanged). Verified
+   with a full Playwright pass: initial render with real pending-requisition data, carousel cycling
+   through all three tabs, and the mobile breakpoint (sidebar collapses, side column stacks below
+   main column).
