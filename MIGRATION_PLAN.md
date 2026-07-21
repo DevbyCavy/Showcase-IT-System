@@ -347,6 +347,25 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   - Same `passwordHash`-leak class of bug as Module 11: the trip's `user` (driver) relation was
     being returned raw. Mapped through `toPublicUser()` from the start this time, having learned
     from the Vehicles module.
-- **Module 15 (Vehicle Documents)** is next — `includes/vehicles/vehicleDocuments.php`, with a
-  known legacy bug to fix (a typo'd variable means uploaded document files never actually save
-  their path, despite the upload itself succeeding on disk).
+- **Module 15 (Vehicle Documents):** done and verified end-to-end — this was a bigger find than
+  originally scoped. The known `$uploadeFile` typo bug (confirmed and fixed: uploaded files landed
+  on disk but the DB column always stayed NULL) turned out to be the smaller of two bugs — the
+  legacy `<form>` itself only ever rendered a single `document_type` field. Every other column the
+  `INSERT` statement needs (vehicle, document number, issue/expiry dates, reminder days) was
+  simply absent from the HTML, so the "Save Document" feature could never have worked at all, with
+  or without the typo. Reconstructed the complete field set from the `INSERT` column list and the
+  file-upload handler, matching the sibling Fuel Log/Maintenance Log forms' conventions. Also:
+  - Dropped a standalone dead code block at the top of the legacy file that referenced an
+    undefined `$daysRemaining` variable outside any loop (executed unconditionally on every page
+    load, printing a meaningless badge) — clearly copy-paste residue from the row-rendering loop
+    lower in the same file, not a real feature.
+  - Fixed the page's own heading, which again read "Fuel Log" (the same copy-paste bug as
+    Maintenance Log, not fixed at its source apparently).
+  - The "Renew" action linked to `renewDocument.php`, which has never existed — same class of dead
+    link as `editOrder.php`. Built it as a real edit action reusing the create fields, applying the
+    same precedent already established for Orders rather than re-asking a third time.
+  - Verified the status computation (Valid/Expiring Soon/Expired) against the exact legacy formula
+    for all three outcomes, and confirmed a renewal correctly recomputes status from the new
+    expiry date while leaving the uploaded file untouched when no new one is provided.
+- **Module 16 (Reports)** is next — `report.php` (`IssueProductReport.php` was already covered by
+  Module 7's Issued Products Report).

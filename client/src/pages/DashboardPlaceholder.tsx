@@ -53,6 +53,9 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/trip-logbook" className="text-sm underline">
         Trip Logbook
       </Link>
+      <Link to="/vehicle-documents" className="text-sm underline">
+        Vehicle Documents
+      </Link>
       {user?.role === 'SuperAdmin' && (
         <>
           <Link to="/users" className="text-sm underline">
