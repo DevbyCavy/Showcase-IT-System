@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme inline {
@@ -23,6 +24,19 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  /* Design language ported from feature/work-log-sheet's modern-dashboard.css (see
+     MIGRATION_PLAN.md's post-migration UI notes) — additive tokens, not replacing the shadcn
+     semantic ones above. */
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-dark: var(--brand-orange-dark);
+  --color-brand-orange-light: var(--brand-orange-light);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-purple-dark: var(--brand-purple-dark);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --radius-card: var(--card-radius);
+  --font-sans: 'Poppins', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
 :root {
@@ -32,7 +46,7 @@
   --card-foreground: hsl(240 10% 4%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(240 10% 4%);
-  --primary: hsl(24 100% 50%);
+  --primary: hsl(14 88% 56%);
   --primary-foreground: hsl(0 0% 100%);
   --secondary: hsl(240 5% 96%);
   --secondary-foreground: hsl(240 6% 10%);
@@ -44,8 +58,17 @@
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(240 6% 90%);
   --input: hsl(240 6% 90%);
-  --ring: hsl(24 100% 50%);
+  --ring: hsl(14 88% 56%);
   --radius: 0.5rem;
+
+  --brand-orange: #f15a2c;
+  --brand-orange-dark: #d94e22;
+  --brand-orange-light: #ff8f5e;
+  --brand-purple: #8b5cf6;
+  --brand-purple-dark: #6d28d9;
+  --ink: #1e1b2e;
+  --ink-soft: #2a2542;
+  --card-radius: 18px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,7 +79,7 @@
     --card-foreground: hsl(0 0% 98%);
     --popover: hsl(240 10% 6%);
     --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(24 100% 55%);
+    --primary: hsl(14 88% 58%);
     --primary-foreground: hsl(0 0% 100%);
     --secondary: hsl(240 4% 16%);
     --secondary-foreground: hsl(0 0% 98%);
@@ -68,7 +91,7 @@
     --destructive-foreground: hsl(0 0% 100%);
     --border: hsl(240 4% 16%);
     --input: hsl(240 4% 16%);
-    --ring: hsl(24 100% 55%);
+    --ring: hsl(14 88% 58%);
   }
 }
 
@@ -80,7 +103,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 #root {

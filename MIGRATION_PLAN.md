@@ -412,3 +412,37 @@ for specifics), always flagged rather than silently resolved when the right beha
 ambiguous. `client/` and `server/` are feature-complete replacements for the PHP application at
 the repo root, which remains untouched — retiring it is a separate decision for Calvin to make
 once he's had a chance to use the new system.
+
+## 10. Post-migration: modern UI + Work Log Sheet + Quotations
+
+After the migration finished, Calvin asked to bring over UI/UX work that exists on the
+never-merged `feature/work-log-sheet` branch (itself built on `feature/super-admin-modern-ui`) —
+none of this was ever part of `main`, so it's new scope on top of the completed 1:1 migration, not
+a translation of anything already covered above. Investigated read-only via `git show
+feature/work-log-sheet:<path>` (branch never checked out or modified). Three pieces:
+
+1. **Modern AppShell (done).** The branch's dark-sidebar shell (`includes/sidebarSuper.php` +
+   `custom/css/modern-dashboard.css`) replaced the plain top-nav `AppShell` from Module 17: fixed
+   250px sidebar with an ink→ink-soft gradient, Poppins font, brand-orange (`#F15A2C`)/brand-purple
+   (`#8B5CF6`) accents added as new Tailwind tokens (`bg-ink`, `bg-brand-orange`, etc.) alongside
+   the existing shadcn semantic tokens, 18px card radius, mobile off-canvas toggle, and a
+   notifications bell (pending requisitions count + up to 5 pending quotations). Verified visually
+   at both desktop and mobile viewports.
+2. **Work Log Sheet (new feature)** — shift login, task start/stop with a live timer, two fixed
+   break windows (Tea 08:30–09:00, Lunch 13:00–13:40) that block starting a task, a live adherence
+   percentage, an evening-shift toggle, and a weekly view. Needs two new tables (`work_shifts`,
+   `work_tasks`) not present in the migrated schema.
+3. **Quotations (new feature, decided in scope now rather than deferred to a Marketer role)** —
+   customer quotations with line items, a design-file attachment, server-recomputed totals (never
+   trust client math), Super-Admin-only approval (same atomic Pending-only guard pattern as
+   `processRequisition.php`), and a Puppeteer-generated PDF matching the legacy DOMPDF layout. The
+   legacy gates *submission* to a `requireRole('Marketer')` check — but "Marketer" was already
+   dropped during Module 2's role-normalization (it's the same broken role string flagged back
+   then). Since no live role is really "the marketer," submission is open to any authenticated
+   user (matching the precedent already set for Requisitions), and every role's nav gets a "Make
+   Quotation" link rather than hiding it inconsistently for some roles while the API allows it for
+   all.
+
+Both new features are being built the same way as the original 17 modules: Prisma model → repo →
+service → controller → routes → Zod validation → React page, verified via curl then a real
+browser flow before committing.
