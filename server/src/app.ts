@@ -20,6 +20,7 @@ import { maintenanceLogRouter } from './routes/maintenanceLog.routes'
 import { vehicleTripRouter } from './routes/vehicleTrip.routes'
 import { vehicleDocumentRouter } from './routes/vehicleDocument.routes'
 import { workLogSheetRouter } from './routes/workLogSheet.routes'
+import { quotationRouter } from './routes/quotation.routes'
 
 export const app = express()
 
@@ -52,6 +53,7 @@ app.use('/api/maintenance-logs', maintenanceLogRouter)
 app.use('/api/trips', vehicleTripRouter)
 app.use('/api/vehicle-documents', vehicleDocumentRouter)
 app.use('/api/work-log-sheet', workLogSheetRouter)
+app.use('/api/quotations', quotationRouter)
 
 // Further module routers mount here as they land
 

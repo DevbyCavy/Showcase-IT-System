@@ -447,16 +447,26 @@ feature/work-log-sheet:<path>` (branch never checked out or modified). Three pie
    break-time guard, atomic stop, idempotent evening-shift toggle, week aggregation) and a full
    Playwright browser pass (log in, start/stop task, evening shift, week modal — screenshots
    confirmed correct rendering).
-3. **Quotations (new feature, decided in scope now rather than deferred to a Marketer role)** —
-   customer quotations with line items, a design-file attachment, server-recomputed totals (never
-   trust client math), Super-Admin-only approval (same atomic Pending-only guard pattern as
-   `processRequisition.php`), and a Puppeteer-generated PDF matching the legacy DOMPDF layout. The
-   legacy gates *submission* to a `requireRole('Marketer')` check — but "Marketer" was already
-   dropped during Module 2's role-normalization (it's the same broken role string flagged back
-   then). Since no live role is really "the marketer," submission is open to any authenticated
+3. **Quotations (done).** Customer quotations with line items, a design-file attachment,
+   server-recomputed totals (never trust client math), Super-Admin-only approval (same atomic
+   Pending-only guard pattern as `processRequisition.php`), and a Puppeteer-generated PDF matching
+   the legacy DOMPDF layout byte-for-byte in structure (logo embedded as base64, customer block,
+   items table, terms/bank-details split, footer — verified by rendering and reading the actual
+   PDF). The legacy gates *submission* to a `requireRole('Marketer')` check — but "Marketer" was
+   already dropped during Module 2's role-normalization (it's the same broken role string flagged
+   back then). Since no live role is really "the marketer," submission is open to any authenticated
    user (matching the precedent already set for Requisitions), and every role's nav gets a "Make
    Quotation" link rather than hiding it inconsistently for some roles while the API allows it for
-   all.
+   all. Line items travel as a JSON-encoded string field alongside the multipart file upload (no
+   existing module combined an object array with a file upload, so this is a new but small
+   pattern: `z.preprocess` parses the JSON string before array validation). `submittedBy`/
+   `approvedBy` are mapped through the existing `toPublicUser()` helper so `passwordHash` never
+   leaks (same fix applied to Vehicles/Trip Logbook earlier). Routes: `/quotations` (submit + "My
+   Submitted Quotations" list, any role), `/quotations/process` (Super Admin — Pending/All tabs,
+   confirm-then-approve modal, matching `processQuotations.php`'s UI exactly). Verified via curl
+   (server-side total recomputation, atomic approve + re-approve rejection, real PDF byte
+   generation and visual read-back) and a full Playwright browser pass (submit with file upload,
+   pending list, approve modal, pending count drops to 0).
 
 Both new features are being built the same way as the original 17 modules: Prisma model → repo →
 service → controller → routes → Zod validation → React page, verified via curl then a real
