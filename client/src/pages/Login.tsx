@@ -7,7 +7,6 @@ import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
-import { roleDashboardPath } from '@/lib/roleRoutes'
 
 // Mirrors index.php's login form validation: both fields simply required, no format rules.
 const loginSchema = z.object({
@@ -31,8 +30,9 @@ export default function Login() {
   async function onSubmit(values: LoginForm) {
     setServerError(null)
     try {
-      const user = await login(values.username, values.password)
-      navigate(roleDashboardPath[user.role], { replace: true })
+      await login(values.username, values.password)
+      // Every role lands on the same dashboard content (the Orders Kanban) — see App.tsx.
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       const message = isAxiosError(err) ? err.response?.data?.error : undefined
       setServerError(message ?? 'Incorrect username or password')

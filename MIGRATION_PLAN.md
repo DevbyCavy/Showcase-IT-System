@@ -373,6 +373,42 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   was no evidence at all to reconstruct from (no INSERT statement, no dead link, no partial form).
   `IssueProductReport.php`, the only real reporting feature, was already covered by Module 7's
   Issued Products Report. Decided not to invent placeholder content for an empty legacy page.
-- **Module 17 (Dashboards)** is next — real per-role dashboard content for all 8 roles, replacing
-  `DashboardPlaceholder` (in place since Module 2) with the actual nav shell and per-role home
-  pages. This is the last module.
+- **Module 17 (Dashboards): done.** A background survey of all 7 live-role dashboard PHP files
+  (`superDashboard.php`, `storesDashboard.php`, `proj_manDashboard.php`, `accountsDashboard.php`,
+  `designDashboard.php`, `prod_teamDashboard.php`, `logisticsDashboard.php`) found they're all
+  structurally identical: `auth_guard` → `requireRole()` → a role-specific header include →
+  `require_once 'orders.php'` (the kanban) → `footer.php`. **Zero stat cards, zero SQL queries,
+  zero role-specific widgets exist anywhere** — every role's "dashboard" is just the Orders Kanban
+  (already built in Module 8) wrapped in that role's nav chrome. Two more bugs turned up along the
+  way: `accountsDashboard.php` and `designDashboard.php` both include `headerProduction.php`
+  instead of a dedicated header (Accountant/Graphic Designer got Production's nav by copy-paste
+  mistake), and `includes/logisticsDashboard.php` — included by `manageLogistics.php`'s Dashboard
+  tab — doesn't exist anywhere, ever (same class of dead include as `editOrder.php`/
+  `renewDocument.php`).
+
+  Decided with Calvin: since no per-role content survives to translate, build genuine
+  role-conditional navigation (`client/src/lib/navLinks.ts`) grounded in what each role's actual
+  pages are, replacing the 5 duplicated `header*.php` includes with one shared `AppShell`
+  component. This incidentally fixes both bugs above — Accountant and Graphic Designer now get
+  their own sensible link sets instead of Production's by accident, and there's no dead
+  `logisticsDashboard.php`-shaped hole in the new architecture since the former "Dashboard" tab
+  concept was never built as a placeholder needing that include (Vehicles and Trip Logbook became
+  their own standalone pages back in Modules 11/14).
+
+  Collapsed the 7 role-specific `/dashboard/<role>` placeholder routes into one shared
+  `/dashboard` route (any authenticated role) rendering `OrdersKanban` — matching the legacy
+  reality that every role sees the same content. `DashboardPlaceholder.tsx` and the now-unneeded
+  `roleRoutes.ts` were deleted. Verified via browser across three roles (Super Admin, Stores
+  Admin, Production Team): each sees exactly its intended nav links, `/dashboard` renders the
+  kanban for all of them, and a non-admin hitting `/users` directly still correctly redirects to
+  `/access-denied`.
+
+## 9. Migration status: complete
+
+All 17 modules are done (Module 16 skipped by decision — see above, nothing existed to migrate).
+Every module was verified via curl and a real browser flow before being committed; several genuine
+bugs in the legacy application were found and fixed along the way (see each module's notes above
+for specifics), always flagged rather than silently resolved when the right behavior was
+ambiguous. `client/` and `server/` are feature-complete replacements for the PHP application at
+the repo root, which remains untouched — retiring it is a separate decision for Calvin to make
+once he's had a chance to use the new system.

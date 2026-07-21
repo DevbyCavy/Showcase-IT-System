@@ -17,8 +17,8 @@ import FuelLogs from '@/pages/FuelLogs'
 import MaintenanceLogs from '@/pages/MaintenanceLogs'
 import TripLogbook from '@/pages/TripLogbook'
 import VehicleDocuments from '@/pages/VehicleDocuments'
-import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AppShell } from '@/components/AppShell'
 
 function AccessDenied() {
   return (
@@ -36,6 +36,10 @@ function NotFound() {
   )
 }
 
+// Every one of the 7 legacy per-role dashboards is auth_guard + requireRole + a role-specific
+// header + `require_once 'orders.php'` — the same kanban content for every role (see
+// MIGRATION_PLAN.md Module 17). One shared /dashboard route replaces all 7; AppShell supplies the
+// role-conditional nav that used to come from 5 duplicated header*.php includes.
 function App() {
   return (
     <Routes>
@@ -44,46 +48,29 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/access-denied" element={<AccessDenied />} />
 
-      {/* categories.php requires only a session, no specific role - matches ProtectedRoute with no `roles`. */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/brands" element={<Brands />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/reports/issued-products" element={<IssuedProductsReport />} />
-        <Route path="/orders" element={<OrdersKanban />} />
-        <Route path="/orders/manage" element={<ManageOrders />} />
-        <Route path="/boq" element={<BOQ />} />
-        <Route path="/requisitions" element={<Requisitions />} />
-        <Route path="/vehicles" element={<Vehicles />} />
-        <Route path="/fuel-logs" element={<FuelLogs />} />
-        <Route path="/maintenance-logs" element={<MaintenanceLogs />} />
-        <Route path="/trip-logbook" element={<TripLogbook />} />
-        <Route path="/vehicle-documents" element={<VehicleDocuments />} />
-      </Route>
+        <Route element={<AppShell />}>
+          <Route path="/dashboard" element={<OrdersKanban />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/brands" element={<Brands />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/store" element={<Store />} />
+          <Route path="/reports/issued-products" element={<IssuedProductsReport />} />
+          <Route path="/orders" element={<OrdersKanban />} />
+          <Route path="/orders/manage" element={<ManageOrders />} />
+          <Route path="/boq" element={<BOQ />} />
+          <Route path="/requisitions" element={<Requisitions />} />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/fuel-logs" element={<FuelLogs />} />
+          <Route path="/maintenance-logs" element={<MaintenanceLogs />} />
+          <Route path="/trip-logbook" element={<TripLogbook />} />
+          <Route path="/vehicle-documents" element={<VehicleDocuments />} />
 
-      <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
-        <Route path="/dashboard/super-admin" element={<DashboardPlaceholder title="Super Admin Dashboard" />} />
-        <Route path="/users" element={<ManageUsers />} />
-        <Route path="/requisitions/process" element={<ProcessRequisitions />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['StoresAdmin']} />}>
-        <Route path="/dashboard/stores-admin" element={<DashboardPlaceholder title="Stores Admin Dashboard" />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['ProjectManager']} />}>
-        <Route path="/dashboard/project-manager" element={<DashboardPlaceholder title="Project Manager Dashboard" />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['Accountant']} />}>
-        <Route path="/dashboard/accountant" element={<DashboardPlaceholder title="Accountant Dashboard" />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['GraphicDesigner']} />}>
-        <Route path="/dashboard/graphic-designer" element={<DashboardPlaceholder title="Graphic Designer Dashboard" />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['ProductionTeam']} />}>
-        <Route path="/dashboard/production-team" element={<DashboardPlaceholder title="Production Team Dashboard" />} />
-      </Route>
-      <Route element={<ProtectedRoute roles={['Logistics']} />}>
-        <Route path="/dashboard/logistics" element={<DashboardPlaceholder title="Logistics Dashboard" />} />
+          <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
+            <Route path="/users" element={<ManageUsers />} />
+            <Route path="/requisitions/process" element={<ProcessRequisitions />} />
+          </Route>
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
