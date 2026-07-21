@@ -53,6 +53,16 @@ export function updateQuantity(id: number, quantity: number) {
   return prisma.product.update({ where: { id }, data: { quantity } })
 }
 
+// Mirrors store.php's grid query: `WHERE p.active = 1 AND p.status = 1` — narrower than
+// fetchProduct.php's plain `status = 1` (Manage Products shows both Available/Not Available rows;
+// the issuing grid only shows stock that's actually Available).
+export function findAllAvailableForIssue() {
+  return prisma.product.findMany({
+    where: { status: 'Active', isActive: true },
+    include: { brand: true, category: true },
+  })
+}
+
 // Mirrors removeProduct.php: `active = 2, status = 2` — both the business flag and the
 // soft-delete flag get flipped on removal (unlike brand/category, which only touch status).
 export function softDelete(id: number) {

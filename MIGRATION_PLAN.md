@@ -236,4 +236,15 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   Product image paths are stored cleanly from Multer; the legacy's own path bug (createProduct.php
   stored a wrong `../`-prefixed path that editProductImage.php then fixed inconsistently) has no
   equivalent here since the storage layer is entirely new.
-- **Module 7 (Inventory / Issued Tools)** is next.
+- **Module 7 (Inventory / Issued Tools):** done and verified end-to-end. Found and fixed a real,
+  meaningful bug: `custom/js/issuedProduct.js` bound *two* separate `submit` listeners to the issue
+  form (one with no validation, one with validation) — both fire on every real submit, since
+  `addEventListener` doesn't replace a prior handler and `preventDefault()` in one doesn't stop the
+  other from running. Every issue action in the legacy app double-POSTs to `issueProduct.php`,
+  double-deducting stock and creating two `issued_tools` rows per click. The new implementation has
+  exactly one issue path — not preserved, since replicating this would mean deliberately shipping a
+  stock-corruption bug. Also made the stock-check + decrement + insert atomic via a Prisma
+  transaction (the legacy version ran three unguarded separate queries, exposed to race conditions
+  under concurrent use — not previously atomic). Verified via curl (stock-check rejection, single
+  correct deduction) and a full browser store→issue→report flow.
+- **Module 8 (Orders)** is next.
