@@ -12,6 +12,7 @@ import ManageOrders from '@/pages/ManageOrders'
 import BOQ from '@/pages/BOQ'
 import Requisitions from '@/pages/Requisitions'
 import ProcessRequisitions from '@/pages/ProcessRequisitions'
+import Vehicles from '@/pages/Vehicles'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -50,6 +51,7 @@ function App() {
         <Route path="/orders/manage" element={<ManageOrders />} />
         <Route path="/boq" element={<BOQ />} />
         <Route path="/requisitions" element={<Requisitions />} />
+        <Route path="/vehicles" element={<Vehicles />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>

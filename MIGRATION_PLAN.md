@@ -296,4 +296,23 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
     with free text, which would have broken any future filtering/reporting by category.
   - `processRequisition.php`'s `WHERE status = 'Pending'` guard (preventing double-processing) is
     preserved as an atomic `updateMany` with the same predicate, not a separate check-then-update.
-- **Module 11 (Logistics / Vehicles)** is next.
+- **Module 11 (Logistics / Vehicles):** done and verified end-to-end. `manageLogistics.php`'s Vehicle
+  Register tab built as its own page (`/vehicles`) rather than replicating its Dashboard/Trip
+  Logbook sibling tabs prematurely — those land with Modules 14/17. Findings:
+  - `manageLogistics.php` has no auth check at all (not even `require_once auth_guard.php`) —
+    applied the same authenticate-only default used everywhere else.
+  - Caught a real security bug during curl verification, not just a translation nit: the
+    `assignedUser` Prisma relation was being returned to the client with the full `User` row
+    attached, **including `passwordHash`**. Fixed by mapping through the existing `toPublicUser()`
+    helper before the vehicle ever leaves the service layer. Re-verified the fix with curl before
+    moving on.
+  - `vehicleRegister.php` only checked registration-number uniqueness at the app level, and only on
+    add — edit could silently create a duplicate since there was no DB constraint.
+    `registrationNumber` is `@unique` in schema.prisma (a Module 1 improvement), so both add and
+    edit now surface the same friendly "already exists" message instead of a raw constraint error.
+  - `deleteVehicle.php` is a real hard `DELETE`, not a soft-delete flag — preserved as-is (Vehicle
+    has no status/isActive column, unlike brand/category/product).
+  - Caught and fixed a validation bug via the browser test itself: an unfilled `purchaseDate`
+    (empty string from `<input type="date">`) was failing `z.coerce.date()` outright instead of
+    falling back to its default — fixed with a preprocess step treating `''` as `undefined`.
+- **Module 12 (Fuel Logs)** is next.
