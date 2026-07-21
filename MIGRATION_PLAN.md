@@ -326,4 +326,15 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   fixed by giving `z.coerce.number()` an explicit base-type error message (the custom message on
   `.positive()` never runs if the base type check fails first). Same fix applied to the other
   required numeric fields for consistency.
-- **Module 13 (Maintenance Logs)** is next.
+- **Module 13 (Maintenance Logs):** done and verified end-to-end. Unlike Fuel Logs, this module
+  does have a real history table (joined with vehicle registration number, `ORDER BY service_date
+  DESC`), preserved as-is. The legacy page's own `<h3>` heading literally reads "Fuel Log" — a
+  copy-paste leftover from `fuelLog.php` that its own breadcrumb and card header two lines later
+  both contradict (correctly saying "Maintenance Log") — used the obviously-correct text rather
+  than reproducing the typo, same category of fix as the earlier `editBrand.php` table-name bug.
+  "Services Due Soon" preserves the legacy's exact predicate (`next_service_date <= today + 30
+  days`, no lower bound, so overdue-forever services still count) rather than "improving" it to
+  exclude already-overdue records — no evidence that was unintentional.
+- **Module 14 (Trip Logbook)** is next — the last of the vehicle-log modules, with real side
+  effects on `vehicles.status` (starting a trip requires `Available` → sets `On Trip`; ending one
+  sets it back and computes `distance_travelled`).
