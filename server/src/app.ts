@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes'
 import { userRouter } from './routes/user.routes'
 import { categoryRouter } from './routes/category.routes'
 import { brandRouter } from './routes/brand.routes'
+import { productRouter } from './routes/product.routes'
 
 export const app = express()
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter)
 app.use('/api/categories', categoryRouter)
 app.use('/api/brands', brandRouter)
+app.use('/api/products', productRouter)
 
 // Further module routers mount here as they land
 

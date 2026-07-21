@@ -9,6 +9,11 @@ export function findById(id: number) {
   return prisma.category.findUnique({ where: { id } })
 }
 
+// Mirrors the product form's category dropdown query: `WHERE categories_status = 1 AND categories_active = 1`.
+export function findAllAvailable() {
+  return prisma.category.findMany({ where: { status: 'Active', isActive: true } })
+}
+
 export function create(data: { name: string; isActive: boolean }) {
   return prisma.category.create({ data: { ...data, status: 'Active' } })
 }

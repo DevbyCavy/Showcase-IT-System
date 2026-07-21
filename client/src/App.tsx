@@ -4,6 +4,7 @@ import Signup from '@/pages/Signup'
 import ManageUsers from '@/pages/ManageUsers'
 import Categories from '@/pages/Categories'
 import Brands from '@/pages/Brands'
+import Products from '@/pages/Products'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -35,6 +36,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/categories" element={<Categories />} />
         <Route path="/brands" element={<Brands />} />
+        <Route path="/products" element={<Products />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>

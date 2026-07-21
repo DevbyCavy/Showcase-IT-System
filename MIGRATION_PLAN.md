@@ -222,4 +222,18 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   Refactored Categories + Brands onto one shared `SimpleCatalogManager` component/pattern since
   both entities are structurally and behaviorally identical (name + isActive + soft-delete status)
   — avoids duplicating the CRUD page a third time when Module 6 needs the same shape elsewhere.
-- **Module 6 (Products)** is next.
+- **Module 6 (Products):** done and verified end-to-end, including a real file upload through the
+  browser. Introduced a reusable `createUploader()` Multer factory (`server/src/middleware/upload.ts`)
+  for reuse by Orders/BOQ/vehicle-documents later. Two real bugs found and fixed during
+  verification (both confirmed broken before, working after):
+  - The update-info endpoint had accidentally reused the create endpoint's multipart-string
+    `isActive` schema for a JSON body — caught immediately by the curl test rejecting a real
+    boolean.
+  - Vite's dev proxy only forwarded `/api`, not `/uploads`, so uploaded images 404'd in the
+    browser even though the upload itself succeeded — added `/uploads` to the proxy.
+  Confirmed the product form's brand/category dropdowns correctly replicate the legacy's narrower
+  filter (`status=1 AND active=1`, not just `status=1` like the Brands/Categories list pages).
+  Product image paths are stored cleanly from Multer; the legacy's own path bug (createProduct.php
+  stored a wrong `../`-prefixed path that editProductImage.php then fixed inconsistently) has no
+  equivalent here since the storage layer is entirely new.
+- **Module 7 (Inventory / Issued Tools)** is next.
