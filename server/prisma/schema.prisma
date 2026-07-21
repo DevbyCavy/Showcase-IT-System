@@ -115,6 +115,16 @@ enum TripStatus {
   Completed
 }
 
+enum WorkTaskStatus {
+  Running
+  Completed
+}
+
+enum QuotationStatus {
+  Pending
+  Approved
+}
+
 // ---------------------------------------------------------------------------
 // Core / users
 // ---------------------------------------------------------------------------
@@ -137,6 +147,10 @@ model User {
   boqsCreated           Boq[]
   vehiclesAssigned      Vehicle[]
   vehicleTrips          VehicleTrip[]
+  workShifts            WorkShift[]
+  workTasks             WorkTask[]
+  quotationsSubmitted   Quotation[]       @relation("QuotationSubmittedBy")
+  quotationsApproved    Quotation[]       @relation("QuotationApprovedBy")
 
   @@map("users")
 }
@@ -412,4 +426,88 @@ model VehicleTrip {
   user    User    @relation(fields: [userId], references: [id])
 
   @@map("vehicle_trips")
+}
+
+// ---------------------------------------------------------------------------
+// Work Log Sheet — new feature, scoped from feature/work-log-sheet (never merged to main,
+// see MIGRATION_PLAN.md §10). One shift row per user per day; a shift has many tasks.
+// ---------------------------------------------------------------------------
+
+model WorkShift {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  shiftDate    DateTime  @db.Date
+  loginTime    DateTime
+  eveningShift Boolean   @default(false)
+  /// Legacy logout_time column — no endpoint on the source branch ever wrote to it either; kept
+  /// for schema parity, not exposed by any endpoint here.
+  logoutTime   DateTime?
+
+  user  User       @relation(fields: [userId], references: [id])
+  tasks WorkTask[]
+
+  @@unique([userId, shiftDate])
+  @@map("work_shifts")
+}
+
+model WorkTask {
+  id        Int            @id @default(autoincrement())
+  shiftId   Int
+  userId    Int
+  taskName  String
+  taskNotes String?
+  startTime DateTime
+  endTime   DateTime?
+  status    WorkTaskStatus @default(Running)
+  createdAt DateTime       @default(now())
+
+  shift WorkShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id])
+
+  @@map("work_tasks")
+}
+
+// ---------------------------------------------------------------------------
+// Quotations — new feature, scoped from feature/work-log-sheet (see MIGRATION_PLAN.md §10).
+// Legacy gated *submission* to a "Marketer" role already dropped during Module 2's role
+// normalization (a broken/unreachable role string) — open to any authenticated user here instead.
+// ---------------------------------------------------------------------------
+
+model Quotation {
+  id              Int             @id @default(autoincrement())
+  quotationNumber String          @unique
+  customerName    String
+  customerId      String?
+  projectName     String?
+  orderNumber     String?
+  quoteDate       DateTime        @db.Date
+  termsConditions String
+  designFile      String?
+  subtotal        Decimal         @db.Decimal(12, 2)
+  total           Decimal         @db.Decimal(12, 2)
+  status          QuotationStatus @default(Pending)
+  submittedById   Int
+  approvedById    Int?
+  approvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+
+  submittedBy User            @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
+  approvedBy  User?           @relation("QuotationApprovedBy", fields: [approvedById], references: [id])
+  items       QuotationItem[]
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id          Int     @id @default(autoincrement())
+  quotationId Int
+  description String
+  quantity    Decimal @db.Decimal(12, 2)
+  unitPrice   Decimal @db.Decimal(12, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@map("quotation_items")
 }

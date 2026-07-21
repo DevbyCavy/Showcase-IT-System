@@ -428,10 +428,25 @@ feature/work-log-sheet:<path>` (branch never checked out or modified). Three pie
    the existing shadcn semantic tokens, 18px card radius, mobile off-canvas toggle, and a
    notifications bell (pending requisitions count + up to 5 pending quotations). Verified visually
    at both desktop and mobile viewports.
-2. **Work Log Sheet (new feature)** — shift login, task start/stop with a live timer, two fixed
-   break windows (Tea 08:30–09:00, Lunch 13:00–13:40) that block starting a task, a live adherence
-   percentage, an evening-shift toggle, and a weekly view. Needs two new tables (`work_shifts`,
-   `work_tasks`) not present in the migrated schema.
+2. **Work Log Sheet (done).** Shift login, task start/stop with a live timer, two fixed break
+   windows (Tea 08:30–09:00, Lunch 13:00–13:40) that block starting a task, a live adherence
+   percentage, an evening-shift toggle, and a weekly view. New tables `work_shifts`/`work_tasks`
+   (`WorkShift`/`WorkTask` models, `@@unique([userId, shiftDate])` for idempotent shift login).
+   `startTask`/`stopTask`/`toggleEveningShift` all use the same atomic guard pattern as
+   `processRequisition.php` (`updateMany` with a status/ownership WHERE-guard). One real behavior
+   improvement over the legacy PHP: `toggleEveningShift` used MySQL `affected_rows`, which is 0 (and
+   so reported as a failure) when re-toggling an already-`evening_shift=1` row — Prisma's
+   `updateMany` count reflects rows matching the WHERE clause regardless of whether the SET
+   changes anything, so re-toggling now correctly no-ops as a success instead of surfacing "Log in
+   first." Legacy rendered the week view as a pre-built HTML fragment (`getWeekLog.php`); here the
+   endpoint returns raw shift/task data and the React `WorkLogSheet`/`TimelineRow` components render
+   it, with the fixed schedule/break windows computed once server-side as the single source of
+   truth instead of being duplicated in every consuming template. Embedded below the Orders section
+   on the shared `/dashboard` route for every role, matching `includes/workLogSheet.php`'s
+   any-logged-in-role placement. Verified via curl (idempotent shift start, running-task guard,
+   break-time guard, atomic stop, idempotent evening-shift toggle, week aggregation) and a full
+   Playwright browser pass (log in, start/stop task, evening shift, week modal — screenshots
+   confirmed correct rendering).
 3. **Quotations (new feature, decided in scope now rather than deferred to a Marketer role)** —
    customer quotations with line items, a design-file attachment, server-recomputed totals (never
    trust client math), Super-Admin-only approval (same atomic Pending-only guard pattern as

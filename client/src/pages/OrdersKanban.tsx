@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as ordersApi from '@/api/orders'
 import { OrderCard } from '@/components/OrderCard'
+import { WorkLogSheet } from '@/components/WorkLogSheet'
 
 // Translated from orders.php — the working kanban view embedded on every dashboard in the legacy
 // app (distinct from manageOrder.php/manageOrderP.php's separate Add/Edit/View tabs — see /orders/manage).
@@ -47,6 +48,10 @@ export default function OrdersKanban() {
         {groups[tab].map((order) => (
           <OrderCard key={order.id} order={order} />
         ))}
+      </div>
+
+      <div className="mt-8">
+        <WorkLogSheet />
       </div>
     </div>
   )
