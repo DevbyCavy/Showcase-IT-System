@@ -1,0 +1,21 @@
+import { useAuth } from '@/hooks/useAuth'
+import { Button } from '@/components/ui/button'
+
+export default function DashboardPlaceholder({ title }: { title: string }) {
+  const { user, logout } = useAuth()
+
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center gap-4">
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      <p className="text-muted-foreground text-sm">
+        Signed in as {user?.name} {user?.surname} ({user?.role})
+      </p>
+      <p className="text-muted-foreground text-xs">
+        Real dashboard content lands with Module 17 — this proves login + RBAC end to end.
+      </p>
+      <Button variant="outline" onClick={() => logout()}>
+        Sign out
+      </Button>
+    </div>
+  )
+}

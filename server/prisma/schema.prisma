@@ -1,0 +1,415 @@
+// Showcase IT — Prisma schema (PostgreSQL)
+//
+// Translated from stock.sql plus tables that only exist in code (see MIGRATION_PLAN.md §3):
+// requisitions, vehicles, vehicle_documents, maintenance_logs, fuel_logs, vehicle_trips, boq,
+// boq_items. Column-level decisions worth knowing when reading this file:
+//
+// - All primary keys stay as sequential Int (not UUID). This is an internal admin system where
+//   every entity already has a human-facing sequential/formatted identifier (order_number,
+//   req_number, boq_number, registration_number) — UUIDs would add no benefit here, so the "use
+//   UUIDs where beneficial" allowance from the brief is deliberately not used anywhere.
+// - `brand.brand_status` / `category.categories_status` / `product.status` were MySQL int(11)
+//   columns used as a two-state soft-delete flag (1 = visible, 2 = removed — see
+//   removeBrand.php/removeCategories.php/removeProduct.php). Modeled as the `RecordStatus` enum
+//   for clarity; `brand_active` / `categories_active` / `product.active` are a *different*,
+//   business-meaning flag ("Available" badge) and stay separate as `isActive Boolean`.
+// - Columns that were MySQL varchar despite holding numbers (product.quantity/rate,
+//   orders_items.quantity/rate/total, boq_items.quantity, vehicle numeric fields) are typed
+//   properly here (Int/Decimal) — an intentional, explicitly-allowed improvement. Application
+//   code owns parsing/validating on the way in; no legacy code depended on these being strings.
+// - OrderStatus/DocumentType/etc. enum members use PascalCase (Postgres enum identifier rules)
+//   with @map(...) back to the exact legacy string where it contained a space, so displayed
+//   values match the old UI exactly (e.g. "On Going", "Vehicle License").
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Normalized per MIGRATION_PLAN.md §2.2 — the 7 live, self-consistent roles.
+enum Role {
+  SuperAdmin      @map("Super Admin")
+  StoresAdmin     @map("Stores Admin")
+  ProjectManager  @map("Project Manager")
+  Accountant      @map("Accountant")
+  GraphicDesigner @map("Graphic Designer")
+  ProductionTeam  @map("Production Team")
+  Logistics       @map("Logistics")
+}
+
+/// Soft-delete flag shared by brand/category/product (legacy: 1 = Active, 2 = Deleted).
+enum RecordStatus {
+  Active
+  Deleted
+}
+
+enum OrderStatus {
+  New
+  Assigned
+  OnGoing   @map("On Going")
+  Completed
+}
+
+enum RequisitionType {
+  Food
+  Transport
+  Tool
+  Other
+}
+
+enum RequisitionStatus {
+  Pending
+  Processed
+  Approved
+  Rejected
+}
+
+enum FuelType {
+  Petrol
+  Diesel
+  Hybrid
+  Electric
+}
+
+enum VehicleStatus {
+  Available
+  OnTrip           @map("On Trip")
+  UnderMaintenance @map("Under Maintenance")
+  OutOfService     @map("Out of Service")
+}
+
+enum VehicleDocumentType {
+  VehicleLicense     @map("Vehicle License")
+  Insurance
+  FitnessCertificate @map("Fitness Certificate")
+  RadioLicense       @map("Radio License")
+  Other
+}
+
+enum VehicleDocumentStatus {
+  Valid
+  ExpiringSoon @map("Expiring Soon")
+  Expired
+}
+
+enum MaintenanceType {
+  Service
+  OilChange       @map("Oil Change")
+  TyreReplacement @map("Tyre Replacement")
+  BrakeRepair     @map("Brake Repair")
+  EngineRepair    @map("Engine Repair")
+  AccidentRepair  @map("Accident Repair")
+  Other
+}
+
+enum TripStatus {
+  Active
+  Completed
+}
+
+// ---------------------------------------------------------------------------
+// Core / users
+// ---------------------------------------------------------------------------
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  name         String
+  surname      String
+  userType     Role
+  department   String
+  passwordHash String
+  email        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderAssignments      OrderAssignment[]
+  requisitionsSubmitted Requisition[]     @relation("RequisitionSubmittedBy")
+  requisitionsProcessed Requisition[]     @relation("RequisitionProcessedBy")
+  boqsCreated           Boq[]
+  vehiclesAssigned      Vehicle[]
+  vehicleTrips          VehicleTrip[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog: brand / category / product
+// ---------------------------------------------------------------------------
+
+model Brand {
+  id       Int          @id @default(autoincrement())
+  name     String
+  isActive Boolean      @default(true)
+  status   RecordStatus @default(Active)
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Category {
+  id       Int          @id @default(autoincrement())
+  name     String
+  isActive Boolean      @default(true)
+  status   RecordStatus @default(Active)
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id         Int          @id @default(autoincrement())
+  name       String
+  code       String
+  imageUrl   String
+  brandId    Int
+  categoryId Int
+  quantity   Int          @default(0)
+  rate       Decimal      @db.Decimal(12, 2)
+  isActive   Boolean      @default(true)
+  status     RecordStatus @default(Active)
+
+  brand       Brand        @relation(fields: [brandId], references: [id])
+  category    Category     @relation(fields: [categoryId], references: [id])
+  issuedTools IssuedTool[]
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model IssuedTool {
+  id               Int       @id @default(autoincrement())
+  productId        Int
+  dateOfCollection DateTime  @db.Date
+  collectorName    String
+  toolName         String
+  quantityIssued   Int
+  jobName          String?
+  dateOfReturn     DateTime? @db.Date
+  createdAt        DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("issued_tools")
+}
+
+// ---------------------------------------------------------------------------
+// Orders / BOQ
+// ---------------------------------------------------------------------------
+
+model Order {
+  id               Int         @id @default(autoincrement())
+  orderNumber      String      @unique
+  orderName        String
+  description      String?
+  startDatetime    DateTime?
+  location         String
+  deadlineDatetime DateTime?
+  boqFile          String?
+  artworkFile      String?
+  status           OrderStatus @default(New)
+  /// Set when status flips to OnGoing; drives the 24h auto-complete window (see MIGRATION_PLAN.md §4 Module 8).
+  ongoingSince     DateTime?
+  createdAt        DateTime    @default(now())
+
+  items       OrderItem[]
+  assignments OrderAssignment[]
+  boqs        Boq[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         Int     @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  quantity   Decimal @db.Decimal(12, 2)
+  rate       Decimal @db.Decimal(12, 2)
+  total      Decimal @db.Decimal(12, 2)
+  /// Legacy orders_item_status column — no reachable code path reads/writes this today; kept for parity.
+  itemStatus Int     @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model OrderAssignment {
+  id      Int @id @default(autoincrement())
+  orderId Int
+  userId  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("order_assignments")
+}
+
+/// Scoped from feature/boq-stock-requisitions per MIGRATION_PLAN.md §2.1.
+model Boq {
+  id          Int      @id @default(autoincrement())
+  boqNumber   String   @unique
+  orderId     Int
+  orderNumber String
+  eventName   String
+  clientName  String?
+  location    String
+  createdById Int
+  createdAt   DateTime @default(now())
+
+  order     Order     @relation(fields: [orderId], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+  items     BoqItem[]
+
+  @@map("boqs")
+}
+
+model BoqItem {
+  id          Int     @id @default(autoincrement())
+  boqId       Int
+  /// Free-text product name typed on the BOQ form — not linked to the product catalog (matches createBOQ.php).
+  productName String
+  description String?
+  unit        String?
+  quantity    Decimal @db.Decimal(12, 2)
+
+  boq Boq @relation(fields: [boqId], references: [id], onDelete: Cascade)
+
+  @@map("boq_items")
+}
+
+// ---------------------------------------------------------------------------
+// Requisitions
+// ---------------------------------------------------------------------------
+
+model Requisition {
+  id             Int               @id @default(autoincrement())
+  reqNumber      String            @unique
+  projectManager String
+  eventName      String
+  location       String
+  eventDate      DateTime          @db.Date
+  teamMembers    String?
+  reqType        RequisitionType
+  /// Custom label when reqType == Other (see createRequisition.php — also duplicated into reqType itself).
+  reqTypeOther   String?
+  submittedById  Int
+  status         RequisitionStatus @default(Pending)
+  processedById  Int?
+  processedAt    DateTime?
+  createdAt      DateTime          @default(now())
+
+  submittedBy User  @relation("RequisitionSubmittedBy", fields: [submittedById], references: [id])
+  processedBy User? @relation("RequisitionProcessedBy", fields: [processedById], references: [id])
+
+  @@map("requisitions")
+}
+
+// ---------------------------------------------------------------------------
+// Logistics / vehicles
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id                 Int           @id @default(autoincrement())
+  registrationNumber String        @unique
+  make               String
+  model              String
+  vehicleYear        Int
+  color              String
+  fuelType           FuelType
+  capacity           String
+  department         String
+  assignedUserId     Int?
+  status             VehicleStatus @default(Available)
+  purchaseDate       DateTime      @db.Date
+  notes              String?
+
+  assignedUser User?             @relation(fields: [assignedUserId], references: [id])
+  documents    VehicleDocument[]
+  maintenance  MaintenanceLog[]
+  fuelLogs     FuelLog[]
+  trips        VehicleTrip[]
+
+  @@map("vehicles")
+}
+
+model VehicleDocument {
+  id             Int                   @id @default(autoincrement())
+  vehicleId      Int
+  documentType   VehicleDocumentType
+  documentNumber String
+  issueDate      DateTime              @db.Date
+  expiryDate     DateTime              @db.Date
+  reminderDays   Int
+  status         VehicleDocumentStatus
+  uploadedFile   String?
+  notes          String?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_documents")
+}
+
+model MaintenanceLog {
+  id                  Int             @id @default(autoincrement())
+  vehicleId           Int
+  maintenanceType     MaintenanceType
+  serviceProvider     String?
+  serviceDate         DateTime        @db.Date
+  odometerReading     Decimal?        @db.Decimal(12, 2)
+  serviceCost         Decimal?        @db.Decimal(12, 2)
+  nextServiceDate     DateTime?       @db.Date
+  nextServiceOdometer Decimal?        @db.Decimal(12, 2)
+  notes               String?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_logs")
+}
+
+model FuelLog {
+  id              Int      @id @default(autoincrement())
+  vehicleId       Int
+  fuelDate        DateTime @db.Date
+  odometerReading Decimal  @db.Decimal(12, 2)
+  litres          Decimal  @db.Decimal(10, 2)
+  fuelCost        Decimal  @db.Decimal(12, 2)
+  fuelStation     String?
+  receiptNumber   String?
+  notes           String?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("fuel_logs")
+}
+
+model VehicleTrip {
+  id                Int        @id @default(autoincrement())
+  vehicleId         Int
+  userId            Int
+  destination       String
+  purpose           String?
+  departureDatetime DateTime
+  returnDatetime    DateTime?
+  odometerStart     Decimal    @db.Decimal(12, 2)
+  odometerEnd       Decimal?   @db.Decimal(12, 2)
+  distanceTravelled Decimal?   @db.Decimal(12, 2)
+  remarks           String?
+  tripStatus        TripStatus @default(Active)
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("vehicle_trips")
+}
