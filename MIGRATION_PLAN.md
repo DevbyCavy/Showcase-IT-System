@@ -335,6 +335,18 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   "Services Due Soon" preserves the legacy's exact predicate (`next_service_date <= today + 30
   days`, no lower bound, so overdue-forever services still count) rather than "improving" it to
   exclude already-overdue records — no evidence that was unintentional.
-- **Module 14 (Trip Logbook)** is next — the last of the vehicle-log modules, with real side
-  effects on `vehicles.status` (starting a trip requires `Available` → sets `On Trip`; ending one
-  sets it back and computes `distance_travelled`).
+- **Module 14 (Trip Logbook):** done and verified end-to-end — this closes out the four vehicle
+  modules (11–14). The vehicle-status side effects (start requires `Available` → sets `OnTrip`;
+  end sets `Available` back and computes `distanceTravelled`) are now atomic Prisma transactions,
+  replacing the legacy's unguarded separate queries; double-booking a busy vehicle is correctly
+  rejected. Two things caught and fixed before landing:
+  - The transaction originally updated the vehicle status *after* creating/updating the trip
+    record with its `vehicle` relation included — meaning the API response's nested `vehicle.status`
+    reflected the pre-update value for one request cycle (the DB itself was always correct on the
+    next fetch). Reordered so the vehicle flips first, so the response is never stale.
+  - Same `passwordHash`-leak class of bug as Module 11: the trip's `user` (driver) relation was
+    being returned raw. Mapped through `toPublicUser()` from the start this time, having learned
+    from the Vehicles module.
+- **Module 15 (Vehicle Documents)** is next — `includes/vehicles/vehicleDocuments.php`, with a
+  known legacy bug to fix (a typo'd variable means uploaded document files never actually save
+  their path, despite the upload itself succeeding on disk).

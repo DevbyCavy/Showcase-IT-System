@@ -15,6 +15,11 @@ export function findByRegistrationNumber(registrationNumber: string) {
   return prisma.vehicle.findUnique({ where: { registrationNumber } })
 }
 
+// Mirrors tripLogbook.php's "New Trip" vehicle dropdown: `WHERE status = 'Available'`.
+export function findAvailable() {
+  return prisma.vehicle.findMany({ where: { status: 'Available' }, orderBy: { registrationNumber: 'asc' } })
+}
+
 export interface VehicleData {
   registrationNumber: string
   make: string

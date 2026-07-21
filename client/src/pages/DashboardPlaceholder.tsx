@@ -50,6 +50,9 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/maintenance-logs" className="text-sm underline">
         Maintenance Log
       </Link>
+      <Link to="/trip-logbook" className="text-sm underline">
+        Trip Logbook
+      </Link>
       {user?.role === 'SuperAdmin' && (
         <>
           <Link to="/users" className="text-sm underline">

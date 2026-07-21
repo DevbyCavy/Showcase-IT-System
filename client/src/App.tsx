@@ -15,6 +15,7 @@ import ProcessRequisitions from '@/pages/ProcessRequisitions'
 import Vehicles from '@/pages/Vehicles'
 import FuelLogs from '@/pages/FuelLogs'
 import MaintenanceLogs from '@/pages/MaintenanceLogs'
+import TripLogbook from '@/pages/TripLogbook'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -56,6 +57,7 @@ function App() {
         <Route path="/vehicles" element={<Vehicles />} />
         <Route path="/fuel-logs" element={<FuelLogs />} />
         <Route path="/maintenance-logs" element={<MaintenanceLogs />} />
+        <Route path="/trip-logbook" element={<TripLogbook />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
