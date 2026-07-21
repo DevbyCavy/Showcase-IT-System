@@ -206,4 +206,14 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
     /api/users/:id`, Super-Admin-gated), completing the CRUD every other entity already has.
   - Verified via curl (RBAC, validation, generic-uniqueness errors) and a full browser flow
     (signup → login → Manage Users → search → edit → delete).
-- **Module 4 (Categories)** is next.
+- **Module 4 (Categories):** done and verified end-to-end (curl + full browser CRUD flow).
+  `categories.php` requires a session but calls no `requireRole()` — any authenticated user can
+  manage categories; preserved exactly (`authenticate` only, no role gate). Confirmed the "Status"
+  field on the add/edit forms actually writes `categories_active` (the `isActive` business flag),
+  never `categories_status` (the separate soft-delete flag, only ever set on create/remove) —
+  modeled as two distinct fields per schema.prisma's existing `RecordStatus`/`isActive` split.
+  Dropped one piece of dead markup (`categories.php` has a leftover "Edit Brand" modal that no
+  button ever targets — copy-paste residue, not a feature) and replaced the DataTables auto-search
+  with one working TanStack Table global filter (the page's own `#categorySearch` input was never
+  wired to anything in `categories.js` — only DataTables' own injected search box worked).
+- **Module 5 (Brands)** is next.

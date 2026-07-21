@@ -7,6 +7,7 @@ import { env } from './config/env'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { authRouter } from './routes/auth.routes'
 import { userRouter } from './routes/user.routes'
+import { categoryRouter } from './routes/category.routes'
 
 export const app = express()
 
@@ -26,6 +27,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter)
+app.use('/api/categories', categoryRouter)
 
 // Further module routers mount here as they land
 

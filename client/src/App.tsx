@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '@/pages/Login'
 import Signup from '@/pages/Signup'
 import ManageUsers from '@/pages/ManageUsers'
+import Categories from '@/pages/Categories'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -28,6 +29,11 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/access-denied" element={<AccessDenied />} />
+
+      {/* categories.php requires only a session, no specific role - matches ProtectedRoute with no `roles`. */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/categories" element={<Categories />} />
+      </Route>
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
         <Route path="/dashboard/super-admin" element={<DashboardPlaceholder title="Super Admin Dashboard" />} />
