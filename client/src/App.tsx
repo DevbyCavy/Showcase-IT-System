@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '@/pages/Login'
+import Signup from '@/pages/Signup'
+import ManageUsers from '@/pages/ManageUsers'
 import DashboardPlaceholder from '@/pages/DashboardPlaceholder'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
@@ -24,10 +26,12 @@ function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/access-denied" element={<AccessDenied />} />
 
       <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
         <Route path="/dashboard/super-admin" element={<DashboardPlaceholder title="Super Admin Dashboard" />} />
+        <Route path="/users" element={<ManageUsers />} />
       </Route>
       <Route element={<ProtectedRoute roles={['StoresAdmin']} />}>
         <Route path="/dashboard/stores-admin" element={<DashboardPlaceholder title="Stores Admin Dashboard" />} />

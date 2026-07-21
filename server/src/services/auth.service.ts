@@ -8,22 +8,11 @@ import bcrypt from 'bcrypt'
 import { ApiError } from '../middleware/errorHandler'
 import * as userRepository from '../repositories/user.repository'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from './token.service'
+import { toPublicUser } from '../utils/mapUser'
 
 export interface LoginInput {
   username: string
   password: string
-}
-
-function toPublicUser(user: { id: number; username: string; name: string; surname: string; userType: string; department: string; email: string }) {
-  return {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    surname: user.surname,
-    role: user.userType,
-    department: user.department,
-    email: user.email,
-  }
 }
 
 export async function login({ username, password }: LoginInput) {

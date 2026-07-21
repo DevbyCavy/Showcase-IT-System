@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 
@@ -13,6 +14,11 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <p className="text-muted-foreground text-xs">
         Real dashboard content lands with Module 17 — this proves login + RBAC end to end.
       </p>
+      {user?.role === 'SuperAdmin' && (
+        <Link to="/users" className="text-sm underline">
+          Manage Users
+        </Link>
+      )}
       <Button variant="outline" onClick={() => logout()}>
         Sign out
       </Button>

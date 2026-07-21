@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,6 +68,13 @@ export default function Login() {
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Signing in…' : 'Sign In'}
           </Button>
+
+          <p className="flex items-center justify-center gap-2 text-sm">
+            <span>No Account?</span>
+            <Link to="/signup" className="hover:underline">
+              Sign Up
+            </Link>
+          </p>
         </form>
       </div>
     </div>

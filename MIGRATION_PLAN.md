@@ -196,4 +196,14 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   against the real DB (correct role resolution, generic invalid-credentials message preserved,
   no-token/wrong-role rejection), and the React login page was verified visually in a real
   browser (Playwright) through to a role-gated dashboard placeholder.
-- **Module 3 (Users)** is next.
+- **Module 3 (Users):** done and verified end-to-end. Two real gaps found in the legacy code and
+  resolved per Calvin's decisions:
+  - `signup.php` has no `auth_guard` at all — public self-registration with a role picker
+    (excluding Super Admin) is preserved exactly as `POST /api/users` (no auth required).
+  - `manage_users.php`'s Edit/Delete links point to `update_user.php` /
+    `php_action/delete_user.php`, neither of which exists anywhere in the repo or its git
+    history — dead links today. Decided to implement real Edit/Delete (`PUT`/`DELETE
+    /api/users/:id`, Super-Admin-gated), completing the CRUD every other entity already has.
+  - Verified via curl (RBAC, validation, generic-uniqueness errors) and a full browser flow
+    (signup → login → Manage Users → search → edit → delete).
+- **Module 4 (Categories)** is next.
