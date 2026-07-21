@@ -283,4 +283,17 @@ To run locally: `cd server && npx tsx src/server.ts` (API on :4000) and `cd clie
   - HTML/CSS layout copied verbatim from `downloadBOQ.php`; only the "Date Created" field was
     reformatted from a raw ISO timestamp to a readable date, since Puppeteer receives a real `Date`
     object where DOMPDF received a pre-formatted MySQL datetime string.
-- **Module 10 (Requisitions)** is next.
+- **Module 10 (Requisitions):** done and verified end-to-end (curl + full browser submit→process
+  flow across two roles). One real data-modeling issue found and resolved:
+  - `createRequisition.php` computes `$finalType = ($req_type === 'Other') ? $req_type_other : $req_type`
+    and stores **that** into the `req_type` column — meaning the legacy DB column holds arbitrary
+    free text whenever "Other" is chosen, not one of the four fixed values. Storing that directly
+    would conflict with `RequisitionType` being a Postgres enum (already migrated in Module 1).
+    Kept `reqType` as the clean enum (the actual category) and `reqTypeOther` holding the custom
+    text as originally intended, then compute a `displayType` field at read time
+    (`reqType === 'Other' ? reqTypeOther : reqType`) — reproduces the exact same user-visible
+    outcome (the badge shows "Custom Stage Setup", not "Other") without overloading an enum column
+    with free text, which would have broken any future filtering/reporting by category.
+  - `processRequisition.php`'s `WHERE status = 'Pending'` guard (preventing double-processing) is
+    preserved as an atomic `updateMany` with the same predicate, not a separate check-then-update.
+- **Module 11 (Logistics / Vehicles)** is next.

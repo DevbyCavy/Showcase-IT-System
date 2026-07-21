@@ -38,10 +38,18 @@ export default function DashboardPlaceholder({ title }: { title: string }) {
       <Link to="/boq" className="text-sm underline">
         Bill Of Quantities
       </Link>
+      <Link to="/requisitions" className="text-sm underline">
+        Requisitions
+      </Link>
       {user?.role === 'SuperAdmin' && (
-        <Link to="/users" className="text-sm underline">
-          Manage Users
-        </Link>
+        <>
+          <Link to="/users" className="text-sm underline">
+            Manage Users
+          </Link>
+          <Link to="/requisitions/process" className="text-sm underline">
+            Process Requisitions
+          </Link>
+        </>
       )}
       <Button variant="outline" onClick={() => logout()}>
         Sign out
