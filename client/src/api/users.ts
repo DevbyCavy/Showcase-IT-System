@@ -34,6 +34,7 @@ export interface AssignableUser {
   id: number
   name: string
   surname: string
+  department: string
 }
 
 interface AssignableUserListResponse {

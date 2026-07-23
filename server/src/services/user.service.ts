@@ -15,10 +15,12 @@ export async function list() {
 
 // Mirrors createOrder.php's `SELECT user_id, name, surname FROM users ORDER BY name ASC` — the
 // assignee dropdown on the Add Order form, open to any authenticated user (unlike the full user
-// management list, which manage_users.php gates to Super Admin).
+// management list, which manage_users.php gates to Super Admin). Also reused by the Office Task
+// Calendar's department -> assignee picker (mirrors superDashboard.php's
+// `SELECT user_id, name, surname, department FROM users`), hence `department` on the response.
 export async function listAssignable() {
   const users = await userRepository.findAllOrderedByName()
-  return users.map((u) => ({ id: u.id, name: u.name, surname: u.surname }))
+  return users.map((u) => ({ id: u.id, name: u.name, surname: u.surname, department: u.department }))
 }
 
 export async function signup(input: SignupBody) {

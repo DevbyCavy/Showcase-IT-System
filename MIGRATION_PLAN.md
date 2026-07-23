@@ -413,21 +413,23 @@ ambiguous. `client/` and `server/` are feature-complete replacements for the PHP
 the repo root, which remains untouched — retiring it is a separate decision for Calvin to make
 once he's had a chance to use the new system.
 
-## 10. Post-migration: modern UI + Work Log Sheet + Quotations
+## 10. Post-migration: modern UI + Work Log Sheet + Quotations + Office Task Calendar
 
-After the migration finished, Calvin asked to bring over UI/UX work that exists on the
-never-merged `feature/work-log-sheet` branch (itself built on `feature/super-admin-modern-ui`) —
-none of this was ever part of `main`, so it's new scope on top of the completed 1:1 migration, not
-a translation of anything already covered above. Investigated read-only via `git show
-feature/work-log-sheet:<path>` (branch never checked out or modified). Three pieces:
+After the migration finished, Calvin asked to bring over UI/UX work that exists on several
+never-merged branches (`feature/work-log-sheet`, built on `feature/super-admin-modern-ui`; later
+`feature/office-task-calendar`) — none of this was ever part of `main`, so it's new scope on top of
+the completed 1:1 migration, not a translation of anything already covered above. Investigated
+read-only via `git show <branch>:<path>` (branches never checked out or modified).
 
-1. **Modern AppShell (done).** The branch's dark-sidebar shell (`includes/sidebarSuper.php` +
-   `custom/css/modern-dashboard.css`) replaced the plain top-nav `AppShell` from Module 17: fixed
-   250px sidebar with an ink→ink-soft gradient, Poppins font, brand-orange (`#F15A2C`)/brand-purple
-   (`#8B5CF6`) accents added as new Tailwind tokens (`bg-ink`, `bg-brand-orange`, etc.) alongside
-   the existing shadcn semantic tokens, 18px card radius, mobile off-canvas toggle, and a
-   notifications bell (pending requisitions count + up to 5 pending quotations). Verified visually
-   at both desktop and mobile viewports.
+1. **Modern AppShell (done, later corrected — see §10.6).** The branch's dark-sidebar shell
+   (`includes/sidebarSuper.php` + `custom/css/modern-dashboard.css`) replaced the plain top-nav
+   `AppShell` from Module 17: fixed 250px sidebar, Poppins font, brand-orange (`#F15A2C`)/brand-purple
+   (`#8B5CF6`) accents added as new Tailwind tokens (`bg-brand-orange`, etc.) alongside the existing
+   shadcn semantic tokens, 18px card radius, mobile off-canvas toggle, and a notifications bell
+   (pending requisitions count + up to 5 pending quotations). Verified visually at both desktop and
+   mobile viewports. The initial pass used the branch's dark ink sidebar color scheme — Calvin didn't
+   like it and asked for it back to white/bordered/black-text; see §10.6 for the correction (kept
+   the sidebar structure, not its original dark colors).
 2. **Work Log Sheet (done).** Shift login, task start/stop with a live timer, two fixed break
    windows (Tea 08:30–09:00, Lunch 13:00–13:40) that block starting a task, a live adherence
    percentage, an evening-shift toggle, and a weekly view. New tables `work_shifts`/`work_tasks`
@@ -477,16 +479,49 @@ browser flow before committing.
    a time — a closer match to the legacy's single-active-panel behavior than the plain tabs used
    elsewhere), the Work Log Sheet widget, a Pending Requisitions quick-process list, a Pending
    Quotations quick-approve list, a profile card (avatar, role, Total Jobs/Current Jobs/Rating stat
-   tiles), a deadline mini-calendar (marks any date with an order deadline, month-navigable), and a
-   recent-BOQs list with PDF download. `totalJobs`/`currentJobs` are derived client-side from the
-   orders already fetched for the carousel (each order's `assignedUsers` is filtered against the
-   current user) rather than adding a new aggregate endpoint — the data was already on the page.
-   The `4.8` rating is a genuine legacy placeholder (`$dummyRating = 4.8; // placeholder — real
-   rating source TBD`), preserved as-is, not wired to anything real. The legacy's order
-   auto-transition "lazy cron" (New/Assigned → OnGoing at deadline, → Completed 24h later) already
-   lives in `order.repository.ts`'s `autoTransition()` from Module 8 and runs on every `orders.list()`
-   call, so the dashboard gets it for free. `/dashboard` now renders `SuperAdminDashboard` only for
-   the Super Admin role; every other role still gets the plain `OrdersKanban` (unchanged). Verified
-   with a full Playwright pass: initial render with real pending-requisition data, carousel cycling
-   through all three tabs, and the mobile breakpoint (sidebar collapses, side column stacks below
-   main column).
+   tiles), the Office Task Calendar (§10.5), and a recent-BOQs list with PDF download.
+   `totalJobs`/`currentJobs` are derived client-side from the orders already fetched for the
+   carousel (each order's `assignedUsers` is filtered against the current user) rather than adding a
+   new aggregate endpoint — the data was already on the page. The `4.8` rating is a genuine legacy
+   placeholder (`$dummyRating = 4.8; // placeholder — real rating source TBD`), preserved as-is, not
+   wired to anything real. The legacy's order auto-transition "lazy cron" (New/Assigned → OnGoing at
+   deadline, → Completed 24h later) already lives in `order.repository.ts`'s `autoTransition()` from
+   Module 8 and runs on every `orders.list()` call, so the dashboard gets it for free. `/dashboard`
+   now renders `SuperAdminDashboard` only for the Super Admin role; every other role still gets the
+   plain `OrdersKanban` (unchanged). Verified with a full Playwright pass: initial render with real
+   pending-requisition data, carousel cycling through all three tabs, and the mobile breakpoint
+   (sidebar collapses, side column stacks below main column).
+
+5. **Office Task Calendar (done).** Scoped from `feature/office-task-calendar` (never merged to
+   main). Replaces the original deadline mini-calendar with the legacy's "family calendar" widget:
+   a month/week grid with colored dots (red = personal To-Do, blue = a job assigned to you, green =
+   a job you assigned) and a day panel listing that date's items. Clicking a day opens a modal to
+   add either a To-Do (writes to a new lightweight `Memo` model — title/description/dueDate/status,
+   just enough to back this widget's quick-add, *not* the full separate Marketer Memos feature with
+   its due-reminder popup, which lives on its own unrequested branch and is out of scope) or a Job
+   (writes to the new `OfficeTask` model — assign a task to any user in any department, the actual
+   "office task management" entity, translated from `createOfficeTask.php`/`office_tasks`). The
+   department → assignee picker reuses the existing `GET /users/assignable` endpoint (open to any
+   authenticated user, same one Orders' assignee dropdown uses) with `department` added to its
+   response — a small additive field, safe for the existing Orders caller to ignore.
+   `GET /task-calendar` aggregates all three sources (own memos, tasks assigned to you, tasks you
+   assigned) for a given month, mirroring `getTaskCalendar.php`'s three queries; the widget polls
+   every 25s like the legacy's `setInterval(fetchAndRender, 25000)` so a newly-assigned job appears
+   without a reload. Verified via a full Playwright pass: adding a To-Do (shows as a red dot/card),
+   adding a Job assigned to self (correctly appears as both "you assigned" and "assigned to you"
+   since assignedBy === assignedTo), and the month grid/day panel rendering.
+
+6. **Style correction (done).** The AppShell/dashboard rebuild in §10.1–10.4 pulled feature/work-log
+   -sheet's dark-ink sidebar and dark widget panels (profile card, mini-calendar) wholesale — Calvin
+   didn't want that; he wanted the original app's actual look back: white backgrounds, bordered
+   cards/forms, black text, keeping the sidebar *structure* (it still replaces 5 duplicated header
+   files) but not its color scheme. Fixed: `AppShell` sidebar is now `bg-card`/`border-r` with black
+   nav text (bordered active/hover states instead of a solid dark fill); the dashboard's profile
+   card and BOQ date badge are now white/bordered instead of `bg-ink`; the Work Log Sheet's
+   "Evening Shift Active" badge is now a bordered brand-orange chip instead of a dark pill. Orange
+   accent tiles (order cards, requisition/quotation icon chips) were kept as-is — those are small
+   colored accents matching the legacy's *own* design, not part of the dark-theme complaint. Worth
+   noting: the Office Task Calendar (§10.5) needed no such fix — its actual legacy CSS
+   (`custom/css/modern-dashboard.css`) was already explicitly changed to a white `.cal-card` in the
+   same commit that introduced it (comment: "light 'family calendar' style"), so building it
+   faithfully already matched the corrected direction.

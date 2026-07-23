@@ -125,6 +125,16 @@ enum QuotationStatus {
   Approved
 }
 
+enum MemoStatus {
+  Pending
+  Done
+}
+
+enum OfficeTaskStatus {
+  Pending
+  Completed
+}
+
 // ---------------------------------------------------------------------------
 // Core / users
 // ---------------------------------------------------------------------------
@@ -151,6 +161,9 @@ model User {
   workTasks             WorkTask[]
   quotationsSubmitted   Quotation[]       @relation("QuotationSubmittedBy")
   quotationsApproved    Quotation[]       @relation("QuotationApprovedBy")
+  memosCreated          Memo[]
+  officeTasksAssignedBy OfficeTask[]      @relation("OfficeTaskAssignedBy")
+  officeTasksAssignedTo OfficeTask[]      @relation("OfficeTaskAssignedTo")
 
   @@map("users")
 }
@@ -510,4 +523,44 @@ model QuotationItem {
   quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
   @@map("quotation_items")
+}
+
+// ---------------------------------------------------------------------------
+// Office Task Calendar — new feature, scoped from feature/office-task-calendar (never merged to
+// main, see MIGRATION_PLAN.md §10). Memo is a lightweight personal to-do (feeds the calendar's
+// "To-Do" quick-add); OfficeTask is the actual "office task management" entity — assign a job to
+// any user regardless of department. The Marketer Memos feature this table also belongs to
+// (due-date reminder popup, dedicated memo page) lives on a separate, unrequested branch and is
+// out of scope here.
+// ---------------------------------------------------------------------------
+
+model Memo {
+  id             Int        @id @default(autoincrement())
+  title          String
+  description    String?
+  dueDate        DateTime
+  status         MemoStatus @default(Pending)
+  acknowledgedAt DateTime?
+  createdById    Int?
+  createdAt      DateTime   @default(now())
+
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@map("memos")
+}
+
+model OfficeTask {
+  id           Int              @id @default(autoincrement())
+  title        String
+  description  String?
+  dueDate      DateTime         @db.Date
+  status       OfficeTaskStatus @default(Pending)
+  assignedById Int?
+  assignedToId Int?
+  createdAt    DateTime         @default(now())
+
+  assignedBy User? @relation("OfficeTaskAssignedBy", fields: [assignedById], references: [id])
+  assignedTo User? @relation("OfficeTaskAssignedTo", fields: [assignedToId], references: [id])
+
+  @@map("office_tasks")
 }

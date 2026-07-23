@@ -5,42 +5,42 @@ import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 
-// Replaces the 5 duplicated includes/header*.php variants (and, per the post-migration UI pass,
-// recreates the feature/work-log-sheet branch's dark-sidebar "modern dashboard" shell) with one
-// shared component and genuine role-conditional nav — see navLinks.ts for why nothing here is a
-// literal translation (no per-role link list survived in the legacy code to translate).
+// Replaces the 5 duplicated includes/header*.php variants with one shared component and genuine
+// role-conditional nav — see navLinks.ts for why nothing here is a literal translation (no
+// per-role link list survived in the legacy code to translate). Styled white/bordered with black
+// text to match the original app's look (Calvin didn't like the dark sidebar from an earlier pass).
 export function AppShell() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const links = user ? roleNavLinks[user.role] : []
 
   return (
-    <div className="flex min-h-svh bg-[var(--bg-page,#f5f6fa)]">
+    <div className="flex min-h-svh bg-background">
       {mobileOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-ink to-ink-soft text-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card text-foreground transition-transform lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-5 py-5">
+        <div className="flex items-center justify-between border-b px-5 py-5">
           <span className="text-lg font-bold tracking-tight">
-            Showcase<span className="text-brand-orange-light">IT</span>
+            Showcase<span className="text-brand-orange">IT</span>
           </span>
           <button className="lg:hidden" onClick={() => setMobileOpen(false)}>
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand-orange text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                `flex items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive ? 'border-brand-orange bg-brand-orange text-white' : 'border-transparent text-foreground hover:border-input hover:bg-secondary'
                 }`
               }
             >
@@ -50,10 +50,10 @@ export function AppShell() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t p-3">
           <button
             onClick={() => logout()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-foreground hover:border-input hover:bg-secondary"
           >
             <LogOut className="h-4 w-4" />
             Sign out

@@ -376,7 +376,7 @@ export function WorkLogSheet() {
                 <Moon className="mr-1.5 h-4 w-4" /> Evening Shift
               </Button>
             ) : (
-              <span className="bg-ink inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white">
+              <span className="border-brand-orange text-brand-orange inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
                 <Moon className="h-3.5 w-3.5" /> Evening Shift Active
               </span>
             )}

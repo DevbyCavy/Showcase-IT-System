@@ -23,6 +23,7 @@ import * as quotationsApi from '@/api/quotations'
 import * as boqApi from '@/api/boq'
 import type { Order } from '@/api/orders'
 import { WorkLogSheet } from '@/components/WorkLogSheet'
+import { TaskCalendar } from '@/components/TaskCalendar'
 
 const ORDER_TABS = [
   { key: 'new' as const, label: 'New Orders', icon: Zap, gradient: 'from-brand-orange to-brand-orange-dark' },
@@ -88,7 +89,7 @@ function OrdersCarousel({ orders }: { orders: Order[] }) {
                   ? new Date(o.deadlineDatetime).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
                   : 'No deadline'}
               </div>
-              <Link to="/orders/manage" className="text-ink mt-auto self-start rounded-full bg-white px-3 py-1 text-xs font-bold">
+              <Link to="/orders/manage" className="text-foreground mt-auto self-start rounded-full bg-white px-3 py-1 text-xs font-bold">
                 Manage
               </Link>
             </div>
@@ -99,83 +100,12 @@ function OrdersCarousel({ orders }: { orders: Order[] }) {
   )
 }
 
-function dateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function MiniCalendar({ markedDates }: { markedDates: Set<string> }) {
-  const [viewDate, setViewDate] = useState(() => {
-    const d = new Date()
-    d.setDate(1)
-    return d
-  })
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
-  const monthLabel = viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-  const firstDayOfWeek = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const prevMonthDays = new Date(year, month, 0).getDate()
-  const today = new Date()
-
-  const cells: { date: Date; inMonth: boolean }[] = []
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    cells.push({ date: new Date(year, month - 1, prevMonthDays - i), inMonth: false })
-  }
-  for (let d = 1; d <= daysInMonth; d++) cells.push({ date: new Date(year, month, d), inMonth: true })
-  while (cells.length % 7 !== 0) {
-    const next = new Date(cells[cells.length - 1].date)
-    next.setDate(next.getDate() + 1)
-    cells.push({ date: next, inMonth: false })
-  }
-
-  return (
-    <div className="bg-ink rounded-2xl p-4 text-white">
-      <div className="mb-3 flex items-center justify-between text-sm font-bold">
-        <button
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10"
-          onClick={() => setViewDate(new Date(year, month - 1, 1))}
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        <span>{monthLabel}</span>
-        <button
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10"
-          onClick={() => setViewDate(new Date(year, month + 1, 1))}
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[0.7rem]">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="pb-1.5 font-semibold opacity-50">
-            {d}
-          </div>
-        ))}
-        {cells.map(({ date, inMonth }, i) => {
-          const isToday = date.toDateString() === today.toDateString()
-          const marked = markedDates.has(dateKey(date))
-          return (
-            <div key={i} className={`relative rounded-lg py-1.5 ${inMonth ? '' : 'opacity-40'} ${isToday ? 'bg-brand-orange font-bold' : ''}`}>
-              {date.getDate()}
-              {marked && (
-                <span
-                  className={`absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${isToday ? 'bg-white' : 'bg-brand-purple'}`}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // Translated from superDashboard.php (scoped from feature/work-log-sheet, see MIGRATION_PLAN.md
 // §10) — orders carousel, Work Log Sheet, pending requisitions/quotations quick-actions, profile
-// stats, deadline calendar, and recent BOQs. `totalJobs`/`currentJobs` are derived client-side from
-// the orders already fetched for the carousel (each order carries its assignedUsers) rather than a
-// new aggregate endpoint, since the data is already on the page. The dummy 4.8 rating is a genuine
-// legacy placeholder — not something to make "real".
+// stats, Office Task Calendar, and recent BOQs. `totalJobs`/`currentJobs` are derived client-side
+// from the orders already fetched for the carousel (each order carries its assignedUsers) rather
+// than a new aggregate endpoint, since the data is already on the page. The dummy 4.8 rating is a
+// genuine legacy placeholder — not something to make "real".
 export default function SuperAdminDashboard() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -197,14 +127,6 @@ export default function SuperAdminDashboard() {
   const currentJobs = user
     ? (orders ?? []).filter((o) => o.assignedUsers.some((u) => u.id === user.id) && o.status !== 'Completed').length
     : 0
-
-  const markedDates = useMemo(() => {
-    const set = new Set<string>()
-    for (const o of orders ?? []) {
-      if (o.deadlineDatetime) set.add(dateKey(new Date(o.deadlineDatetime)))
-    }
-    return set
-  }, [orders])
 
   const pendingRequisitions = (requisitions ?? []).filter((r) => r.status === 'Pending').slice(0, 6)
   const pendingQuotations = (quotations ?? []).filter((q) => q.status === 'Pending').slice(0, 6)
@@ -292,34 +214,34 @@ export default function SuperAdminDashboard() {
 
       {/* Side column */}
       <div className="flex min-w-0 flex-col gap-5">
-        <div className="from-ink to-brand-purple-dark rounded-2xl bg-gradient-to-br p-6 text-center text-white">
-          <div className="relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px] border-white/35 bg-white/10">
+        <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
+          <div className="border-brand-orange bg-secondary relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px]">
             <User className="h-8 w-8" />
-            <span className="bg-brand-orange border-ink absolute -right-0.5 -bottom-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2">
+            <span className="bg-brand-orange absolute -right-0.5 -bottom-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-white text-white">
               <BadgeCheck className="h-3 w-3" />
             </span>
           </div>
           <h3 className="font-bold">
             {user?.name} {user?.surname}
           </h3>
-          <div className="mb-4 text-xs opacity-75">{user?.role}</div>
+          <div className="text-muted-foreground mb-4 text-xs">{user?.role}</div>
           <div className="flex gap-2">
-            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
+            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
               <strong className="block text-base">{totalJobs}</strong>
-              <span className="text-[0.66rem] opacity-75">Total Jobs</span>
+              <span className="text-muted-foreground text-[0.66rem]">Total Jobs</span>
             </div>
-            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
+            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
               <strong className="block text-base">{currentJobs}</strong>
-              <span className="text-[0.66rem] opacity-75">Current Jobs</span>
+              <span className="text-muted-foreground text-[0.66rem]">Current Jobs</span>
             </div>
-            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
+            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
               <strong className="block text-base">4.8</strong>
-              <span className="text-[0.66rem] opacity-75">Rating</span>
+              <span className="text-muted-foreground text-[0.66rem]">Rating</span>
             </div>
           </div>
         </div>
 
-        <MiniCalendar markedDates={markedDates} />
+        <TaskCalendar />
 
         <div className="rounded-2xl border bg-card p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
@@ -334,9 +256,11 @@ export default function SuperAdminDashboard() {
             <div className="divide-y">
               {recentBoqs.map((b) => (
                 <div key={b.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <div className="bg-ink shrink-0 rounded-[10px] px-2.5 py-1.5 text-center leading-tight text-white">
+                  <div className="bg-secondary shrink-0 rounded-[10px] border px-2.5 py-1.5 text-center leading-tight">
                     <strong className="block text-sm">{new Date(b.createdAt).getDate()}</strong>
-                    <span className="text-[0.6rem] opacity-75 uppercase">{new Date(b.createdAt).toLocaleDateString(undefined, { month: 'short' })}</span>
+                    <span className="text-muted-foreground text-[0.6rem] uppercase">
+                      {new Date(b.createdAt).toLocaleDateString(undefined, { month: 'short' })}
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">{b.eventName}</div>
