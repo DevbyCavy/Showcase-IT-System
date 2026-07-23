@@ -28,10 +28,10 @@ export function DashboardSidePanel() {
 
   return (
     <div className="flex w-full flex-col gap-5 xl:w-80">
-      <div className="relative overflow-hidden rounded-2xl border bg-card p-6 text-center">
+      <div className="from-sidebar-from to-sidebar-to relative overflow-hidden rounded-2xl bg-gradient-to-b p-6 text-center text-white">
         <LogoWatermark />
         <div className="relative z-10">
-          <div className="border-brand-orange bg-secondary relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px]">
+          <div className="border-brand-orange relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px] bg-white/10">
             <User className="h-8 w-8" />
             <span className="bg-brand-orange absolute -right-0.5 -bottom-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-white text-white">
               <BadgeCheck className="h-3 w-3" />
@@ -40,19 +40,19 @@ export function DashboardSidePanel() {
           <h3 className="font-bold">
             {user?.name} {user?.surname}
           </h3>
-          <div className="text-muted-foreground mb-4 text-xs">{user?.role}</div>
+          <div className="mb-4 text-xs text-white/70">{user?.role}</div>
           <div className="flex gap-2">
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
+            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
               <strong className="block text-base">{totalJobs}</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Total Jobs</span>
+              <span className="text-[0.66rem] text-white/70">Total Jobs</span>
             </div>
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
+            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
               <strong className="block text-base">{currentJobs}</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Current Jobs</span>
+              <span className="text-[0.66rem] text-white/70">Current Jobs</span>
             </div>
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
+            <div className="flex-1 rounded-xl bg-white/10 px-1 py-2.5">
               <strong className="block text-base">4.8</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Rating</span>
+              <span className="text-[0.66rem] text-white/70">Rating</span>
             </div>
           </div>
         </div>

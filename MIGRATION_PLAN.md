@@ -672,3 +672,10 @@ browser flow before committing.
     palette as the orange rather than a clashing cool violet). The sidebar is now
     `bg-gradient-to-b from-sidebar-from to-sidebar-to` instead of a flat fill. Verified visually via
     Playwright.
+
+15. **Profile card matches the sidebar gradient (done).** Applied the same `sidebar-from`/
+    `sidebar-to` gradient to `DashboardSidePanel`'s profile card (previously a plain white/bordered
+    card), with text/stat-tile colors switched to white/`white/70` for contrast and the avatar ring
+    now a translucent `bg-white/10` circle instead of `bg-secondary` — matching the sidebar's
+    borderless, white-on-dark treatment so the two dark panels read as one consistent palette.
+    Verified visually via Playwright.
