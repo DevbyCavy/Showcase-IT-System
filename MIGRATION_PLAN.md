@@ -552,3 +552,20 @@ browser flow before committing.
    full-page wrapper. Both added to every role's nav (same "no live role gates this" precedent as
    Make Quotation). The due-date reminder popup/acknowledge flow from the original Marketer Memos
    feature remains out of scope — this is the to-do list itself, not that popup.
+
+9. **Office Task Calendar — board redesign (done).** Calvin pointed at a Monday.com-style board
+   screenshot and asked for the full-page `/task-calendar` view to look like it: a left sidebar of
+   toggleable calendar categories and a big day-column grid, instead of the compact
+   month-grid-with-day-panel widget style. The reference's bars span multiple days and group by
+   team; our Memos/Office Tasks only carry one due date each (no start-to-end range) and group
+   naturally by item type instead — by his choice, adapted to single-day colored chips (still using
+   the red/blue/green To-Do / Assigned-to-you / You-assigned palette) with sidebar checkboxes that
+   filter the grid live, rather than adding a date-range field that never existed in the legacy app.
+   The dashboard's compact widget (`components/TaskCalendar.tsx`) is untouched — this full board
+   layout lives only in `pages/OfficeTaskCalendarPage.tsx`. Also by his choice, this page's "Add
+   Task" form is a right-anchored slide-in panel (mount + requestAnimationFrame to trigger the
+   transform transition, matching the mobile sidebar's slide pattern already used in AppShell)
+   instead of the centered modal used everywhere else in the app — scoped to just this page, not a
+   global modal-to-drawer change. Verified via Playwright: grid rendering with real data, sidebar
+   checkbox filtering (unchecking a category hides its chips live), the slide-in panel opening and
+   closing, and the Week/Month toggle.
