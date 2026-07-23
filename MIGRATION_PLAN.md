@@ -661,3 +661,14 @@ browser flow before committing.
     block — it now shows only the mail and notification-bell icons, per explicit request. Verified
     visually via Playwright on two different pages to confirm the active-item highlight moves
     correctly with the route.
+
+14. **Sidebar darkened + blended toward orange (done).** Calvin asked for the purple to be darker
+    and to blend nicely with the orange accents. Rather than darkening `--brand-purple` itself
+    (still used elsewhere — order-tile gradients, category/quotation label text — darkening it
+    there would have changed unrelated small accents), added two new sidebar-only tokens:
+    `--sidebar-from: #35102e` (a deep plum, darker than `--brand-purple-dark`) and `--sidebar-to:
+    #6b2a29` (a warm wine/terracotta — a weighted blend of the deep plum toward
+    `--brand-orange-dark`, computed rather than guessed, so it reads as part of the same warm
+    palette as the orange rather than a clashing cool violet). The sidebar is now
+    `bg-gradient-to-b from-sidebar-from to-sidebar-to` instead of a flat fill. Verified visually via
+    Playwright.

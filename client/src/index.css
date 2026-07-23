@@ -33,6 +33,8 @@
   --color-brand-orange-light: var(--brand-orange-light);
   --color-brand-purple: var(--brand-purple);
   --color-brand-purple-dark: var(--brand-purple-dark);
+  --color-sidebar-from: var(--sidebar-from);
+  --color-sidebar-to: var(--sidebar-to);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --radius-card: var(--card-radius);
@@ -72,6 +74,12 @@
   --ink: #1e1b2e;
   --ink-soft: #2a2542;
   --card-radius: 18px;
+
+  /* Sidebar-only gradient: a deep plum darkened from --brand-purple, blending down into a warm
+     wine/terracotta tone (a weighted mix toward --brand-orange-dark) so the sidebar reads as part
+     of the same warm palette as the orange accents instead of clashing with them. */
+  --sidebar-from: #35102e;
+  --sidebar-to: #6b2a29;
 }
 
 /* Intentionally no @media (prefers-color-scheme: dark) override — this app has no theme toggle,

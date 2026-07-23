@@ -78,7 +78,7 @@ export function AppShell() {
       {mobileOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />}
 
       <aside
-        className={`bg-brand-purple fixed inset-y-0 left-0 z-40 flex w-64 flex-col text-white transition-transform lg:static lg:translate-x-0 ${
+        className={`from-sidebar-from to-sidebar-to fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b text-white transition-transform lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
