@@ -679,3 +679,13 @@ browser flow before committing.
     now a translucent `bg-white/10` circle instead of `bg-secondary` — matching the sidebar's
     borderless, white-on-dark treatment so the two dark panels read as one consistent palette.
     Verified visually via Playwright.
+
+16. **Logout confirmation modal restored (done).** Calvin caught that the "Replace logout browser
+    confirm() with a centered Bootstrap modal" feature (commit `5f808b5` on `main`, present in all 7
+    legacy sidebars) had been dropped during the AppShell rebuild — the React Sign Out button called
+    `logout()` directly with no confirmation. Added it back: clicking Sign Out now opens a "Confirm
+    Logout" modal ("Are you sure you want to log out?") with Cancel/"Yes, Log Out" buttons, using
+    the same confirm-modal markup pattern already used elsewhere (`ProcessRequisitions`'s "Confirm
+    Processing", etc.) rather than reintroducing Bootstrap. Verified via Playwright: Cancel leaves
+    the user on the current page still logged in; "Yes, Log Out" actually logs out and redirects to
+    `/login`.

@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { DashboardSidePanel } from '@/components/DashboardSidePanel'
+import { Button } from '@/components/ui/button'
 
 // Quick "jump to page" search for the header's left-aligned rounded search bar — filters the
 // current role's own nav links (no global content-search feature exists anywhere in the legacy app
@@ -71,6 +72,7 @@ function HeaderSearch() {
 export function AppShell() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const links = user ? roleNavLinks[user.role] : []
 
   return (
@@ -112,7 +114,7 @@ export function AppShell() {
 
         <div className="p-3">
           <button
-            onClick={() => logout()}
+            onClick={() => setLogoutConfirmOpen(true)}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
@@ -120,6 +122,26 @@ export function AppShell() {
           </button>
         </div>
       </aside>
+
+      {/* Translated from the legacy "Replace logout browser confirm() with a centered Bootstrap
+          modal" pass — same Cancel/Yes confirm-modal pattern used throughout the app (e.g.
+          ProcessRequisitions' "Confirm Processing"). */}
+      {logoutConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setLogoutConfirmOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-2 text-lg font-semibold">Confirm Logout</h2>
+            <p className="text-muted-foreground mb-5 text-sm">Are you sure you want to log out?</p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={() => logout()}>
+                <LogOut className="mr-1.5 h-4 w-4" /> Yes, Log Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 bg-card px-4 py-3 md:px-6">
