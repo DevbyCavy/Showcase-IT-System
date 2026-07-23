@@ -63,7 +63,7 @@ export default function ManageOrders() {
           <h2 className="font-semibold">Orders Assigned to You</h2>
           {myOrders.length === 0 && <p className="text-muted-foreground text-sm">No orders assigned to you.</p>}
           {myOrders.map((o) => (
-            <div key={o.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+            <div key={o.id} className="rounded-2xl border bg-card p-4">
               <div className="font-semibold">
                 #{o.orderNumber} — {o.orderName}
               </div>
@@ -80,7 +80,7 @@ export default function ManageOrders() {
 function EditableOrderRow({ order }: { order: Order }) {
   const [editing, setEditing] = useState(false)
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+    <div className="rounded-2xl border bg-card p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-semibold">
@@ -181,7 +181,7 @@ function OrderForm({ mode, order, onSaved }: { mode: 'add' | 'edit'; order?: Ord
         <select
           multiple
           size={5}
-          className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+          className="w-full rounded-md border border-input bg-background p-2 text-sm"
           value={form.assignedUserIds.map(String)}
           onChange={(e) =>
             setForm({

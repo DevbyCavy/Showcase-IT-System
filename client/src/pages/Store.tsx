@@ -50,7 +50,7 @@ export default function Store() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {filtered.map((p) => (
-          <div key={p.id} className="flex flex-col rounded-2xl border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
+          <div key={p.id} className="flex flex-col rounded-2xl border bg-card p-3">
             <div className="mb-2 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-secondary">
               {p.imageUrl ? (
                 <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
@@ -130,7 +130,7 @@ function IssueProductModal({ product, onClose }: { product: Product; onClose: ()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Issue Product</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}

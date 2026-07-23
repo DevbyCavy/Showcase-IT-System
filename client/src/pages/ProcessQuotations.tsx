@@ -108,7 +108,7 @@ export default function ProcessQuotations() {
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setConfirming(null)}>
-          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-2 text-lg font-semibold">Confirm Approval</h3>
             <p className="mb-1">Approve quotation</p>
             <p className="mb-2 text-lg font-bold">{confirming.quotationNumber}</p>

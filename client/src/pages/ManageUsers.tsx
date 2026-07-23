@@ -12,7 +12,7 @@ import { JOB_TITLE_OPTIONS, DEPARTMENT_OPTIONS } from '@/lib/userOptions'
 import type { AuthUser } from '@/types/auth'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 // Translated from manage_users.php: list + live client-side search filter, plus the Edit/Delete
 // actions that page linked to but never actually implemented (see MIGRATION_PLAN.md — Module 3
@@ -118,7 +118,7 @@ function EditUserModal({ user, onClose }: { user: AuthUser; onClose: () => void 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Edit User</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}

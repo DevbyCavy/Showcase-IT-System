@@ -11,7 +11,7 @@ import * as usersApi from '@/api/users'
 import type { Vehicle, VehicleInput, FuelType, VehicleStatus } from '@/api/vehicles'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 const statusLabel: Record<VehicleStatus, string> = {
   Available: 'Available',
@@ -106,7 +106,7 @@ export default function Vehicles() {
 function VehicleDetailsModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-lg rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Vehicle Details</h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -198,7 +198,7 @@ function VehicleModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">{modal.mode === 'add' ? 'Add Vehicle' : 'Edit Vehicle'}</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -284,7 +284,7 @@ function VehicleModal({
           <div className="col-span-full space-y-1">
             <label className="text-sm font-medium">Notes</label>
             <textarea
-              className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+              className="w-full rounded-md border border-input bg-background p-2 text-sm"
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}

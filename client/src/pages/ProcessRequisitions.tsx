@@ -149,7 +149,7 @@ export default function ProcessRequisitions() {
 
       {viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl border bg-card p-6 shadow-lg">
+          <div className="w-full max-w-lg rounded-2xl border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold">Requisition Details</h2>
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
@@ -202,7 +202,7 @@ export default function ProcessRequisitions() {
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-lg">
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center">
             <h2 className="mb-2 text-lg font-semibold">Confirm Processing</h2>
             <p className="mb-1">Mark requisition</p>
             <p className="mb-1 text-lg font-bold">{confirming.reqNumber}</p>

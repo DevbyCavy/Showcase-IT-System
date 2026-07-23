@@ -28,7 +28,7 @@ export function DashboardSidePanel() {
 
   return (
     <div className="flex w-full flex-col gap-5 xl:w-80">
-      <div className="relative overflow-hidden rounded-2xl border bg-card p-6 text-center shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border bg-card p-6 text-center">
         <LogoWatermark />
         <div className="relative z-10">
           <div className="border-brand-orange bg-secondary relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px]">
@@ -60,7 +60,7 @@ export function DashboardSidePanel() {
 
       <TaskCalendar />
 
-      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border bg-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-bold">Bill of Quantities</h2>
           <Link to="/orders/manage" className="text-brand-orange text-sm font-semibold">

@@ -11,7 +11,7 @@ import * as usersApi from '@/api/users'
 import type { VehicleTrip } from '@/api/vehicleTrips'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 // Translated from includes/vehicles/tripLogbook.php. Vehicle status side-effects mirror the
 // legacy exactly: starting a trip requires the vehicle to be Available and flips it to On Trip;
@@ -183,7 +183,7 @@ export default function TripLogbook() {
             <div className="col-span-full space-y-1">
               <label className="text-sm font-medium">Purpose</label>
               <textarea
-                className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+                className="w-full rounded-md border border-input bg-background p-2 text-sm"
                 rows={3}
                 value={form.purpose}
                 onChange={(e) => setForm({ ...form, purpose: e.target.value })}
@@ -248,7 +248,7 @@ function EndTripModal({ trip, onClose }: { trip: VehicleTrip; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">End Trip</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -265,7 +265,7 @@ function EndTripModal({ trip, onClose }: { trip: VehicleTrip; onClose: () => voi
           <div className="space-y-1">
             <label className="text-sm font-medium">Remarks</label>
             <textarea
-              className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+              className="w-full rounded-md border border-input bg-background p-2 text-sm"
               rows={3}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}

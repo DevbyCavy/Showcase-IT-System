@@ -28,7 +28,7 @@ export function NotificationsBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border bg-card p-2 shadow-lg">
+          <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border bg-card p-2">
             <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Pending Requisitions</div>
             <div className="px-2 pb-2 text-sm">
               {pendingRequisitions.length === 0 ? (

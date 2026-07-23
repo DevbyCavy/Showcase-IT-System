@@ -42,7 +42,7 @@ function HeaderSearch() {
         }}
       />
       {open && query.trim() && (
-        <div className="bg-card absolute top-full right-0 left-0 z-50 mt-1.5 overflow-hidden rounded-xl border shadow-lg">
+        <div className="bg-card absolute top-full right-0 left-0 z-50 mt-1.5 overflow-hidden rounded-xl border">
           {matches.length === 0 ? (
             <div className="text-muted-foreground px-4 py-3 text-sm">No pages found.</div>
           ) : (

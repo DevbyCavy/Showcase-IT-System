@@ -638,3 +638,16 @@ browser flow before committing.
       logging in) — table pages, stat-card pages, card-grid pages (Store), and the tab-switcher
       pages all render consistently with the rounded-pill tabs, uppercase DataTable headers, and the
       persistent right-hand DashboardSidePanel present throughout.
+
+12. **Drop shadows removed app-wide (done).** Calvin asked to remove the drop shadow from forms and
+    input boxes. Since `shadow-sm`/`shadow-md`/`shadow-lg` was the one elevation style used
+    uniformly across every card, modal, input, select, and textarea in the redesign (not just
+    forms), removing it only from literal "forms" would have left some bordered containers shadowed
+    and others flat on the same page — inconsistent. Stripped it everywhere instead (`Card`,
+    `Input`, `DataTable`'s container, every modal, every inline `selectClass`/textarea, the header's
+    search-suggestions dropdown, `NotificationsBell`'s dropdown, `OrderCard`'s hover-shadow effect)
+    across 26 files in one pass (`perl -pi -e` matching the exact shadow/transition-shadow utility
+    tokens, not a blind string replace, so nothing else in each className was touched). Borders are
+    unaffected and still delineate every card/input, matching the already-established
+    white-background/bordered-forms direction from earlier feedback. Verified with `tsc --noEmit`,
+    a clean `oxlint` pass, and a Playwright visual check of the dashboard and a form-heavy page.

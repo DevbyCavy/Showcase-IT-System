@@ -149,7 +149,7 @@ function CatalogModal<T extends SimpleCatalogItem>({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">{modal.mode === 'add' ? `Add ${entityName}` : `Edit ${entityName}`}</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -162,7 +162,7 @@ function CatalogModal<T extends SimpleCatalogItem>({
           <div className="space-y-1">
             <label className="text-sm font-medium">Status</label>
             <select
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={form.isActive ? '1' : '2'}
               onChange={(e) => setForm({ ...form, isActive: e.target.value === '1' })}
             >

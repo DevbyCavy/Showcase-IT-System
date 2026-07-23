@@ -9,7 +9,7 @@ import * as fuelLogsApi from '@/api/fuelLogs'
 import * as vehiclesApi from '@/api/vehicles'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 // Translated from includes/vehicles/fuelLog.php. Note: the legacy page only ever shows these three
 // aggregate stat cards plus the add-entry form — there is no history/list table for fuel_logs
@@ -126,7 +126,7 @@ export default function FuelLogs() {
           <div className="col-span-full space-y-1">
             <label className="text-sm font-medium">Notes</label>
             <textarea
-              className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+              className="w-full rounded-md border border-input bg-background p-2 text-sm"
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}

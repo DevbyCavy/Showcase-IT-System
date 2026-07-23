@@ -11,7 +11,7 @@ import * as vehiclesApi from '@/api/vehicles'
 import type { MaintenanceLog, MaintenanceType } from '@/api/maintenanceLogs'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 const TYPE_OPTIONS: { value: MaintenanceType; label: string }[] = [
   { value: 'Service', label: 'Service' },
@@ -181,7 +181,7 @@ export default function MaintenanceLogs() {
           <div className="col-span-full space-y-1">
             <label className="text-sm font-medium">Notes</label>
             <textarea
-              className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+              className="w-full rounded-md border border-input bg-background p-2 text-sm"
               rows={3}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}

@@ -109,13 +109,13 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 md:p-8">
-      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border bg-card p-5">
         <OrdersCarousel orders={orders ?? []} />
       </div>
 
       <WorkLogSheet />
 
-      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold">Pending Requisitions</h2>
           <Link to="/requisitions/process" className="text-brand-orange text-sm font-semibold">
@@ -149,7 +149,7 @@ export default function SuperAdminDashboard() {
         )}
       </div>
 
-      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold">Pending Quotations</h2>
           <Link to="/quotations/process" className="text-brand-orange text-sm font-semibold">

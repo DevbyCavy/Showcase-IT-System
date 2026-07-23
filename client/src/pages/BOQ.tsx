@@ -102,7 +102,7 @@ export default function BOQ() {
             <div className="space-y-1">
               <label className="text-sm font-medium">Order</label>
               <select
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 value={orderId}
                 onChange={(e) => handleOrderChange(e.target.value)}
               >

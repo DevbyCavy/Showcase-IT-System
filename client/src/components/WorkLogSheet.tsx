@@ -164,7 +164,7 @@ function WeekLogModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg"
+        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -255,7 +255,7 @@ export function WorkLogSheet() {
 
   if (isLoading || !data) {
     return (
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border bg-card p-6">
         <p className="text-muted-foreground text-sm">Loading work log…</p>
       </div>
     )
@@ -316,7 +316,7 @@ export function WorkLogSheet() {
   }
 
   return (
-    <div className="rounded-2xl border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border bg-card p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-base font-bold">
           <Clock className="text-brand-orange h-5 w-5" /> Work Log Sheet
@@ -394,7 +394,7 @@ export function WorkLogSheet() {
 
       {taskModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setTaskModalOpen(false)}>
-          <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-lg border bg-card p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Start a Task</h3>
               <button onClick={() => setTaskModalOpen(false)} aria-label="Close">

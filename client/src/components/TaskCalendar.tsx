@@ -212,7 +212,7 @@ export function TaskCalendar() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border bg-card p-4">
       <LogoWatermark />
       <div className="relative z-10">
         <div className="mb-3.5 flex items-center justify-between text-sm font-bold">
@@ -318,7 +318,7 @@ export function TaskCalendar() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setModalOpen(false)}>
-          <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-lg border bg-card p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">
                 Add to {new Date(selectedDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -372,7 +372,7 @@ export function TaskCalendar() {
                     Department <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm"
+                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm"
                     value={department}
                     onChange={(e) => {
                       setDepartment(e.target.value)
@@ -392,7 +392,7 @@ export function TaskCalendar() {
                     Assign To <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
+                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm disabled:opacity-50"
                     value={assigneeId}
                     onChange={(e) => setAssigneeId(e.target.value)}
                     disabled={!department}

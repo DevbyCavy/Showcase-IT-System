@@ -10,7 +10,7 @@ import * as productsApi from '@/api/products'
 import type { Product } from '@/api/products'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 // Translated from product.php + custom/js/product.js (DataTables -> TanStack Table -> the shared
 // DataTable primitive, see MIGRATION_PLAN.md §10.11). Image upload replaces move_uploaded_file()
@@ -169,7 +169,7 @@ function AddProductModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Add Product</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -265,7 +265,7 @@ function EditProductModal({ product, onClose }: { product: Product; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6">
         <h2 className="mb-4 text-lg font-semibold">Edit Product</h2>
 
         <div className="mb-4 flex gap-2 border-b">

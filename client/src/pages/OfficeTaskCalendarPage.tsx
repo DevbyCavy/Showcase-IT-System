@@ -243,7 +243,7 @@ export default function OfficeTaskCalendarPage() {
 
       <div className="flex items-start gap-5">
         {/* Left sidebar: toggleable calendar categories */}
-        <div className="w-56 shrink-0 rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="w-56 shrink-0 rounded-2xl border bg-card p-4">
           <h2 className="text-muted-foreground mb-3 text-xs font-bold tracking-wide uppercase">Calendars</h2>
           <div className="space-y-2.5">
             {ALL_TYPES.map((t) => (
@@ -265,7 +265,7 @@ export default function OfficeTaskCalendarPage() {
         </div>
 
         {/* Main day-column grid */}
-        <div className="min-w-0 flex-1 overflow-x-auto rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="min-w-0 flex-1 overflow-x-auto rounded-2xl border bg-card p-4">
           <div className="grid min-w-[700px] grid-cols-7 border-t border-l">
             {DOW_LABELS.map((d) => (
               <div key={d} className="text-muted-foreground border-r border-b bg-secondary/40 py-2 text-center text-xs font-semibold">
@@ -321,7 +321,7 @@ export default function OfficeTaskCalendarPage() {
             onClick={closePanel}
           />
           <div
-            className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm overflow-y-auto border-l bg-card p-6 shadow-lg transition-transform duration-200 ${
+            className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm overflow-y-auto border-l bg-card p-6 transition-transform duration-200 ${
               panelVisible ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
@@ -378,7 +378,7 @@ export default function OfficeTaskCalendarPage() {
                     Department <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm"
+                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm"
                     value={department}
                     onChange={(e) => {
                       setDepartment(e.target.value)
@@ -398,7 +398,7 @@ export default function OfficeTaskCalendarPage() {
                     Assign To <span className="text-destructive">*</span>
                   </label>
                   <select
-                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
+                    className="border-input flex h-9 w-full rounded-md border bg-background px-3 py-1 text-sm disabled:opacity-50"
                     value={assigneeId}
                     onChange={(e) => setAssigneeId(e.target.value)}
                     disabled={!department}

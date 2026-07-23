@@ -12,7 +12,7 @@ import * as vehiclesApi from '@/api/vehicles'
 import type { VehicleDocument, VehicleDocumentType } from '@/api/vehicleDocuments'
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 const TYPE_OPTIONS: { value: VehicleDocumentType; label: string }[] = [
   { value: 'VehicleLicense', label: 'Vehicle License' },
@@ -112,7 +112,7 @@ export default function VehicleDocuments() {
 
       {renewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold">Renew Document</h2>
             <DocumentForm mode="renew" document={renewing} onSaved={() => setRenewing(null)} />
             <div className="mt-4 flex justify-end">
@@ -238,7 +238,7 @@ function DocumentForm({
         <div className="col-span-full space-y-1">
           <label className="text-sm font-medium">Notes</label>
           <textarea
-            className="w-full rounded-md border border-input bg-background p-2 text-sm shadow-sm"
+            className="w-full rounded-md border border-input bg-background p-2 text-sm"
             rows={2}
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}

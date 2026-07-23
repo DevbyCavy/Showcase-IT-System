@@ -1,12 +1,12 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Formalizes the `rounded-2xl border bg-card p-5 shadow-sm` pattern already used ad-hoc across the
+// Formalizes the `rounded-2xl border bg-card p-5` pattern already used ad-hoc across the
 // post-migration modern-UI pages (SuperAdminDashboard, WorkLogSheet, TaskCalendar, etc.) into one
 // component, so the full-app redesign sweep has a single place to keep every card visually
 // consistent instead of copy-pasted className strings drifting apart page by page.
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('rounded-2xl border bg-card shadow-sm', className)} {...props} />
+  <div ref={ref} className={cn('rounded-2xl border bg-card', className)} {...props} />
 ))
 Card.displayName = 'Card'
 

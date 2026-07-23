@@ -29,7 +29,7 @@ const signupSchema = z
 type SignupForm = z.infer<typeof signupSchema>
 
 const selectClass =
-  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 export default function Signup() {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -56,7 +56,7 @@ export default function Signup() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-secondary p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
         <div className="mb-4 flex justify-center">
           <img src="/showcaseit-icon.png" alt="ShowcaseIT" className="h-14 w-14" />
         </div>
