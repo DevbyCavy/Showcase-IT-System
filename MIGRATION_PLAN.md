@@ -651,3 +651,13 @@ browser flow before committing.
     unaffected and still delineate every card/input, matching the already-established
     white-background/bordered-forms direction from earlier feedback. Verified with `tsc --noEmit`,
     a clean `oxlint` pass, and a Playwright visual check of the dashboard and a form-heavy page.
+
+13. **Sidebar/header restyle (done).** Sidebar background is now `bg-brand-purple` (the logo's
+    second/accent color, sampled in §10.7) instead of white, borderless throughout (aside, the
+    logo/nav divider, the nav buttons' own border classes, and the sign-out button's top divider are
+    all gone). The active nav item is picked out with a solid `bg-brand-orange` fill and white
+    label; inactive labels are `text-white/80` with a `hover:bg-white/10` fill, so they stay legible
+    against the purple background. The header lost its bottom border and the avatar/name/role
+    block — it now shows only the mail and notification-bell icons, per explicit request. Verified
+    visually via Playwright on two different pages to confirm the active-item highlight moves
+    correctly with the route.

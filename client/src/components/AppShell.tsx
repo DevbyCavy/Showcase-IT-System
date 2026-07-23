@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Menu, X, Mail, LogOut, Search, User } from 'lucide-react'
+import { Menu, X, Mail, LogOut, Search } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
@@ -64,8 +64,10 @@ function HeaderSearch() {
 
 // Replaces the 5 duplicated includes/header*.php variants with one shared component and genuine
 // role-conditional nav — see navLinks.ts for why nothing here is a literal translation (no
-// per-role link list survived in the legacy code to translate). Styled white/bordered with black
-// text to match the original app's look (Calvin didn't like the dark sidebar from an earlier pass).
+// per-role link list survived in the legacy code to translate). Sidebar uses the logo's second
+// (purple) color as a solid background, borderless, with the active nav item picked out in
+// brand-orange; the header is borderless too and only shows mail + notifications (no avatar/name/
+// role) per Calvin's request.
 export function AppShell() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -76,11 +78,11 @@ export function AppShell() {
       {mobileOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card text-foreground transition-transform lg:static lg:translate-x-0 ${
+        className={`bg-brand-purple fixed inset-y-0 left-0 z-40 flex w-64 flex-col text-white transition-transform lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between border-b px-5 py-5">
+        <div className="flex items-center justify-between px-5 py-5">
           <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <img src="/showcaseit-icon.png" alt="" className="h-8 w-8" />
             Showcase<span className="text-brand-orange">IT</span>
@@ -97,8 +99,8 @@ export function AppShell() {
               to={link.to}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'border-brand-orange bg-brand-orange text-white' : 'border-transparent text-foreground hover:border-input hover:bg-secondary'
+                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive ? 'bg-brand-orange text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
@@ -108,10 +110,10 @@ export function AppShell() {
           ))}
         </nav>
 
-        <div className="border-t p-3">
+        <div className="p-3">
           <button
             onClick={() => logout()}
-            className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-foreground hover:border-input hover:bg-secondary"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
             Sign out
@@ -120,7 +122,7 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 border-b bg-card px-4 py-3 md:px-6">
+        <header className="flex items-center justify-between gap-4 bg-card px-4 py-3 md:px-6">
           <button className="text-muted-foreground lg:hidden" onClick={() => setMobileOpen(true)}>
             <Menu className="h-6 w-6" />
           </button>
@@ -138,18 +140,6 @@ export function AppShell() {
               </a>
             )}
             <NotificationsBell />
-            <div className="mx-1 h-6 w-px bg-border" />
-            <div className="flex items-center gap-2 pr-1">
-              <div className="bg-secondary flex h-9 w-9 items-center justify-center rounded-full">
-                <User className="h-[18px] w-[18px]" />
-              </div>
-              <div className="hidden text-right text-xs sm:block">
-                <div className="font-semibold">
-                  {user?.name} {user?.surname}
-                </div>
-                <div className="text-muted-foreground">{user?.role}</div>
-              </div>
-            </div>
           </div>
         </header>
 
