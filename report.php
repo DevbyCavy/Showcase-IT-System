@@ -1,1 +1,0 @@
-<?php require_once 'php_action/auth_guard.php'; ?>

@@ -689,3 +689,17 @@ browser flow before committing.
     Processing", etc.) rather than reintroducing Bootstrap. Verified via Playwright: Cancel leaves
     the user on the current page still logged in; "Yes, Log Out" actually logs out and redirects to
     `/login`.
+
+17. **Legacy PHP codebase deleted (done).** With the migration to `client/`+`server/` complete and
+    verified (all 17 original modules plus the post-migration UI work in this §10), Calvin asked to
+    delete the original PHP application: every root-level `*.php` file, `includes/`, `php_action/`,
+    `custom/`, `assets/` (vendored Bootstrap/jQuery/FontAwesome/DataTables/FullCalendar/Krajee
+    FileInput), `dashboards/`, and `stock.sql` — roughly 7,000 tracked files, almost all vendored
+    third-party assets. `images/` was explicitly kept: `server/src/utils/quotationPdf.ts` reads
+    `images/showcaseit_logo.png` directly at runtime (embedded as base64 in generated quotation
+    PDFs), so it's a live dependency of the new app, not a legacy leftover. Rewrote `CLAUDE.md` from
+    scratch to describe the current stack/directory layout instead of the now-deleted PHP structure
+    (it previously pointed at `php_action/`, `includes/`, etc. as required reading). Verified with
+    `tsc --noEmit` in both `client/` and `server/` and a live health-check/page-load against both
+    running dev servers — nothing in the new app referenced anything under the deleted paths (the
+    one real cross-reference, the logo, was already identified and `images/` was kept for it).

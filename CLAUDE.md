@@ -4,36 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Showcase IT is a stock/inventory and order-management system for a signage/printing business. It tracks products, brands, categories, stock issuance, customer orders (with file uploads for BOQs/artwork), requisitions, vehicles/logistics, and per-role dashboards (Super Admin, Stores Admin, Project Manager, Marketers, Accountant, Graphic Designer, Production Team, Logistics).
+Showcase IT is a stock/inventory and order-management system for a signage/printing business. It tracks products, brands, categories, stock issuance, customer orders (with file uploads for BOQs/artwork), requisitions, quotations, vehicles/logistics, a per-user Work Log Sheet, an Office Task Calendar, and per-role dashboards (Super Admin, Stores Admin, Project Manager, Accountant, Graphic Designer, Production Team, Logistics).
+
+The app was originally a plain PHP/MySQL application (procedural PHP, no framework, MySQLi, XAMPP/Apache). That codebase was fully migrated to the stack below and then deleted — see `MIGRATION_PLAN.md` for the complete module-by-module migration history, every scope decision made along the way, and the legacy behavior each module preserves or intentionally fixes. If you need to see the original PHP source for historical context, check out an earlier commit (e.g. `git log --diff-filter=D --summary | grep delete` from the migration branch, or the `main` branch prior to this cleanup).
 
 ## Tech Stack
 
-- **PHP** (procedural, no framework) run via **XAMPP/Apache**, MySQLi (object-oriented) for DB access
-- **MariaDB/MySQL** — schema and seed data in `stock.sql`, database name `stock`
-- **Bootstrap 5**, **Font Awesome 6**, **jQuery**, **jQuery UI** — vendored under `assets/`
-- **DataTables** and **Krajee Bootstrap FileInput** plugins — vendored under `assets/plugins/`
-- No build step, no package manager, no test framework — this is plain PHP served directly by Apache
+- **Frontend** (`client/`): React 19 + TypeScript + Vite, React Router, React Hook Form + Zod, Axios, Tailwind CSS v4, shadcn/ui-style components, TanStack Query + TanStack Table, Recharts, lucide-react icons
+- **Backend** (`server/`): Node.js + Express + TypeScript, Prisma ORM, Zod validation, JWT (access + refresh) + bcrypt auth, Multer file uploads, Puppeteer for PDF generation (BOQs/quotations)
+- **Database**: PostgreSQL, schema in `server/prisma/schema.prisma`, migrations in `server/prisma/migrations/`
+- No CI is configured; rely on `tsc --noEmit` and `npm run lint` (oxlint) in both `client/` and `server/`, plus manual verification in a browser.
 
 ## Key Directories
 
-- `php_action/` — AJAX/form-processing endpoints (create/fetch/edit/remove per entity). This is the "backend" layer; pages under the repo root POST/GET to these scripts. See `php_action/core.php:1` (shared bootstrap: session + DB) and `php_action/auth_guard.php:11` (`requireRole()` gate).
-- `includes/` — shared page chrome: `header.php` (default nav) plus role-specific variants `headerStores.php`, `headerProduction.php`, `headerProject.php`, `headerLogistics.php`, and `footer.php`. `includes/vehicles/` holds the logistics/vehicle sub-pages (fuel log, maintenance log, trip logbook, documents, registration).
-- `dashboards/` — a second, older set of role dashboards (accounts/graphics/marketing/project) that overlaps with the root-level `*Dashboard.php` files — check both when working on a given role's dashboard.
-- `custom/js/` and `custom/css/` — page-specific jQuery/DataTables wiring (`product.js`, `brand.js`, `order.js`, `report.js`, `setting.js`, `issuedProduct.js`) and the site's custom stylesheet. `assets/` is entirely third-party/vendored code — don't hand-edit it.
-- Root `*.php` files — one file per page/dashboard, generally named after the role or entity (`storesDashboard.php`, `manageOrder.php`, `requisitions.php`, `product.php`, etc).
-- `stock.sql` — authoritative reference for table structure (`brand`, `category`, `product`, `orders`, `orders_items`, `order_assignments`, `issued_tools`, `users`; note `requisitions` is used by code but not present in this dump).
+- `server/src/routes/`, `controllers/`, `services/`, `repositories/`, `validations/` — one file per module per layer (e.g. `order.routes.ts` → `order.controller.ts` → `order.service.ts` → `order.repository.ts` → `order.validation.ts`). Controllers stay thin; business logic lives in services; Prisma calls live in repositories only.
+- `server/src/middleware/` — `auth.ts` (JWT verification + `requireRole()`), `upload.ts` (Multer `createUploader()` factory), `validate.ts` (Zod `validateBody()`), `errorHandler.ts` (`ApiError` + centralized error responses).
+- `server/src/utils/` — PDF renderers (`boqPdf.ts`, `quotationPdf.ts`, both Puppeteer-based), `mapUser.ts` (`toPublicUser()` — strips `passwordHash` before any user object reaches a client), date helpers.
+- `client/src/pages/` — one file per route/page. `client/src/components/` — shared components (`AppShell` is the sidebar+header shell, `DashboardSidePanel` is the persistent right-hand profile/calendar/BOQ rail, `TaskCalendar`/`WorkLogSheet` are the two dashboard widgets). `client/src/components/ui/` — shared primitives (`Card`, `PageHeader`, `DataTable`, `Button`, `Input`).
+- `client/src/api/` — one file per module, thin Axios wrappers matching the server's REST routes.
+- `images/showcaseit_logo.png` — the actual company logo; still referenced directly by `server/src/utils/quotationPdf.ts` (embedded as base64 in generated PDFs) and by `client/public/showcaseit-icon.png` (a resized copy used in the UI). Don't delete this directory.
+- `MIGRATION_PLAN.md` — the living design/decision doc for the whole project. Read this before assuming why something is built a particular way; it documents every legacy quirk, bug fix, and scope decision made during the PHP→Node/React migration and the post-migration UI work.
 
 ## Running & Testing
 
-- Serve the project through XAMPP/Apache with the repo at the web root (e.g. `htdocs/showcase-it/Showcase-IT-System`); no CLI dev server.
-- Import `stock.sql` into a local MariaDB/MySQL instance named `stock` before first run. DB credentials are hardcoded in `php_action/db_connection.php:3-6` (`root` / empty password / `localhost`).
-- There is no automated test suite. Verify changes by loading the affected page in a browser and exercising the relevant form/DataTable/AJAX flow directly.
-- No linter is configured; rely on your own PHP/JS syntax care since there's no CI to catch mistakes.
+- `server/`: copy `.env.example` if present or check `server/src/config/env.ts` for required vars (`DATABASE_URL`, JWT secrets, `UPLOADS_DIR`, `CLIENT_ORIGIN`). Run `npx prisma migrate dev` against a local Postgres instance, then `npx tsx src/server.ts` (or the configured dev script) to start the API on its configured port.
+- `client/`: `npm run dev` starts the Vite dev server; it proxies `/api` and `/uploads` to the server (see `client/vite.config.ts`).
+- No automated test suite exists. Verify changes by running both processes and exercising the relevant page/flow in a browser — screenshot-verify anything visual.
+- Typecheck with `npx tsc --noEmit` in both `client/` and `server/` before considering a change done; lint with `npm run lint` (oxlint) in `client/`.
 
 ## Adding New Features or Fixing Bugs
 
-**IMPORTANT**: When you work on a new feature or bug, create a git branch first. Then work on changes in that branch for the reminder of the session.
-
-## Additional Documentation
-
-- `.claude/docs/architectural_patterns.md` — request/response conventions, auth/session pattern, DataTables+AJAX CRUD pattern, file upload handling, and where the codebase is inconsistent (raw SQL vs prepared statements, password hashing schemes, mismatched role strings) — read this before adding or modifying any `php_action/` endpoint or role-gated page.
+**IMPORTANT**: When you work on a new feature or bug, create a git branch first. Then work on changes in that branch for the remainder of the session.
