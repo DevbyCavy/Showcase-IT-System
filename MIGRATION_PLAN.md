@@ -569,3 +569,20 @@ browser flow before committing.
    global modal-to-drawer change. Verified via Playwright: grid rendering with real data, sidebar
    checkbox filtering (unchecking a category hides its chips live), the slide-in panel opening and
    closing, and the Week/Month toggle.
+
+10. **Profile card / calendar / BOQ list made global (done).** Calvin tracked down the original
+    "Selena Academy" template screenshot the Super Admin Dashboard's right column (§10.4) was
+    actually built from, and asked to keep that column — profile card, calendar, small BOQ/schedule
+    list — visible "exactly where it is" on every page, not just the dashboard. Extracted that
+    column out of `SuperAdminDashboard.tsx` into a new `DashboardSidePanel` component, now rendered
+    by `AppShell` itself alongside every route's content (`<Outlet/>` + `DashboardSidePanel` in a
+    flex row that stacks vertically below `xl:`). Since it's global now, it runs for every role, not
+    just Super Admin — no permission changes were needed since `/orders`, `/boqs`, and
+    `/task-calendar` were already open to any authenticated user. React Query's shared cache keys
+    (`['orders']`, `['boqs']`) mean visiting a page that also fetches those (OrdersKanban, BOQ) does
+    not trigger extra network round-trips. `SuperAdminDashboard` is now single-column — just the
+    orders carousel, Work Log Sheet, and pending requisitions/quotations quick-actions. Verified via
+    Playwright: the panel appears identically on the dashboard, on an unrelated CRUD page (Products),
+    and on the new Office Task Calendar board page (which now shows both the compact global calendar
+    widget *and* the full board — intentional, a quick glance plus a deep-dive view), and correctly
+    stacks below the main content on mobile widths instead of disappearing.

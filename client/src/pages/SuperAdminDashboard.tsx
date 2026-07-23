@@ -1,29 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Zap,
-  HardHat,
-  CircleCheck,
-  Inbox,
-  Clock,
-  FileSignature,
-  FileSpreadsheet,
-  User,
-  BadgeCheck,
-  FileText,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Zap, HardHat, CircleCheck, Inbox, Clock, FileSignature, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/hooks/useAuth'
 import * as ordersApi from '@/api/orders'
 import * as requisitionsApi from '@/api/requisitions'
 import * as quotationsApi from '@/api/quotations'
-import * as boqApi from '@/api/boq'
 import type { Order } from '@/api/orders'
 import { WorkLogSheet } from '@/components/WorkLogSheet'
-import { TaskCalendar } from '@/components/TaskCalendar'
 
 const ORDER_TABS = [
   { key: 'new' as const, label: 'New Orders', icon: Zap, gradient: 'from-brand-orange to-brand-orange-dark' },
@@ -101,18 +85,15 @@ function OrdersCarousel({ orders }: { orders: Order[] }) {
 }
 
 // Translated from superDashboard.php (scoped from feature/work-log-sheet, see MIGRATION_PLAN.md
-// §10) — orders carousel, Work Log Sheet, pending requisitions/quotations quick-actions, profile
-// stats, Office Task Calendar, and recent BOQs. `totalJobs`/`currentJobs` are derived client-side
-// from the orders already fetched for the carousel (each order carries its assignedUsers) rather
-// than a new aggregate endpoint, since the data is already on the page. The dummy 4.8 rating is a
-// genuine legacy placeholder — not something to make "real".
+// §10) — orders carousel, Work Log Sheet, and pending requisitions/quotations quick-actions. The
+// profile card / calendar / BOQ list that used to live in a side column here now live in
+// `DashboardSidePanel`, rendered globally by `AppShell` on every page (see §10.10) instead of being
+// assembled per-page.
 export default function SuperAdminDashboard() {
-  const { user } = useAuth()
   const queryClient = useQueryClient()
   const { data: orders } = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list })
   const { data: requisitions } = useQuery({ queryKey: ['requisitions'], queryFn: requisitionsApi.list })
   const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list })
-  const { data: boqs } = useQuery({ queryKey: ['boqs'], queryFn: boqApi.list })
 
   const processMutation = useMutation({
     mutationFn: (id: number) => requisitionsApi.process(id),
@@ -123,165 +104,84 @@ export default function SuperAdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotations'] }),
   })
 
-  const totalJobs = user ? (orders ?? []).filter((o) => o.assignedUsers.some((u) => u.id === user.id)).length : 0
-  const currentJobs = user
-    ? (orders ?? []).filter((o) => o.assignedUsers.some((u) => u.id === user.id) && o.status !== 'Completed').length
-    : 0
-
   const pendingRequisitions = (requisitions ?? []).filter((r) => r.status === 'Pending').slice(0, 6)
   const pendingQuotations = (quotations ?? []).filter((q) => q.status === 'Pending').slice(0, 6)
-  const recentBoqs = (boqs ?? []).slice(0, 5)
 
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 p-4 md:p-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-      {/* Main column */}
-      <div className="flex min-w-0 flex-col gap-5">
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <OrdersCarousel orders={orders ?? []} />
-        </div>
-
-        <WorkLogSheet />
-
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold">Pending Requisitions</h2>
-            <Link to="/requisitions/process" className="text-brand-orange text-sm font-semibold">
-              See All
-            </Link>
-          </div>
-          {pendingRequisitions.length === 0 ? (
-            <div className="text-muted-foreground py-4 text-center text-sm">No pending requisitions right now.</div>
-          ) : (
-            <div className="space-y-2.5">
-              {pendingRequisitions.map((r) => (
-                <div key={r.id} className="bg-secondary flex items-center gap-3.5 rounded-2xl px-4 py-3">
-                  <div className="from-brand-orange to-brand-purple flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white">
-                    <FileSignature className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-brand-purple text-[0.68rem] font-bold tracking-wide uppercase">{r.displayType}</div>
-                    <div className="truncate text-sm font-semibold">
-                      {r.eventName} — {r.projectManager}
-                    </div>
-                  </div>
-                  <div className="text-muted-foreground hidden shrink-0 rounded-full bg-card px-3 py-1.5 text-xs sm:block">
-                    {new Date(r.eventDate).toLocaleDateString()}
-                  </div>
-                  <Button size="sm" onClick={() => processMutation.mutate(r.id)} disabled={processMutation.isPending}>
-                    Process
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold">Pending Quotations</h2>
-            <Link to="/quotations/process" className="text-brand-orange text-sm font-semibold">
-              See All
-            </Link>
-          </div>
-          {pendingQuotations.length === 0 ? (
-            <div className="text-muted-foreground py-4 text-center text-sm">No pending quotations right now.</div>
-          ) : (
-            <div className="space-y-2.5">
-              {pendingQuotations.map((q) => (
-                <div key={q.id} className="bg-secondary flex items-center gap-3.5 rounded-2xl px-4 py-3">
-                  <div className="from-brand-orange to-brand-purple flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white">
-                    <FileSpreadsheet className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-brand-purple text-[0.68rem] font-bold tracking-wide uppercase">{q.quotationNumber}</div>
-                    <div className="truncate text-sm font-semibold">
-                      {q.customerName}
-                      {q.projectName ? ` — ${q.projectName}` : ''}
-                    </div>
-                  </div>
-                  <div className="text-muted-foreground hidden shrink-0 rounded-full bg-card px-3 py-1.5 text-xs sm:block">
-                    {new Date(q.quoteDate).toLocaleDateString()}
-                  </div>
-                  <Button size="sm" onClick={() => approveMutation.mutate(q.id)} disabled={approveMutation.isPending}>
-                    Approve
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 md:p-8">
+      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <OrdersCarousel orders={orders ?? []} />
       </div>
 
-      {/* Side column */}
-      <div className="flex min-w-0 flex-col gap-5">
-        <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-          <div className="border-brand-orange bg-secondary relative mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full border-[3px]">
-            <User className="h-8 w-8" />
-            <span className="bg-brand-orange absolute -right-0.5 -bottom-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-white text-white">
-              <BadgeCheck className="h-3 w-3" />
-            </span>
-          </div>
-          <h3 className="font-bold">
-            {user?.name} {user?.surname}
-          </h3>
-          <div className="text-muted-foreground mb-4 text-xs">{user?.role}</div>
-          <div className="flex gap-2">
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
-              <strong className="block text-base">{totalJobs}</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Total Jobs</span>
-            </div>
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
-              <strong className="block text-base">{currentJobs}</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Current Jobs</span>
-            </div>
-            <div className="bg-secondary flex-1 rounded-xl border px-1 py-2.5">
-              <strong className="block text-base">4.8</strong>
-              <span className="text-muted-foreground text-[0.66rem]">Rating</span>
-            </div>
-          </div>
+      <WorkLogSheet />
+
+      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold">Pending Requisitions</h2>
+          <Link to="/requisitions/process" className="text-brand-orange text-sm font-semibold">
+            See All
+          </Link>
         </div>
-
-        <TaskCalendar />
-
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold">Bill of Quantities</h2>
-            <Link to="/orders/manage" className="text-brand-orange text-sm font-semibold">
-              See All
-            </Link>
-          </div>
-          {recentBoqs.length === 0 ? (
-            <div className="text-muted-foreground py-4 text-center text-sm">No BOQs saved yet.</div>
-          ) : (
-            <div className="divide-y">
-              {recentBoqs.map((b) => (
-                <div key={b.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <div className="bg-secondary shrink-0 rounded-[10px] border px-2.5 py-1.5 text-center leading-tight">
-                    <strong className="block text-sm">{new Date(b.createdAt).getDate()}</strong>
-                    <span className="text-muted-foreground text-[0.6rem] uppercase">
-                      {new Date(b.createdAt).toLocaleDateString(undefined, { month: 'short' })}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{b.eventName}</div>
-                    <div className="text-muted-foreground text-xs">
-                      BOQ #{b.boqNumber} · {b.orderNumber}
-                    </div>
-                  </div>
-                  <button
-                    className="text-muted-foreground hover:text-brand-orange shrink-0"
-                    title="Download PDF"
-                    onClick={() => {
-                      boqApi.downloadPdf(b.id, b.boqNumber).catch(() => {})
-                    }}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </button>
+        {pendingRequisitions.length === 0 ? (
+          <div className="text-muted-foreground py-4 text-center text-sm">No pending requisitions right now.</div>
+        ) : (
+          <div className="space-y-2.5">
+            {pendingRequisitions.map((r) => (
+              <div key={r.id} className="bg-secondary flex items-center gap-3.5 rounded-2xl px-4 py-3">
+                <div className="from-brand-orange to-brand-purple flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white">
+                  <FileSignature className="h-4 w-4" />
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-brand-purple text-[0.68rem] font-bold tracking-wide uppercase">{r.displayType}</div>
+                  <div className="truncate text-sm font-semibold">
+                    {r.eventName} — {r.projectManager}
+                  </div>
+                </div>
+                <div className="text-muted-foreground hidden shrink-0 rounded-full bg-card px-3 py-1.5 text-xs sm:block">
+                  {new Date(r.eventDate).toLocaleDateString()}
+                </div>
+                <Button size="sm" onClick={() => processMutation.mutate(r.id)} disabled={processMutation.isPending}>
+                  Process
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold">Pending Quotations</h2>
+          <Link to="/quotations/process" className="text-brand-orange text-sm font-semibold">
+            See All
+          </Link>
         </div>
+        {pendingQuotations.length === 0 ? (
+          <div className="text-muted-foreground py-4 text-center text-sm">No pending quotations right now.</div>
+        ) : (
+          <div className="space-y-2.5">
+            {pendingQuotations.map((q) => (
+              <div key={q.id} className="bg-secondary flex items-center gap-3.5 rounded-2xl px-4 py-3">
+                <div className="from-brand-orange to-brand-purple flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white">
+                  <FileSpreadsheet className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-brand-purple text-[0.68rem] font-bold tracking-wide uppercase">{q.quotationNumber}</div>
+                  <div className="truncate text-sm font-semibold">
+                    {q.customerName}
+                    {q.projectName ? ` — ${q.projectName}` : ''}
+                  </div>
+                </div>
+                <div className="text-muted-foreground hidden shrink-0 rounded-full bg-card px-3 py-1.5 text-xs sm:block">
+                  {new Date(q.quoteDate).toLocaleDateString()}
+                </div>
+                <Button size="sm" onClick={() => approveMutation.mutate(q.id)} disabled={approveMutation.isPending}>
+                  Approve
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

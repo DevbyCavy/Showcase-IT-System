@@ -4,6 +4,7 @@ import { Menu, X, Mail, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
+import { DashboardSidePanel } from '@/components/DashboardSidePanel'
 
 // Replaces the 5 duplicated includes/header*.php variants with one shared component and genuine
 // role-conditional nav — see navLinks.ts for why nothing here is a literal translation (no
@@ -88,8 +89,17 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1">
-          <Outlet />
+        <main className="flex flex-1 flex-col items-start xl:flex-row">
+          {/* Each page owns its own max-width/padding, unchanged — this wrapper just makes room
+              for the side panel alongside it. */}
+          <div className="min-w-0 w-full flex-1">
+            <Outlet />
+          </div>
+          {/* Profile card + calendar + BOQ list — kept visible on every page per Calvin's request,
+              not just the dashboard (see MIGRATION_PLAN.md §10.10). */}
+          <div className="w-full shrink-0 p-4 md:p-8 xl:w-auto xl:pl-0">
+            <DashboardSidePanel />
+          </div>
         </main>
       </div>
     </div>
