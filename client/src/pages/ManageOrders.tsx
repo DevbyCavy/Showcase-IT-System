@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
 import * as ordersApi from '@/api/orders'
 import * as usersApi from '@/api/users'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,6 +14,8 @@ import type { Order, OrderFormInput } from '@/api/orders'
 // consolidated into one page per MIGRATION_PLAN.md's AppShell plan. "Edit Order" is newly built
 // (the legacy link went to a page that never existed); "View Order" is fixed to actually query
 // order_assignments (the legacy version referenced a column that doesn't exist and always showed empty).
+// Rebuilt on the shared Card/PageHeader primitives as part of the full-app redesign sweep (see
+// MIGRATION_PLAN.md §10.11).
 export default function ManageOrders() {
   const [tab, setTab] = useState<'add' | 'edit' | 'view'>('add')
   const { user } = useAuth()
@@ -21,14 +25,14 @@ export default function ManageOrders() {
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Manage Orders</h1>
+      <PageHeader title="Manage Orders" />
 
-      <div className="mb-4 flex gap-2 border-b">
+      <div className="mb-5 flex gap-0.5 rounded-full bg-secondary p-1 w-fit">
         {(['add', 'edit', 'view'] as const).map((t) => (
           <button
             key={t}
-            className={`px-4 py-2 text-sm font-semibold ${
-              tab === t ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+              tab === t ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'
             }`}
             onClick={() => setTab(t)}
           >
@@ -37,7 +41,13 @@ export default function ManageOrders() {
         ))}
       </div>
 
-      {tab === 'add' && <OrderForm mode="add" />}
+      {tab === 'add' && (
+        <Card>
+          <CardContent>
+            <OrderForm mode="add" />
+          </CardContent>
+        </Card>
+      )}
 
       {tab === 'edit' && (
         <div className="space-y-3">
@@ -53,7 +63,7 @@ export default function ManageOrders() {
           <h2 className="font-semibold">Orders Assigned to You</h2>
           {myOrders.length === 0 && <p className="text-muted-foreground text-sm">No orders assigned to you.</p>}
           {myOrders.map((o) => (
-            <div key={o.id} className="rounded-lg border bg-card p-3 shadow-sm">
+            <div key={o.id} className="rounded-2xl border bg-card p-4 shadow-sm">
               <div className="font-semibold">
                 #{o.orderNumber} — {o.orderName}
               </div>
@@ -70,7 +80,7 @@ export default function ManageOrders() {
 function EditableOrderRow({ order }: { order: Order }) {
   const [editing, setEditing] = useState(false)
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-sm">
+    <div className="rounded-2xl border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-semibold">
@@ -78,7 +88,7 @@ function EditableOrderRow({ order }: { order: Order }) {
           </div>
           <div className="text-muted-foreground text-sm">{order.location}</div>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => setEditing((v) => !v)}>
+        <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>
           {editing ? 'Close' : 'Edit'}
         </Button>
       </div>

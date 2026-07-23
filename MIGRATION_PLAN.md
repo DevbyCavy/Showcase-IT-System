@@ -587,7 +587,7 @@ browser flow before committing.
     widget *and* the full board — intentional, a quick glance plus a deep-dive view), and correctly
     stacks below the main content on mobile widths instead of disappearing.
 
-11. **Full-app redesign — shared design system (in progress).** Calvin asked to redesign every page
+11. **Full-app redesign — shared design system (done).** Calvin asked to redesign every page
     (Dashboard, Inventory, Products, Orders, Logistics, Vehicles, Fuel Logs, Trips, Maintenance,
     Reports, Users, Settings, Authentication) into one cohesive premium dashboard, following the same
     "Selena Academy" reference (§10.4/§10.10) app-wide, and agreed to a shared-system-first rollout:
@@ -620,9 +620,21 @@ browser flow before committing.
       with search/pagination/action-icon buttons, `PageHeader`) and `Requisitions.tsx`
       (form-heavy — `Card`/`CardContent` for the create form, `DataTable` for the submitted-list).
       Both verified visually via Playwright alongside the dashboard before continuing.
-    - **Remaining work**: sweep every other page onto these same primitives — Categories, Brands,
-      Products, Store, IssuedProductsReport, ManageOrders, OrdersKanban, BOQ, ProcessRequisitions,
-      MakeQuotation, ProcessQuotations, Vehicles, FuelLogs, MaintenanceLogs, TripLogbook,
-      VehicleDocuments, Memos, Login, Signup — plus a lint/typecheck pass at the end. None of these
-      pages' underlying logic, validation, or API calls change — this is a pure presentation-layer
-      sweep, same pattern as the two representative pages above.
+    - **Full sweep completed**: every remaining page converted onto the same primitives —
+      Categories/Brands (both share `SimpleCatalogManager`, so one rewrite covered both), Products
+      and the shared `SimpleCatalogManager` were also migrated off direct TanStack Table usage onto
+      `DataTable` for consistency (TanStack Table is still a dependency but no longer used anywhere
+      in the client — left in `package.json` rather than pulled mid-sweep, a separate cleanup if ever
+      wanted), Store (card grid, not a table — got the rounded search pill + `PageHeader` + hover
+      shadow on cards), IssuedProductsReport, ManageOrders (pill-style tab switcher replacing
+      underline tabs), OrdersKanban + `OrderCard` (rounded-2xl + hover shadow), BOQ,
+      ProcessRequisitions, MakeQuotation, ProcessQuotations, Vehicles, FuelLogs (stat cards row using
+      `Card`, matching the reference's summary-cards-at-top layout), MaintenanceLogs, TripLogbook,
+      VehicleDocuments, Memos, and Login/Signup (added the logo mark, matched card radius). No
+      underlying logic, validation, mutation, or API-call code changed anywhere in the sweep — every
+      diff is presentation-layer only (markup + Tailwind classes), verified by an unchanged
+      `tsc --noEmit` pass after every single file and a final `oxlint` pass with zero new warnings.
+      Verified visually via an 18-page Playwright sweep (screenshotting every converted page after
+      logging in) — table pages, stat-card pages, card-grid pages (Store), and the tab-switcher
+      pages all render consistently with the rounded-pill tabs, uppercase DataTable headers, and the
+      persistent right-hand DashboardSidePanel present throughout.

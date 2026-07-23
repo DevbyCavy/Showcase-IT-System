@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as vehicleDocumentsApi from '@/api/vehicleDocuments'
 import * as vehiclesApi from '@/api/vehicles'
 import type { VehicleDocument, VehicleDocumentType } from '@/api/vehicleDocuments'
@@ -38,94 +42,77 @@ export default function VehicleDocuments() {
   const { data: documents, isLoading } = useQuery({ queryKey: ['vehicle-documents'], queryFn: vehicleDocumentsApi.list })
   const [renewing, setRenewing] = useState<VehicleDocument | null>(null)
 
+  const columns: DataTableColumn<VehicleDocument>[] = [
+    { key: 'vehicle', header: 'Vehicle', render: (d) => d.vehicle.registrationNumber },
+    { key: 'type', header: 'Type', render: (d) => typeLabel[d.documentType] },
+    { key: 'number', header: 'Number', render: (d) => d.documentNumber },
+    { key: 'issue', header: 'Issue Date', render: (d) => new Date(d.issueDate).toLocaleDateString() },
+    { key: 'expiry', header: 'Expiry Date', render: (d) => new Date(d.expiryDate).toLocaleDateString() },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (d) => <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[d.status]}`}>{statusLabel[d.status]}</span>,
+    },
+    {
+      key: 'document',
+      header: 'Document',
+      render: (d) =>
+        d.uploadedFile ? (
+          <a href={d.uploadedFile} target="_blank" rel="noreferrer" className="text-xs underline">
+            View
+          </a>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (d) => (
+        <Button size="sm" variant="outline" onClick={() => setRenewing(d)}>
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Renew
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Vehicle Documents</h1>
+      <PageHeader title="Vehicle Documents" />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Documents</h6>
-          <p className="text-2xl font-bold">{stats?.totalDocs ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Expired</h6>
-          <p className="text-2xl font-bold text-destructive">{stats?.expiredDocs ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Expiring Soon</h6>
-          <p className="text-2xl font-bold text-amber-500">{stats?.expiringDocs ?? 0}</p>
-        </div>
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Documents</h6>
+            <p className="text-2xl font-bold">{stats?.totalDocs ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Expired</h6>
+            <p className="text-2xl font-bold text-destructive">{stats?.expiredDocs ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Expiring Soon</h6>
+            <p className="text-2xl font-bold text-amber-500">{stats?.expiringDocs ?? 0}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
-        <h2 className="mb-3 font-semibold">Add Document</h2>
-        <DocumentForm mode="add" />
-      </div>
+      <Card className="mb-5">
+        <CardContent>
+          <h2 className="mb-3 font-semibold">Add Document</h2>
+          <DocumentForm mode="add" />
+        </CardContent>
+      </Card>
 
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            <tr>
-              <th className="p-3">Vehicle</th>
-              <th className="p-3">Type</th>
-              <th className="p-3">Number</th>
-              <th className="p-3">Issue Date</th>
-              <th className="p-3">Expiry Date</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Document</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={8} className="p-4 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && (documents ?? []).length === 0 && (
-              <tr>
-                <td colSpan={8} className="p-4 text-center text-muted-foreground">
-                  No documents yet.
-                </td>
-              </tr>
-            )}
-            {documents?.map((d) => (
-              <tr key={d.id} className="border-t">
-                <td className="p-3">{d.vehicle.registrationNumber}</td>
-                <td className="p-3">{typeLabel[d.documentType]}</td>
-                <td className="p-3">{d.documentNumber}</td>
-                <td className="p-3">{new Date(d.issueDate).toLocaleDateString()}</td>
-                <td className="p-3">{new Date(d.expiryDate).toLocaleDateString()}</td>
-                <td className="p-3">
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[d.status]}`}>
-                    {statusLabel[d.status]}
-                  </span>
-                </td>
-                <td className="p-3">
-                  {d.uploadedFile ? (
-                    <a href={d.uploadedFile} target="_blank" rel="noreferrer" className="text-xs underline">
-                      View
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  )}
-                </td>
-                <td className="p-3">
-                  <Button size="sm" variant="secondary" onClick={() => setRenewing(d)}>
-                    Renew
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable columns={columns} data={documents ?? []} keyExtractor={(d) => d.id} isLoading={isLoading} emptyMessage="No documents yet." />
 
       {renewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
             <h2 className="mb-4 text-lg font-semibold">Renew Document</h2>
             <DocumentForm mode="renew" document={renewing} onSaved={() => setRenewing(null)} />
             <div className="mt-4 flex justify-end">

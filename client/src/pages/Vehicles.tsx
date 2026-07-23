@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { Eye, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as vehiclesApi from '@/api/vehicles'
 import * as usersApi from '@/api/users'
 import type { Vehicle, VehicleInput, FuelType, VehicleStatus } from '@/api/vehicles'
@@ -42,83 +45,57 @@ export default function Vehicles() {
     [v.registrationNumber, v.make, v.model, v.department].join(' ').toLowerCase().includes(search.toLowerCase()),
   )
 
+  const columns: DataTableColumn<Vehicle>[] = [
+    { key: 'reg', header: 'Reg Number', render: (v) => v.registrationNumber },
+    { key: 'vehicle', header: 'Vehicle', render: (v) => `${v.make} ${v.model}` },
+    { key: 'department', header: 'Department', render: (v) => v.department },
+    { key: 'assignedUser', header: 'Assigned User', render: (v) => (v.assignedUser ? `${v.assignedUser.name} ${v.assignedUser.surname}` : '—') },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (v) => <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[v.status]}`}>{statusLabel[v.status]}</span>,
+    },
+    { key: 'purchaseDate', header: 'Purchase Date', render: (v) => new Date(v.purchaseDate).toLocaleDateString() },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (v) => (
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setViewing(v)}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setModal({ mode: 'edit', vehicle: v })}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              if (confirm('Delete this vehicle?')) deleteMutation.mutate(v.id)
+            }}
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-8">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Vehicle Register</h1>
-        <Button onClick={() => setModal({ mode: 'add' })}>+ Add Vehicle</Button>
-      </div>
+      <PageHeader title="Vehicle Register" action={<Button onClick={() => setModal({ mode: 'add' })}>+ Add Vehicle</Button>} />
 
-      <Input placeholder="Search vehicle..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-3" />
-
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            <tr>
-              <th className="p-3">Reg Number</th>
-              <th className="p-3">Vehicle</th>
-              <th className="p-3">Department</th>
-              <th className="p-3">Assigned User</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Purchase Date</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                  No vehicles found.
-                </td>
-              </tr>
-            )}
-            {filtered.map((v) => (
-              <tr key={v.id} className="border-t">
-                <td className="p-3">{v.registrationNumber}</td>
-                <td className="p-3">
-                  {v.make} {v.model}
-                </td>
-                <td className="p-3">{v.department}</td>
-                <td className="p-3">
-                  {v.assignedUser ? `${v.assignedUser.name} ${v.assignedUser.surname}` : '—'}
-                </td>
-                <td className="p-3">
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[v.status]}`}>
-                    {statusLabel[v.status]}
-                  </span>
-                </td>
-                <td className="p-3">{new Date(v.purchaseDate).toLocaleDateString()}</td>
-                <td className="p-3">
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => setViewing(v)}>
-                      View
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setModal({ mode: 'edit', vehicle: v })}>
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        if (confirm('Delete this vehicle?')) deleteMutation.mutate(v.id)
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(v) => v.id}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search vehicle..."
+        isLoading={isLoading}
+        emptyMessage="No vehicles found."
+      />
 
       {modal && <VehicleModal modal={modal} onClose={() => setModal(null)} />}
       {viewing && <VehicleDetailsModal vehicle={viewing} onClose={() => setViewing(null)} />}
@@ -129,7 +106,7 @@ export default function Vehicles() {
 function VehicleDetailsModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-lg rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">Vehicle Details</h2>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -221,7 +198,7 @@ function VehicleModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">{modal.mode === 'add' ? 'Add Vehicle' : 'Edit Vehicle'}</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}

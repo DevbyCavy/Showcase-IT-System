@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table'
 import { isAxiosError } from 'axios'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 
 export interface SimpleCatalogItem {
   id: number
@@ -26,6 +28,8 @@ interface SimpleCatalogApi<T extends SimpleCatalogItem> {
 // Shared UI for the brand/category CRUD shape (identical in the legacy app: name + a soft-delete
 // status + a business "Available" flag confusingly also called "Status" on the form). Used by
 // Categories.tsx and Brands.tsx — extract further shared entities here rather than re-copying.
+// Rebuilt on the shared PageHeader/DataTable primitives as part of the full-app redesign sweep
+// (see MIGRATION_PLAN.md §10.11).
 export function SimpleCatalogManager<T extends SimpleCatalogItem>({
   title,
   entityName,
@@ -41,7 +45,7 @@ export function SimpleCatalogManager<T extends SimpleCatalogItem>({
 }) {
   const queryClient = useQueryClient()
   const { data: items, isLoading } = useQuery({ queryKey: [queryKey], queryFn: api.list })
-  const [globalFilter, setGlobalFilter] = useState('')
+  const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ mode: 'add' } | { mode: 'edit'; item: T } | null>(null)
 
   const deleteMutation = useMutation({
@@ -49,117 +53,61 @@ export function SimpleCatalogManager<T extends SimpleCatalogItem>({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [queryKey] }),
   })
 
-  const columns = useMemo<ColumnDef<T>[]>(
-    () => [
-      { header: `${entityName} Name`, accessorKey: 'name' },
-      {
-        header: 'Status',
-        accessorKey: 'isActive',
-        cell: ({ row }) =>
-          row.original.isActive ? (
-            <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Available</span>
-          ) : (
-            <span className="rounded bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-              Not Available
-            </span>
-          ),
-      },
-      {
-        id: 'options',
-        header: 'Options',
-        cell: ({ row }) => (
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setModal({ mode: 'edit', item: row.original })}>
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                if (confirm(`Do you really want to remove this ${entityName.toLowerCase()}?`)) {
-                  deleteMutation.mutate(row.original.id)
-                }
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [deleteMutation, entityName],
-  )
+  const filtered = (items ?? []).filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
 
-  const table = useReactTable({
-    data: items ?? [],
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  })
+  const columns: DataTableColumn<T>[] = [
+    { key: 'name', header: `${entityName} Name`, render: (item) => item.name },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (item) =>
+        item.isActive ? (
+          <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Available</span>
+        ) : (
+          <span className="rounded bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">Not Available</span>
+        ),
+    },
+    {
+      key: 'options',
+      header: 'Options',
+      render: (item) => (
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setModal({ mode: 'edit', item })}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              if (confirm(`Do you really want to remove this ${entityName.toLowerCase()}?`)) {
+                deleteMutation.mutate(item.id)
+              }
+            }}
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">{title}</h1>
-        <Button onClick={() => setModal({ mode: 'add' })}>Add {entityName}</Button>
-      </div>
+      <PageHeader title={title} action={<Button onClick={() => setModal({ mode: 'add' })}>Add {entityName}</Button>} />
 
-      <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
-        <Input placeholder="Search..." value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} />
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((header) => (
-                  <th key={header.id} className="p-3">
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={columns.length} className="p-4 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && table.getRowModel().rows.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} className="p-4 text-center text-muted-foreground">
-                  No {entityName.toLowerCase()}s found.
-                </td>
-              </tr>
-            )}
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-t">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-3">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        search={search}
+        onSearchChange={setSearch}
+        isLoading={isLoading}
+        emptyMessage={`No ${entityName.toLowerCase()}s found.`}
+      />
 
       {modal && (
-        <CatalogModal
-          modal={modal}
-          entityName={entityName}
-          nameLabel={nameLabel}
-          queryKey={queryKey}
-          api={api}
-          onClose={() => setModal(null)}
-        />
+        <CatalogModal modal={modal} entityName={entityName} nameLabel={nameLabel} queryKey={queryKey} api={api} onClose={() => setModal(null)} />
       )}
     </div>
   )
@@ -201,10 +149,8 @@ function CatalogModal<T extends SimpleCatalogItem>({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
-        <h2 className="mb-4 text-lg font-semibold">
-          {modal.mode === 'add' ? `Add ${entityName}` : `Edit ${entityName}`}
-        </h2>
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold">{modal.mode === 'add' ? `Add ${entityName}` : `Edit ${entityName}`}</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
 

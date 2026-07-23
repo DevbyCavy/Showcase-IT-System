@@ -68,7 +68,7 @@ export function OrderCard({ order }: { order: Order }) {
   }, [order.status, order.ongoingSince, order.deadlineDatetime])
 
   return (
-    <div className="flex h-full flex-col rounded-lg border bg-card p-4 shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-2 flex items-start justify-between">
         <div>
           <div className="text-lg font-bold">Order #{order.orderNumber}</div>

@@ -3,9 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as maintenanceLogsApi from '@/api/maintenanceLogs'
 import * as vehiclesApi from '@/api/vehicles'
-import type { MaintenanceType } from '@/api/maintenanceLogs'
+import type { MaintenanceLog, MaintenanceType } from '@/api/maintenanceLogs'
 
 const selectClass =
   'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -78,26 +81,42 @@ export default function MaintenanceLogs() {
     },
   })
 
+  const historyColumns: DataTableColumn<MaintenanceLog>[] = [
+    { key: 'date', header: 'Date', render: (h) => new Date(h.serviceDate).toLocaleDateString() },
+    { key: 'vehicle', header: 'Vehicle', render: (h) => h.vehicle.registrationNumber },
+    { key: 'type', header: 'Type', render: (h) => typeLabel[h.maintenanceType] },
+    { key: 'provider', header: 'Provider', render: (h) => h.serviceProvider },
+    { key: 'cost', header: 'Cost', render: (h) => `$${Number(h.serviceCost ?? 0).toFixed(2)}` },
+    { key: 'next', header: 'Next Service', render: (h) => (h.nextServiceDate ? new Date(h.nextServiceDate).toLocaleDateString() : '—') },
+  ]
+
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Maintenance Log</h1>
+      <PageHeader title="Maintenance Log" />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Services</h6>
-          <p className="text-2xl font-bold">{stats?.totalServices ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Maintenance Cost</h6>
-          <p className="text-2xl font-bold">${Number(stats?.totalCost ?? 0).toFixed(2)}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Services Due Soon</h6>
-          <p className="text-2xl font-bold">{stats?.dueServices ?? 0}</p>
-        </div>
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Services</h6>
+            <p className="text-2xl font-bold">{stats?.totalServices ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Maintenance Cost</h6>
+            <p className="text-2xl font-bold">${Number(stats?.totalCost ?? 0).toFixed(2)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Services Due Soon</h6>
+            <p className="text-2xl font-bold">{stats?.dueServices ?? 0}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="mb-4 space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+      <Card className="mb-5">
+        <CardContent className="space-y-3">
         <h2 className="font-semibold">Maintenance Log</h2>
 
         {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -173,44 +192,11 @@ export default function MaintenanceLogs() {
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
           {mutation.isPending ? 'Saving…' : 'Save Maintenance Record'}
         </Button>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="border-b p-4 font-semibold">Maintenance History</div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary text-left">
-              <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">Vehicle</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Provider</th>
-                <th className="p-3">Cost</th>
-                <th className="p-3">Next Service</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(history ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-4 text-center text-muted-foreground">
-                    No maintenance records yet.
-                  </td>
-                </tr>
-              )}
-              {history?.map((h) => (
-                <tr key={h.id} className="border-t">
-                  <td className="p-3">{new Date(h.serviceDate).toLocaleDateString()}</td>
-                  <td className="p-3">{h.vehicle.registrationNumber}</td>
-                  <td className="p-3">{typeLabel[h.maintenanceType]}</td>
-                  <td className="p-3">{h.serviceProvider}</td>
-                  <td className="p-3">${Number(h.serviceCost ?? 0).toFixed(2)}</td>
-                  <td className="p-3">{h.nextServiceDate ? new Date(h.nextServiceDate).toLocaleDateString() : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <h2 className="mb-3 font-semibold">Maintenance History</h2>
+      <DataTable columns={historyColumns} data={history ?? []} keyExtractor={(h) => h.id} emptyMessage="No maintenance records yet." />
     </div>
   )
 }

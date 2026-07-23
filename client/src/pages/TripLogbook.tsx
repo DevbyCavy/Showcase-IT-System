@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as tripsApi from '@/api/vehicleTrips'
 import * as usersApi from '@/api/users'
 import type { VehicleTrip } from '@/api/vehicleTrips'
@@ -61,39 +64,86 @@ export default function TripLogbook() {
     [t.vehicle.registrationNumber, t.driver.name, t.driver.surname, t.destination].join(' ').toLowerCase().includes(search.toLowerCase()),
   )
 
+  const activeColumns: DataTableColumn<VehicleTrip>[] = [
+    { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicle.registrationNumber },
+    { key: 'driver', header: 'Driver', render: (t) => `${t.driver.name} ${t.driver.surname}` },
+    { key: 'destination', header: 'Destination', render: (t) => t.destination },
+    { key: 'departure', header: 'Departure', render: (t) => new Date(t.departureDatetime).toLocaleString() },
+    { key: 'status', header: 'Status', render: () => <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">Active</span> },
+    {
+      key: 'action',
+      header: 'Action',
+      render: (t) => (
+        <Button size="sm" onClick={() => setEnding(t)}>
+          End Trip
+        </Button>
+      ),
+    },
+  ]
+
+  const historyColumns: DataTableColumn<VehicleTrip>[] = [
+    { key: 'vehicle', header: 'Vehicle', render: (t) => t.vehicle.registrationNumber },
+    { key: 'driver', header: 'Driver', render: (t) => `${t.driver.name} ${t.driver.surname}` },
+    { key: 'destination', header: 'Destination', render: (t) => t.destination },
+    { key: 'departure', header: 'Departure', render: (t) => new Date(t.departureDatetime).toLocaleString() },
+    { key: 'return', header: 'Return', render: (t) => (t.returnDatetime ? new Date(t.returnDatetime).toLocaleString() : '') },
+    { key: 'distance', header: 'Distance (KM)', render: (t) => Number(t.distanceTravelled ?? 0).toFixed(2) },
+    {
+      key: 'status',
+      header: 'Status',
+      render: () => <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Completed</span>,
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Trip Logbook</h1>
+      <PageHeader title="Trip Logbook" />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Trips</h6>
-          <p className="text-2xl font-bold">{stats?.totalTrips ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Active Trips</h6>
-          <p className="text-2xl font-bold">{stats?.activeTripCount ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Distance</h6>
-          <p className="text-2xl font-bold">{Number(stats?.totalDistance ?? 0).toFixed(2)} KM</p>
-        </div>
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Trips</h6>
+            <p className="text-2xl font-bold">{stats?.totalTrips ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Active Trips</h6>
+            <p className="text-2xl font-bold">{stats?.activeTripCount ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Distance</h6>
+            <p className="text-2xl font-bold">{Number(stats?.totalDistance ?? 0).toFixed(2)} KM</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="mb-4 flex gap-2 border-b">
-        <button className={`px-4 py-2 text-sm font-semibold ${tab === 'new' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`} onClick={() => setTab('new')}>
+      <div className="mb-5 flex w-fit gap-0.5 rounded-full bg-secondary p-1">
+        <button
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${tab === 'new' ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setTab('new')}
+        >
           New Trip
         </button>
-        <button className={`px-4 py-2 text-sm font-semibold ${tab === 'active' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`} onClick={() => setTab('active')}>
+        <button
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${tab === 'active' ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setTab('active')}
+        >
           Active Trips
         </button>
-        <button className={`px-4 py-2 text-sm font-semibold ${tab === 'history' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`} onClick={() => setTab('history')}>
+        <button
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${tab === 'history' ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setTab('history')}
+        >
           Trip History
         </button>
       </div>
 
       {tab === 'new' && (
-        <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+        <Card>
+          <CardContent className="space-y-3">
           <h2 className="font-semibold">Create New Trip</h2>
 
           {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -148,96 +198,24 @@ export default function TripLogbook() {
           <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Starting…' : 'Start Trip'}
           </Button>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {tab === 'active' && (
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary text-left">
-              <tr>
-                <th className="p-3">Vehicle</th>
-                <th className="p-3">Driver</th>
-                <th className="p-3">Destination</th>
-                <th className="p-3">Departure</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(activeTrips ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-4 text-center text-muted-foreground">
-                    No active trips.
-                  </td>
-                </tr>
-              )}
-              {activeTrips?.map((t) => (
-                <tr key={t.id} className="border-t">
-                  <td className="p-3">{t.vehicle.registrationNumber}</td>
-                  <td className="p-3">
-                    {t.driver.name} {t.driver.surname}
-                  </td>
-                  <td className="p-3">{t.destination}</td>
-                  <td className="p-3">{new Date(t.departureDatetime).toLocaleString()}</td>
-                  <td className="p-3">
-                    <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">Active</span>
-                  </td>
-                  <td className="p-3">
-                    <Button size="sm" onClick={() => setEnding(t)}>
-                      End Trip
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable columns={activeColumns} data={activeTrips ?? []} keyExtractor={(t) => t.id} emptyMessage="No active trips." />
       )}
 
       {tab === 'history' && (
-        <div>
-          <Input placeholder="Search trips..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-3" />
-          <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary text-left">
-                <tr>
-                  <th className="p-3">Vehicle</th>
-                  <th className="p-3">Driver</th>
-                  <th className="p-3">Destination</th>
-                  <th className="p-3">Departure</th>
-                  <th className="p-3">Return</th>
-                  <th className="p-3">Distance (KM)</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHistory.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                      No completed trips.
-                    </td>
-                  </tr>
-                )}
-                {filteredHistory.map((t) => (
-                  <tr key={t.id} className="border-t">
-                    <td className="p-3">{t.vehicle.registrationNumber}</td>
-                    <td className="p-3">
-                      {t.driver.name} {t.driver.surname}
-                    </td>
-                    <td className="p-3">{t.destination}</td>
-                    <td className="p-3">{new Date(t.departureDatetime).toLocaleString()}</td>
-                    <td className="p-3">{t.returnDatetime && new Date(t.returnDatetime).toLocaleString()}</td>
-                    <td className="p-3">{Number(t.distanceTravelled ?? 0).toFixed(2)}</td>
-                    <td className="p-3">
-                      <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Completed</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DataTable
+          columns={historyColumns}
+          data={filteredHistory}
+          keyExtractor={(t) => t.id}
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search trips..."
+          emptyMessage="No completed trips."
+        />
       )}
 
       {ending && <EndTripModal trip={ending} onClose={() => setEnding(null)} />}
@@ -270,7 +248,7 @@ function EndTripModal({ trip, onClose }: { trip: VehicleTrip; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">End Trip</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}

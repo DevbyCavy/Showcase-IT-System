@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Eye, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as requisitionsApi from '@/api/requisitions'
 import type { Requisition } from '@/api/requisitions'
 
@@ -11,6 +14,8 @@ const statusBadge: Record<string, string> = {
 }
 
 // Translated from processRequisitions.php (Super-Admin-only approval UI) + processRequisition.php.
+// Rebuilt on the shared PageHeader/DataTable primitives as part of the full-app redesign sweep
+// (see MIGRATION_PLAN.md §10.11).
 export default function ProcessRequisitions() {
   const queryClient = useQueryClient()
   const { data: requisitions } = useQuery({ queryKey: ['requisitions'], queryFn: requisitionsApi.list })
@@ -28,24 +33,101 @@ export default function ProcessRequisitions() {
     },
   })
 
+  const pendingColumns: DataTableColumn<Requisition>[] = [
+    { key: 'reqNumber', header: 'Req #', render: (r) => <span className="font-medium">{r.reqNumber}</span> },
+    { key: 'pm', header: 'Project Manager', render: (r) => r.projectManager },
+    { key: 'event', header: 'Event', render: (r) => r.eventName },
+    { key: 'location', header: 'Location', render: (r) => r.location },
+    { key: 'date', header: 'Date', render: (r) => new Date(r.eventDate).toLocaleDateString() },
+    { key: 'type', header: 'Type', render: (r) => <span className="bg-secondary rounded px-2 py-0.5 text-xs">{r.displayType}</span> },
+    { key: 'submittedBy', header: 'Submitted by', render: (r) => `${r.submittedBy.name} ${r.submittedBy.surname}` },
+    {
+      key: 'actions',
+      header: 'Action',
+      headerClassName: 'text-center',
+      cellClassName: 'text-center',
+      render: (r) => (
+        <div className="flex justify-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setViewing(r)}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+          </Button>
+          <Button size="sm" onClick={() => setConfirming(r)}>
+            <Check className="mr-1.5 h-3.5 w-3.5" /> Process
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
+  const allColumns: DataTableColumn<Requisition>[] = [
+    { key: 'reqNumber', header: 'Req #', render: (r) => <span className="font-medium">{r.reqNumber}</span> },
+    { key: 'pm', header: 'Project Manager', render: (r) => r.projectManager },
+    {
+      key: 'event',
+      header: 'Event',
+      render: (r) => (
+        <>
+          {r.eventName}
+          <div className="text-muted-foreground text-xs">{r.location}</div>
+        </>
+      ),
+    },
+    { key: 'date', header: 'Date', render: (r) => new Date(r.eventDate).toLocaleDateString() },
+    { key: 'type', header: 'Type', render: (r) => <span className="bg-secondary rounded px-2 py-0.5 text-xs">{r.displayType}</span> },
+    { key: 'submittedBy', header: 'Submitted by', render: (r) => `${r.submittedBy.name} ${r.submittedBy.surname}` },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (r) => (
+        <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[r.status] ?? 'bg-amber-500'}`}>{r.status}</span>
+      ),
+    },
+    {
+      key: 'processedBy',
+      header: 'Processed by',
+      render: (r) =>
+        r.processedBy ? (
+          <>
+            {r.processedBy.name} {r.processedBy.surname}
+            <div className="text-muted-foreground text-xs">{r.processedAt && new Date(r.processedAt).toLocaleString()}</div>
+          </>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'View',
+      headerClassName: 'text-center',
+      cellClassName: 'text-center',
+      render: (r) => (
+        <Button size="sm" variant="outline" onClick={() => setViewing(r)}>
+          <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Process Requisitions</h1>
-        <span className="rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground">
-          {pending.length} Pending
-        </span>
-      </div>
+      <PageHeader
+        title="Process Requisitions"
+        action={<span className="rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground">{pending.length} Pending</span>}
+      />
 
-      <div className="mb-4 flex gap-2 border-b">
+      <div className="mb-5 flex w-fit gap-0.5 rounded-full bg-secondary p-1">
         <button
-          className={`px-4 py-2 text-sm font-semibold ${tab === 'pending' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+            tab === 'pending' ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'
+          }`}
           onClick={() => setTab('pending')}
         >
           Pending ({pending.length})
         </button>
         <button
-          className={`px-4 py-2 text-sm font-semibold ${tab === 'all' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+            tab === 'all' ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'
+          }`}
           onClick={() => setTab('all')}
         >
           All Requisitions
@@ -53,129 +135,21 @@ export default function ProcessRequisitions() {
       </div>
 
       {tab === 'pending' && (
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary text-left">
-              <tr>
-                <th className="p-3">Req #</th>
-                <th className="p-3">Project Manager</th>
-                <th className="p-3">Event</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Submitted by</th>
-                <th className="p-3 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pending.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="p-6 text-center text-muted-foreground">
-                    All requisitions have been processed.
-                  </td>
-                </tr>
-              )}
-              {pending.map((r) => (
-                <tr key={r.id} className="border-t">
-                  <td className="p-3 font-medium">{r.reqNumber}</td>
-                  <td className="p-3">{r.projectManager}</td>
-                  <td className="p-3">{r.eventName}</td>
-                  <td className="p-3">{r.location}</td>
-                  <td className="p-3">{new Date(r.eventDate).toLocaleDateString()}</td>
-                  <td className="p-3">
-                    <span className="rounded bg-secondary px-2 py-0.5 text-xs">{r.displayType}</span>
-                  </td>
-                  <td className="p-3">
-                    {r.submittedBy.name} {r.submittedBy.surname}
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setViewing(r)}>
-                        View
-                      </Button>
-                      <Button size="sm" variant="default" onClick={() => setConfirming(r)}>
-                        Process
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={pendingColumns}
+          data={pending}
+          keyExtractor={(r) => r.id}
+          emptyMessage="All requisitions have been processed."
+        />
       )}
 
       {tab === 'all' && (
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary text-left">
-              <tr>
-                <th className="p-3">Req #</th>
-                <th className="p-3">Project Manager</th>
-                <th className="p-3">Event</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Submitted by</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Processed by</th>
-                <th className="p-3 text-center">View</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(requisitions ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={9} className="p-6 text-center text-muted-foreground">
-                    No requisitions found.
-                  </td>
-                </tr>
-              )}
-              {requisitions?.map((r) => (
-                <tr key={r.id} className="border-t">
-                  <td className="p-3 font-medium">{r.reqNumber}</td>
-                  <td className="p-3">{r.projectManager}</td>
-                  <td className="p-3">
-                    {r.eventName}
-                    <div className="text-muted-foreground text-xs">{r.location}</div>
-                  </td>
-                  <td className="p-3">{new Date(r.eventDate).toLocaleDateString()}</td>
-                  <td className="p-3">
-                    <span className="rounded bg-secondary px-2 py-0.5 text-xs">{r.displayType}</span>
-                  </td>
-                  <td className="p-3">
-                    {r.submittedBy.name} {r.submittedBy.surname}
-                  </td>
-                  <td className="p-3">
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${statusBadge[r.status] ?? 'bg-amber-500'}`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {r.processedBy ? (
-                      <>
-                        {r.processedBy.name} {r.processedBy.surname}
-                        <div className="text-muted-foreground text-xs">
-                          {r.processedAt && new Date(r.processedAt).toLocaleString()}
-                        </div>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    <Button size="sm" variant="outline" onClick={() => setViewing(r)}>
-                      View
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable columns={allColumns} data={requisitions ?? []} keyExtractor={(r) => r.id} emptyMessage="No requisitions found." />
       )}
 
       {viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-lg border bg-card p-6 shadow-lg">
+          <div className="w-full max-w-lg rounded-2xl border bg-card p-6 shadow-lg">
             <h2 className="mb-4 text-lg font-semibold">Requisition Details</h2>
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
@@ -228,11 +202,11 @@ export default function ProcessRequisitions() {
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-lg border bg-card p-6 text-center shadow-lg">
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-lg">
             <h2 className="mb-2 text-lg font-semibold">Confirm Processing</h2>
             <p className="mb-1">Mark requisition</p>
             <p className="mb-1 text-lg font-bold">{confirming.reqNumber}</p>
-            <p className="mb-4 text-muted-foreground text-sm">as Processed? This action cannot be undone.</p>
+            <p className="text-muted-foreground mb-4 text-sm">as Processed? This action cannot be undone.</p>
             <div className="flex justify-center gap-2">
               <Button variant="outline" onClick={() => setConfirming(null)}>
                 Cancel

@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { Send, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useAuth } from '@/hooks/useAuth'
 import * as quotationsApi from '@/api/quotations'
-import type { QuotationItemInput } from '@/api/quotations'
+import type { Quotation, QuotationItemInput } from '@/api/quotations'
 
 const DEFAULT_TERMS = [
   '1. Invoice valid for 14 working days.',
@@ -89,11 +93,38 @@ export default function MakeQuotation() {
 
   const myQuotations = (quotations ?? []).filter((q) => q.submittedBy.id === user?.id)
 
+  const columns: DataTableColumn<Quotation>[] = [
+    { key: 'quotationNumber', header: 'Quotation #', render: (q) => <span className="font-medium">{q.quotationNumber}</span> },
+    { key: 'customer', header: 'Customer', render: (q) => q.customerName },
+    { key: 'project', header: 'Project', render: (q) => q.projectName },
+    { key: 'date', header: 'Date', render: (q) => new Date(q.quoteDate).toLocaleDateString() },
+    { key: 'total', header: 'Total', render: (q) => `$${Number(q.total).toFixed(2)}` },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (q) => (
+        <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${q.status === 'Approved' ? 'bg-green-600' : 'bg-amber-500'}`}>
+          {q.status}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (q) => (
+        <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
+          <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Make Quotation</h1>
+      <PageHeader title="Make Quotation" />
 
-      <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+      <Card className="mb-8">
+        <CardContent className="space-y-3">
         {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
         {success && <div className="rounded-md bg-primary/10 px-3 py-2 text-sm">{success}</div>}
 
@@ -129,7 +160,7 @@ export default function MakeQuotation() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Items</label>
-          <div className="overflow-x-auto rounded border">
+          <div className="overflow-x-auto rounded-xl border">
             <table className="w-full text-sm">
               <thead className="bg-secondary text-left">
                 <tr>
@@ -220,57 +251,15 @@ export default function MakeQuotation() {
         </div>
 
         <Button className="w-full" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          <Send className="mr-1.5 h-4 w-4" />
           {mutation.isPending ? 'Submitting…' : 'Submit for Approval'}
         </Button>
-      </div>
+        </CardContent>
+      </Card>
 
-      <h2 className="mt-8 mb-3 font-semibold">My Submitted Quotations</h2>
+      <h2 className="mb-3 font-semibold">My Submitted Quotations</h2>
       {downloadError && <div className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{downloadError}</div>}
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            <tr>
-              <th className="p-3">Quotation #</th>
-              <th className="p-3">Customer</th>
-              <th className="p-3">Project</th>
-              <th className="p-3">Date</th>
-              <th className="p-3">Total</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myQuotations.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                  No quotations submitted yet.
-                </td>
-              </tr>
-            )}
-            {myQuotations.map((q) => (
-              <tr key={q.id} className="border-t">
-                <td className="p-3 font-medium">{q.quotationNumber}</td>
-                <td className="p-3">{q.customerName}</td>
-                <td className="p-3">{q.projectName}</td>
-                <td className="p-3">{new Date(q.quoteDate).toLocaleDateString()}</td>
-                <td className="p-3">${Number(q.total).toFixed(2)}</td>
-                <td className="p-3">
-                  <span
-                    className={`rounded px-2 py-0.5 text-xs font-medium text-white ${q.status === 'Approved' ? 'bg-green-600' : 'bg-amber-500'}`}
-                  >
-                    {q.status}
-                  </span>
-                </td>
-                <td className="p-3">
-                  <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
-                    PDF
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable columns={columns} data={myQuotations} keyExtractor={(q) => q.id} emptyMessage="No quotations submitted yet." />
     </div>
   )
 }

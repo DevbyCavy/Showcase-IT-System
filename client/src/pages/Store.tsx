@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
 import * as inventoryApi from '@/api/inventory'
 import * as productsApi from '@/api/products'
 import type { Product } from '@/api/products'
@@ -33,23 +35,23 @@ export default function Store() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Store</h1>
-        <Input
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
-      </div>
+      <PageHeader
+        title="Store"
+        action={
+          <div className="relative w-full max-w-xs">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="rounded-full pl-9" />
+          </div>
+        }
+      />
 
       {isLoading && <p className="text-muted-foreground">Loading…</p>}
       {!isLoading && filtered.length === 0 && <p className="text-muted-foreground">No products found.</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {filtered.map((p) => (
-          <div key={p.id} className="flex flex-col rounded-lg border bg-card p-3 shadow-sm">
-            <div className="mb-2 flex h-40 items-center justify-center overflow-hidden rounded">
+          <div key={p.id} className="flex flex-col rounded-2xl border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
+            <div className="mb-2 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-secondary">
               {p.imageUrl ? (
                 <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
               ) : (
@@ -128,7 +130,7 @@ function IssueProductModal({ product, onClose }: { product: Product; onClose: ()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">Issue Product</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}

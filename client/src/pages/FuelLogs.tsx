@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader } from '@/components/ui/page-header'
 import * as fuelLogsApi from '@/api/fuelLogs'
 import * as vehiclesApi from '@/api/vehicles'
 
@@ -55,24 +57,31 @@ export default function FuelLogs() {
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
-      <h1 className="mb-4 text-xl font-bold">Fuel Log</h1>
+      <PageHeader title="Fuel Log" />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Entries</h6>
-          <p className="text-2xl font-bold">{stats?.totalEntries ?? 0}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Litres</h6>
-          <p className="text-2xl font-bold">{Number(stats?.totalLitres ?? 0).toFixed(2)}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <h6 className="text-muted-foreground text-sm">Total Fuel Cost</h6>
-          <p className="text-2xl font-bold">${Number(stats?.totalFuelCost ?? 0).toFixed(2)}</p>
-        </div>
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Entries</h6>
+            <p className="text-2xl font-bold">{stats?.totalEntries ?? 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Litres</h6>
+            <p className="text-2xl font-bold">{Number(stats?.totalLitres ?? 0).toFixed(2)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h6 className="text-muted-foreground text-sm">Total Fuel Cost</h6>
+            <p className="text-2xl font-bold">${Number(stats?.totalFuelCost ?? 0).toFixed(2)}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+      <Card>
+        <CardContent className="space-y-3">
         <h2 className="font-semibold">Add Fuel Entry</h2>
 
         {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -128,7 +137,8 @@ export default function FuelLogs() {
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
           {mutation.isPending ? 'Saving…' : 'Save Fuel Entry'}
         </Button>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

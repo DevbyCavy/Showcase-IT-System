@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as inventoryApi from '@/api/inventory'
+import type { IssuedTool } from '@/api/inventory'
 
-// Translated from IssueProductReport.php.
+// Translated from IssueProductReport.php. Rebuilt on the shared PageHeader/DataTable primitives as
+// part of the full-app redesign sweep (see MIGRATION_PLAN.md §10.11).
 export default function IssuedProductsReport() {
   const { data: issuedTools, isLoading } = useQuery({
     queryKey: ['inventory', 'issued-tools'],
@@ -11,68 +14,37 @@ export default function IssuedProductsReport() {
   })
   const [search, setSearch] = useState('')
 
-  const filtered = useMemo(() => {
-    if (!issuedTools) return []
-    const q = search.toLowerCase()
-    if (!q) return issuedTools
-    return issuedTools.filter((t) => [t.collectorName, t.toolName, t.jobName].join(' ').toLowerCase().includes(q))
-  }, [issuedTools, search])
+  const filtered = (issuedTools ?? []).filter((t) =>
+    [t.collectorName, t.toolName, t.jobName].join(' ').toLowerCase().includes(search.toLowerCase()),
+  )
+
+  const columns: DataTableColumn<IssuedTool>[] = [
+    { key: 'date', header: 'Date of Collection', render: (t) => new Date(t.dateOfCollection).toLocaleDateString() },
+    { key: 'collector', header: 'Collector Name', render: (t) => t.collectorName },
+    { key: 'product', header: 'Product Name', render: (t) => t.toolName },
+    { key: 'quantity', header: 'Quantity Issued', render: (t) => t.quantityIssued },
+    { key: 'job', header: 'Job Name', render: (t) => t.jobName },
+    {
+      key: 'return',
+      header: 'Date of Return',
+      render: (t) =>
+        t.dateOfReturn ? new Date(t.dateOfReturn).toLocaleDateString() : <span className="text-muted-foreground">Not Returned</span>,
+    },
+  ]
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Issued Products Report</h1>
-        <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-      </div>
+      <PageHeader title="Issued Products Report" />
 
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            <tr>
-              <th className="p-3">#</th>
-              <th className="p-3">Date of Collection</th>
-              <th className="p-3">Collector Name</th>
-              <th className="p-3">Product Name</th>
-              <th className="p-3">Quantity Issued</th>
-              <th className="p-3">Job Name</th>
-              <th className="p-3">Date of Return</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                  No issued products found.
-                </td>
-              </tr>
-            )}
-            {filtered.map((t, i) => (
-              <tr key={t.id} className="border-t">
-                <td className="p-3">{i + 1}</td>
-                <td className="p-3">{new Date(t.dateOfCollection).toLocaleDateString()}</td>
-                <td className="p-3">{t.collectorName}</td>
-                <td className="p-3">{t.toolName}</td>
-                <td className="p-3">{t.quantityIssued}</td>
-                <td className="p-3">{t.jobName}</td>
-                <td className="p-3">
-                  {t.dateOfReturn ? (
-                    new Date(t.dateOfReturn).toLocaleDateString()
-                  ) : (
-                    <span className="text-muted-foreground">Not Returned</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(t) => t.id}
+        search={search}
+        onSearchChange={setSearch}
+        isLoading={isLoading}
+        emptyMessage="No issued products found."
+      />
     </div>
   )
 }

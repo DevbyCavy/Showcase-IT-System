@@ -1,21 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table'
 import { isAxiosError } from 'axios'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/ui/page-header'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as productsApi from '@/api/products'
 import type { Product } from '@/api/products'
 
 const selectClass =
   'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
-// Translated from product.php + custom/js/product.js (DataTables -> TanStack Table).
-// Image upload replaces move_uploaded_file() with Multer on the server side.
+// Translated from product.php + custom/js/product.js (DataTables -> TanStack Table -> the shared
+// DataTable primitive, see MIGRATION_PLAN.md §10.11). Image upload replaces move_uploaded_file()
+// with Multer on the server side.
 export default function Products() {
   const queryClient = useQueryClient()
   const { data: products, isLoading } = useQuery({ queryKey: ['products'], queryFn: productsApi.list })
-  const [globalFilter, setGlobalFilter] = useState('')
+  const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ mode: 'add' } | { mode: 'edit'; product: Product } | null>(null)
 
   const deleteMutation = useMutation({
@@ -23,121 +26,74 @@ export default function Products() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   })
 
-  const columns = useMemo<ColumnDef<Product>[]>(
-    () => [
-      {
-        header: 'Image',
-        accessorKey: 'imageUrl',
-        cell: ({ row }) =>
-          row.original.imageUrl ? (
-            <img src={row.original.imageUrl} alt={row.original.name} className="h-8 w-12 rounded object-cover" />
-          ) : (
-            <span className="text-muted-foreground text-xs">No Image</span>
-          ),
-      },
-      { header: 'Product Name', accessorKey: 'name' },
-      { header: 'Amnt/Size(mm/ml/kg)', accessorKey: 'rate' },
-      { header: 'Quantity', accessorKey: 'quantity' },
-      { header: 'Brand', accessorFn: (row) => row.brand.name },
-      { header: 'Category', accessorFn: (row) => row.category.name },
-      {
-        header: 'Status',
-        accessorKey: 'isActive',
-        cell: ({ row }) =>
-          row.original.isActive ? (
-            <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Available</span>
-          ) : (
-            <span className="rounded bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-              Not Available
-            </span>
-          ),
-      },
-      {
-        id: 'options',
-        header: 'Options',
-        cell: ({ row }) => (
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setModal({ mode: 'edit', product: row.original })}>
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => {
-                if (confirm('Do you really want to remove this product?')) {
-                  deleteMutation.mutate(row.original.id)
-                }
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [deleteMutation],
+  const filtered = (products ?? []).filter((p) =>
+    [p.name, p.brand.name, p.category.name].join(' ').toLowerCase().includes(search.toLowerCase()),
   )
 
-  const table = useReactTable({
-    data: products ?? [],
-    columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  })
+  const columns: DataTableColumn<Product>[] = [
+    {
+      key: 'image',
+      header: 'Image',
+      render: (p) =>
+        p.imageUrl ? (
+          <img src={p.imageUrl} alt={p.name} className="h-8 w-12 rounded object-cover" />
+        ) : (
+          <span className="text-muted-foreground text-xs">No Image</span>
+        ),
+    },
+    { key: 'name', header: 'Product Name', render: (p) => p.name },
+    { key: 'rate', header: 'Amnt/Size(mm/ml/kg)', render: (p) => p.rate },
+    { key: 'quantity', header: 'Quantity', render: (p) => p.quantity },
+    { key: 'brand', header: 'Brand', render: (p) => p.brand.name },
+    { key: 'category', header: 'Category', render: (p) => p.category.name },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (p) =>
+        p.isActive ? (
+          <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-medium text-white">Available</span>
+        ) : (
+          <span className="rounded bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">Not Available</span>
+        ),
+    },
+    {
+      key: 'options',
+      header: 'Options',
+      render: (p) => (
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setModal({ mode: 'edit', product: p })}>
+            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              if (confirm('Do you really want to remove this product?')) {
+                deleteMutation.mutate(p.id)
+              }
+            }}
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-8">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Manage Product</h1>
-        <Button onClick={() => setModal({ mode: 'add' })}>Add Product</Button>
-      </div>
+      <PageHeader title="Manage Product" action={<Button onClick={() => setModal({ mode: 'add' })}>Add Product</Button>} />
 
-      <div className="mb-4 rounded-lg border bg-card p-4 shadow-sm">
-        <Input placeholder="Search..." value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} />
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((header) => (
-                  <th key={header.id} className="p-3">
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={columns.length} className="p-4 text-center text-muted-foreground">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && table.getRowModel().rows.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} className="p-4 text-center text-muted-foreground">
-                  No products found.
-                </td>
-              </tr>
-            )}
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-t">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-3">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        keyExtractor={(p) => p.id}
+        search={search}
+        onSearchChange={setSearch}
+        isLoading={isLoading}
+        emptyMessage="No products found."
+      />
 
       {modal?.mode === 'add' && <AddProductModal onClose={() => setModal(null)} />}
       {modal?.mode === 'edit' && <EditProductModal product={modal.product} onClose={() => setModal(null)} />}
@@ -213,7 +169,7 @@ function AddProductModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">Add Product</h2>
 
         {error && <div className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -309,7 +265,7 @@ function EditProductModal({ product, onClose }: { product: Product; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-lg">
         <h2 className="mb-4 text-lg font-semibold">Edit Product</h2>
 
         <div className="mb-4 flex gap-2 border-b">

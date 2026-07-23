@@ -41,7 +41,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-secondary p-4">
-      <div className="w-full max-w-sm rounded-lg border bg-card p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-sm">
         <div className="mb-4 flex justify-center">
           <img src="/showcaseit-icon.png" alt="ShowcaseIT" className="h-14 w-14" />
         </div>
