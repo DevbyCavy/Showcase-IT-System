@@ -24,7 +24,8 @@ export function AppShell() {
         }`}
       >
         <div className="flex items-center justify-between border-b px-5 py-5">
-          <span className="text-lg font-bold tracking-tight">
+          <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
+            <img src="/showcaseit-icon.png" alt="" className="h-8 w-8" />
             Showcase<span className="text-brand-orange">IT</span>
           </span>
           <button className="lg:hidden" onClick={() => setMobileOpen(false)}>

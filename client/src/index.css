@@ -46,7 +46,7 @@
   --card-foreground: hsl(240 10% 4%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(240 10% 4%);
-  --primary: hsl(14 88% 56%);
+  --primary: hsl(28 90% 54%);
   --primary-foreground: hsl(0 0% 100%);
   --secondary: hsl(240 5% 96%);
   --secondary-foreground: hsl(240 6% 10%);
@@ -58,42 +58,27 @@
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(240 6% 90%);
   --input: hsl(240 6% 90%);
-  --ring: hsl(14 88% 56%);
+  --ring: hsl(28 90% 54%);
   --radius: 0.5rem;
 
-  --brand-orange: #f15a2c;
-  --brand-orange-dark: #d94e22;
-  --brand-orange-light: #ff8f5e;
-  --brand-purple: #8b5cf6;
-  --brand-purple-dark: #6d28d9;
+  /* Sampled directly from images/showcaseit_logo.png (the actual company logo) — see
+     MIGRATION_PLAN.md §10.7. Orange is the glossy "S" mark; purple/magenta is its small accent
+     triangle. */
+  --brand-orange: #f5821f;
+  --brand-orange-dark: #d4691a;
+  --brand-orange-light: #ffab5e;
+  --brand-purple: #b71b8a;
+  --brand-purple-dark: #8f1569;
   --ink: #1e1b2e;
   --ink-soft: #2a2542;
   --card-radius: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: hsl(240 10% 4%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(240 10% 6%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(240 10% 6%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(14 88% 58%);
-    --primary-foreground: hsl(0 0% 100%);
-    --secondary: hsl(240 4% 16%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(240 4% 16%);
-    --muted-foreground: hsl(240 5% 65%);
-    --accent: hsl(240 4% 16%);
-    --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 63% 31%);
-    --destructive-foreground: hsl(0 0% 100%);
-    --border: hsl(240 4% 16%);
-    --input: hsl(240 4% 16%);
-    --ring: hsl(14 88% 58%);
-  }
-}
+/* Intentionally no @media (prefers-color-scheme: dark) override — this app has no theme toggle,
+   and a dark-mode override here silently fought every "make it white" fix in the components
+   themselves (all the semantic bg-card/bg-background classes would still flip dark on a
+   dark-mode OS/browser). Calvin wants a plain white app; the light tokens above are the only
+   theme. */
 
 * {
   border-color: var(--border);

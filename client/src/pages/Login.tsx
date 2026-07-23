@@ -42,6 +42,9 @@ export default function Login() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-secondary p-4">
       <div className="w-full max-w-sm rounded-lg border bg-card p-6 shadow-sm">
+        <div className="mb-4 flex justify-center">
+          <img src="/showcaseit-icon.png" alt="ShowcaseIT" className="h-14 w-14" />
+        </div>
         <h1 className="mb-6 text-center text-xl font-semibold">Sign In</h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

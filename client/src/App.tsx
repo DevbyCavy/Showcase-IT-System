@@ -15,6 +15,8 @@ import Requisitions from '@/pages/Requisitions'
 import ProcessRequisitions from '@/pages/ProcessRequisitions'
 import MakeQuotation from '@/pages/MakeQuotation'
 import ProcessQuotations from '@/pages/ProcessQuotations'
+import Memos from '@/pages/Memos'
+import OfficeTaskCalendarPage from '@/pages/OfficeTaskCalendarPage'
 import Vehicles from '@/pages/Vehicles'
 import FuelLogs from '@/pages/FuelLogs'
 import MaintenanceLogs from '@/pages/MaintenanceLogs'
@@ -73,6 +75,8 @@ function App() {
           <Route path="/boq" element={<BOQ />} />
           <Route path="/requisitions" element={<Requisitions />} />
           <Route path="/quotations" element={<MakeQuotation />} />
+          <Route path="/memos" element={<Memos />} />
+          <Route path="/task-calendar" element={<OfficeTaskCalendarPage />} />
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/fuel-logs" element={<FuelLogs />} />
           <Route path="/maintenance-logs" element={<MaintenanceLogs />} />

@@ -22,6 +22,7 @@ import { vehicleDocumentRouter } from './routes/vehicleDocument.routes'
 import { workLogSheetRouter } from './routes/workLogSheet.routes'
 import { quotationRouter } from './routes/quotation.routes'
 import { taskCalendarRouter } from './routes/taskCalendar.routes'
+import { memoRouter } from './routes/memo.routes'
 
 export const app = express()
 
@@ -56,6 +57,7 @@ app.use('/api/vehicle-documents', vehicleDocumentRouter)
 app.use('/api/work-log-sheet', workLogSheetRouter)
 app.use('/api/quotations', quotationRouter)
 app.use('/api/task-calendar', taskCalendarRouter)
+app.use('/api/memos', memoRouter)
 
 // Further module routers mount here as they land
 

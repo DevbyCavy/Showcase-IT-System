@@ -511,17 +511,44 @@ browser flow before committing.
    adding a Job assigned to self (correctly appears as both "you assigned" and "assigned to you"
    since assignedBy === assignedTo), and the month grid/day panel rendering.
 
-6. **Style correction (done).** The AppShell/dashboard rebuild in §10.1–10.4 pulled feature/work-log
-   -sheet's dark-ink sidebar and dark widget panels (profile card, mini-calendar) wholesale — Calvin
-   didn't want that; he wanted the original app's actual look back: white backgrounds, bordered
-   cards/forms, black text, keeping the sidebar *structure* (it still replaces 5 duplicated header
-   files) but not its color scheme. Fixed: `AppShell` sidebar is now `bg-card`/`border-r` with black
-   nav text (bordered active/hover states instead of a solid dark fill); the dashboard's profile
-   card and BOQ date badge are now white/bordered instead of `bg-ink`; the Work Log Sheet's
-   "Evening Shift Active" badge is now a bordered brand-orange chip instead of a dark pill. Orange
-   accent tiles (order cards, requisition/quotation icon chips) were kept as-is — those are small
-   colored accents matching the legacy's *own* design, not part of the dark-theme complaint. Worth
-   noting: the Office Task Calendar (§10.5) needed no such fix — its actual legacy CSS
-   (`custom/css/modern-dashboard.css`) was already explicitly changed to a white `.cal-card` in the
-   same commit that introduced it (comment: "light 'family calendar' style"), so building it
-   faithfully already matched the corrected direction.
+6. **Style correction, round 1 (done).** The AppShell/dashboard rebuild in §10.1–10.4 pulled
+   feature/work-log-sheet's dark-ink sidebar and dark widget panels (profile card, mini-calendar)
+   wholesale — Calvin didn't want that; he wanted the original app's actual look back: white
+   backgrounds, bordered cards/forms, black text, keeping the sidebar *structure* (it still replaces
+   5 duplicated header files) but not its color scheme. Fixed: `AppShell` sidebar is now
+   `bg-card`/`border-r` with black nav text (bordered active/hover states instead of a solid dark
+   fill); the dashboard's profile card and BOQ date badge are now white/bordered instead of
+   `bg-ink`; the Work Log Sheet's "Evening Shift Active" badge is now a bordered brand-orange chip
+   instead of a dark pill. Orange accent tiles (order cards, requisition/quotation icon chips) were
+   kept as-is — those are small colored accents matching the legacy's *own* design, not part of the
+   dark-theme complaint. Worth noting: the Office Task Calendar (§10.5) needed no such fix — its
+   actual legacy CSS (`custom/css/modern-dashboard.css`) was already explicitly changed to a white
+   `.cal-card` in the same commit that introduced it (comment: "light 'family calendar' style"), so
+   building it faithfully already matched the corrected direction.
+
+7. **Style correction, round 2 — the real root cause (done).** Calvin reported the app was *still*
+   showing black after round 1. The actual bug: `client/src/index.css` had a
+   `@media (prefers-color-scheme: dark)` block that swapped every shadcn semantic token
+   (`--background`, `--card`, `--secondary`, etc.) to dark values whenever the browser/OS is in dark
+   mode — which silently overrides every single "white" `bg-card`/`bg-background` class from round
+   1, regardless of what the component markup says. This app has no theme toggle, so a
+   system-driven dark override only ever fights the one theme it actually has. Removed the media
+   query entirely; verified with Playwright's `colorScheme: 'dark'` viewport emulation that the app
+   now stays fully white end-to-end regardless of OS preference. While in there: also pulled real
+   colors from `images/showcaseit_logo.png` (sampled via a pixel probe — the glossy orange "S" mark
+   is `#F5821F`, its small accent triangle is a magenta `#B71B8A`) to replace the originally-guessed
+   `--brand-orange`/`--brand-purple`/`--primary`/`--ring` values, and added the actual logo icon
+   (resized 1500×1500 → 256×256, `client/public/showcaseit-icon.png`) to the sidebar brand mark and
+   the Login page, replacing the plain text-only wordmark.
+
+8. **Memos — full CRUD (done).** Calvin asked for the Office Task Calendar's "Memos" and "Office
+   Task Calendar" entry points to also live in the sidebar as their own pages, not just inside the
+   Super Admin dashboard widget. Memos needed real list/create/mark-done/delete endpoints beyond the
+   calendar's quick-add-only support (translated from `memos.php` +
+   `createMemo.php`/`updateMemoStatus.php`/`deleteMemo.php`, same "Marketer" role dropped in Module 2
+   → open to any authenticated user, own-records-only ownership guard preserved). New `/memos` page:
+   a create form plus a searchable table with overdue highlighting, mark-done, and delete. New
+   `/task-calendar` page: the same `TaskCalendar` widget already built for the dashboard, in a
+   full-page wrapper. Both added to every role's nav (same "no live role gates this" precedent as
+   Make Quotation). The due-date reminder popup/acknowledge flow from the original Marketer Memos
+   feature remains out of scope — this is the to-do list itself, not that popup.
