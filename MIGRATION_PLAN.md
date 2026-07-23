@@ -586,3 +586,43 @@ browser flow before committing.
     and on the new Office Task Calendar board page (which now shows both the compact global calendar
     widget *and* the full board — intentional, a quick glance plus a deep-dive view), and correctly
     stacks below the main content on mobile widths instead of disappearing.
+
+11. **Full-app redesign — shared design system (in progress).** Calvin asked to redesign every page
+    (Dashboard, Inventory, Products, Orders, Logistics, Vehicles, Fuel Logs, Trips, Maintenance,
+    Reports, Users, Settings, Authentication) into one cohesive premium dashboard, following the same
+    "Selena Academy" reference (§10.4/§10.10) app-wide, and agreed to a shared-system-first rollout:
+    build the primitives, verify a representative page of each type, then sweep the rest.
+    - **`Settings` genuinely doesn't exist**: `setting.php` and `custom/js/setting.js` are both empty
+      stub files in the legacy app (confirmed by reading them directly) — same as Module 16's
+      Reports, which was skipped by prior decision. No settings icon/page was added; nothing to
+      migrate.
+    - **New shared primitives**: `components/ui/card.tsx` (`Card`/`CardHeader`/`CardTitle`/
+      `CardContent`, formalizing the `rounded-2xl border bg-card shadow-sm` pattern already used
+      ad-hoc across the post-migration pages), `components/ui/page-header.tsx` (title + optional
+      action button, consistent across every module), `components/ui/data-table.tsx` (rounded
+      container, uppercase column heads, a rounded search pill, hover-highlighted rows, and
+      client-side pagination — every existing table rendered its full result set with zero paging;
+      small enough datasets that it never mattered functionally, but the reference calls for
+      pagination explicitly, so it's built once here rather than per-page).
+    - **Header redesign**: `AppShell`'s header now has a left-aligned rounded search bar
+      (`HeaderSearch` — a quick "jump to page" nav search filtering the current role's own
+      `roleNavLinks`; no global content-search feature exists anywhere in the legacy app to migrate,
+      so this is new but small and intentionally limited to navigation, not data querying) and a
+      right-aligned icon group (mail, notifications, a profile avatar circle + name/role) with a
+      divider — matching the reference's icon-group-right layout, minus a Settings icon since there's
+      no Settings page behind it.
+    - **Watermark**: new `components/LogoWatermark.tsx` (its own file, not colocated with
+      `DashboardSidePanel`, specifically to avoid a circular import since `DashboardSidePanel`
+      renders `TaskCalendar` and both need the watermark) — a low-opacity (6%) `showcaseit-icon.png`
+      bottom-right of a `relative overflow-hidden` card. Applied to the profile card and the
+      `TaskCalendar` widget's card, per "subtle branded background."
+    - **Representative pages converted**: `ManageUsers.tsx` (table-heavy + edit-modal — DataTable
+      with search/pagination/action-icon buttons, `PageHeader`) and `Requisitions.tsx`
+      (form-heavy — `Card`/`CardContent` for the create form, `DataTable` for the submitted-list).
+      Both verified visually via Playwright alongside the dashboard before continuing.
+    - **Remaining work**: sweep every other page onto these same primitives — Categories, Brands,
+      Products, Store, IssuedProductsReport, ManageOrders, OrdersKanban, BOQ, ProcessRequisitions,
+      MakeQuotation, ProcessQuotations, Vehicles, FuelLogs, MaintenanceLogs, TripLogbook,
+      VehicleDocuments, Memos, Login, Signup — plus a lint/typecheck pass at the end. None of these
+      pages' underlying logic, validation, or API calls change — this is a pure presentation-layer
+      sweep, same pattern as the two representative pages above.

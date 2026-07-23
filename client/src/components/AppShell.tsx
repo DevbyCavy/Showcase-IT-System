@@ -1,10 +1,66 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { Menu, X, Mail, LogOut } from 'lucide-react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Menu, X, Mail, LogOut, Search, User } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { DashboardSidePanel } from '@/components/DashboardSidePanel'
+
+// Quick "jump to page" search for the header's left-aligned rounded search bar — filters the
+// current role's own nav links (no global content-search feature exists anywhere in the legacy app
+// to migrate, so this is new but small and self-contained: it only ever navigates, it doesn't
+// query any data).
+function HeaderSearch() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const links = user ? roleNavLinks[user.role] : []
+  const matches = query.trim() ? links.filter((l) => l.label.toLowerCase().includes(query.trim().toLowerCase())) : []
+
+  function go(to: string) {
+    navigate(to)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative w-full max-w-md">
+      <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2" />
+      <input
+        className="focus:ring-ring w-full rounded-full border bg-secondary/50 py-2.5 pr-4 pl-11 text-sm outline-none focus:ring-2"
+        placeholder="Search pages..."
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && matches[0]) go(matches[0].to)
+        }}
+      />
+      {open && query.trim() && (
+        <div className="bg-card absolute top-full right-0 left-0 z-50 mt-1.5 overflow-hidden rounded-xl border shadow-lg">
+          {matches.length === 0 ? (
+            <div className="text-muted-foreground px-4 py-3 text-sm">No pages found.</div>
+          ) : (
+            matches.map((l) => (
+              <button
+                key={l.to}
+                className="hover:bg-secondary flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm"
+                onMouseDown={() => go(l.to)}
+              >
+                <l.icon className="text-muted-foreground h-4 w-4" /> {l.label}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Replaces the 5 duplicated includes/header*.php variants with one shared component and genuine
 // role-conditional nav — see navLinks.ts for why nothing here is a literal translation (no
@@ -64,27 +120,35 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 border-b bg-card px-4 py-3">
+        <header className="flex items-center justify-between gap-4 border-b bg-card px-4 py-3 md:px-6">
           <button className="text-muted-foreground lg:hidden" onClick={() => setMobileOpen(true)}>
             <Menu className="h-6 w-6" />
           </button>
-          <div className="hidden flex-1 lg:block" />
-          <div className="flex items-center gap-2">
+          <div className="hidden flex-1 lg:block">
+            <HeaderSearch />
+          </div>
+          <div className="flex items-center gap-1.5">
             {user?.email && (
               <a
                 href={`mailto:${user.email}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
+                className="text-muted-foreground hover:bg-secondary flex h-9 w-9 items-center justify-center rounded-full"
                 title={user.email}
               >
                 <Mail className="h-5 w-5" />
               </a>
             )}
             <NotificationsBell />
-            <div className="ml-1 text-right text-xs">
-              <div className="font-semibold">
-                {user?.name} {user?.surname}
+            <div className="mx-1 h-6 w-px bg-border" />
+            <div className="flex items-center gap-2 pr-1">
+              <div className="bg-secondary flex h-9 w-9 items-center justify-center rounded-full">
+                <User className="h-[18px] w-[18px]" />
               </div>
-              <div className="text-muted-foreground">{user?.role}</div>
+              <div className="hidden text-right text-xs sm:block">
+                <div className="font-semibold">
+                  {user?.name} {user?.surname}
+                </div>
+                <div className="text-muted-foreground">{user?.role}</div>
+              </div>
             </div>
           </div>
         </header>

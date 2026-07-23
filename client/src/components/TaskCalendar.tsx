@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import * as taskCalendarApi from '@/api/taskCalendar'
 import * as usersApi from '@/api/users'
 import type { CalendarItem, CalendarItemType } from '@/api/taskCalendar'
+import { LogoWatermark } from '@/components/LogoWatermark'
 
 const TYPE_LABEL: Record<CalendarItemType, string> = {
   memo: 'To-Do',
@@ -211,105 +212,108 @@ export function TaskCalendar() {
   }
 
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm">
-      <div className="mb-3.5 flex items-center justify-between text-sm font-bold">
-        <div className="flex items-center gap-2">
-          <button className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary" onClick={goPrev}>
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span>{monthLabel}</span>
-          <button className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary" onClick={goNext}>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="flex gap-0.5 rounded-full bg-secondary p-0.5">
-          <button
-            className={`rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${viewMode === 'week' ? 'bg-brand-orange text-white' : 'text-muted-foreground'}`}
-            onClick={() => setViewMode('week')}
-          >
-            Week
-          </button>
-          <button
-            className={`rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${viewMode === 'month' ? 'bg-brand-orange text-white' : 'text-muted-foreground'}`}
-            onClick={() => setViewMode('month')}
-          >
-            Month
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 text-center text-xs">
-        {DOW.map((d, i) => (
-          <div key={i} className="text-muted-foreground pb-1.5 text-[0.66rem] font-semibold opacity-70">
-            {d}
-          </div>
-        ))}
-        {cellDates.map((cellDate, i) => {
-          const key = toKey(cellDate)
-          const inMonth = viewMode === 'week' || cellDate.getMonth() === month - 1
-          const isToday = key === todayKey
-          const isSelected = key === selectedDate
-          const items = byDate[key] ?? []
-          const seenTypes = Array.from(new Set(items.map((it) => it.type)))
-          const titleAttr = items.map((it) => `${TYPE_LABEL[it.type]}: ${it.title}`).join('\n')
-
-          return (
-            <button
-              key={i}
-              title={titleAttr || undefined}
-              className={`relative min-h-[40px] cursor-pointer rounded-lg py-2 ${inMonth ? '' : 'opacity-40'} ${
-                isSelected ? 'bg-indigo-50' : 'hover:bg-secondary'
-              }`}
-              onClick={() => {
-                selectDate(key)
-                openModalFor(key)
-              }}
-            >
-              <span
-                className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded-full ${
-                  isToday ? 'bg-brand-orange font-bold text-white' : isSelected ? 'border-brand-orange border-[1.5px] font-bold' : ''
-                }`}
-              >
-                {cellDate.getDate()}
-              </span>
-              {seenTypes.length > 0 && (
-                <span className="absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-0.5">
-                  {seenTypes.map((t) => (
-                    <span key={t} className="h-1 w-1 rounded-full" style={{ background: DOT_COLOR[t] }} />
-                  ))}
-                </span>
-              )}
+    <div className="relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm">
+      <LogoWatermark />
+      <div className="relative z-10">
+        <div className="mb-3.5 flex items-center justify-between text-sm font-bold">
+          <div className="flex items-center gap-2">
+            <button className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary" onClick={goPrev}>
+              <ChevronLeft className="h-3.5 w-3.5" />
             </button>
-          )
-        })}
-      </div>
-
-      <div className="mt-4 border-t pt-3.5">
-        {dayItems.length === 0 ? (
-          <div className="text-muted-foreground py-2.5 text-center text-xs">Nothing scheduled.</div>
-        ) : (
-          <div className="space-y-1.5">
-            {dayItems.map((it: CalendarItem) => {
-              let sub = TYPE_LABEL[it.type]
-              if (it.type === 'job_to_me' && it.other) sub += ` — from ${it.other}`
-              if (it.type === 'job_by_me' && it.other) sub += ` — to ${it.other}`
-              return (
-                <div
-                  key={`${it.type}-${it.id}`}
-                  className="bg-secondary/60 flex items-center gap-2.5 rounded-lg border-l-4 px-2.5 py-2"
-                  style={{ borderLeftColor: DOT_COLOR[it.type] }}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-semibold" title={it.title}>
-                      {it.title}
-                    </div>
-                    <div className="text-muted-foreground text-[0.68rem]">{sub}</div>
-                  </div>
-                </div>
-              )
-            })}
+            <span>{monthLabel}</span>
+            <button className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary" onClick={goNext}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
-        )}
+          <div className="flex gap-0.5 rounded-full bg-secondary p-0.5">
+            <button
+              className={`rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${viewMode === 'week' ? 'bg-brand-orange text-white' : 'text-muted-foreground'}`}
+              onClick={() => setViewMode('week')}
+            >
+              Week
+            </button>
+            <button
+              className={`rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${viewMode === 'month' ? 'bg-brand-orange text-white' : 'text-muted-foreground'}`}
+              onClick={() => setViewMode('month')}
+            >
+              Month
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 text-center text-xs">
+          {DOW.map((d, i) => (
+            <div key={i} className="text-muted-foreground pb-1.5 text-[0.66rem] font-semibold opacity-70">
+              {d}
+            </div>
+          ))}
+          {cellDates.map((cellDate, i) => {
+            const key = toKey(cellDate)
+            const inMonth = viewMode === 'week' || cellDate.getMonth() === month - 1
+            const isToday = key === todayKey
+            const isSelected = key === selectedDate
+            const items = byDate[key] ?? []
+            const seenTypes = Array.from(new Set(items.map((it) => it.type)))
+            const titleAttr = items.map((it) => `${TYPE_LABEL[it.type]}: ${it.title}`).join('\n')
+
+            return (
+              <button
+                key={i}
+                title={titleAttr || undefined}
+                className={`relative min-h-[40px] cursor-pointer rounded-lg py-2 ${inMonth ? '' : 'opacity-40'} ${
+                  isSelected ? 'bg-indigo-50' : 'hover:bg-secondary'
+                }`}
+                onClick={() => {
+                  selectDate(key)
+                  openModalFor(key)
+                }}
+              >
+                <span
+                  className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded-full ${
+                    isToday ? 'bg-brand-orange font-bold text-white' : isSelected ? 'border-brand-orange border-[1.5px] font-bold' : ''
+                  }`}
+                >
+                  {cellDate.getDate()}
+                </span>
+                {seenTypes.length > 0 && (
+                  <span className="absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-0.5">
+                    {seenTypes.map((t) => (
+                      <span key={t} className="h-1 w-1 rounded-full" style={{ background: DOT_COLOR[t] }} />
+                    ))}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="mt-4 border-t pt-3.5">
+          {dayItems.length === 0 ? (
+            <div className="text-muted-foreground py-2.5 text-center text-xs">Nothing scheduled.</div>
+          ) : (
+            <div className="space-y-1.5">
+              {dayItems.map((it: CalendarItem) => {
+                let sub = TYPE_LABEL[it.type]
+                if (it.type === 'job_to_me' && it.other) sub += ` — from ${it.other}`
+                if (it.type === 'job_by_me' && it.other) sub += ` — to ${it.other}`
+                return (
+                  <div
+                    key={`${it.type}-${it.id}`}
+                    className="bg-secondary/60 flex items-center gap-2.5 rounded-lg border-l-4 px-2.5 py-2"
+                    style={{ borderLeftColor: DOT_COLOR[it.type] }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-semibold" title={it.title}>
+                        {it.title}
+                      </div>
+                      <div className="text-muted-foreground text-[0.68rem]">{sub}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {modalOpen && (
@@ -425,10 +429,7 @@ export function TaskCalendar() {
               <Button variant="outline" onClick={() => setModalOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={modalType === 'todo' ? submitTodo : submitJob}
-                disabled={memoMutation.isPending || jobMutation.isPending}
-              >
+              <Button onClick={modalType === 'todo' ? submitTodo : submitJob} disabled={memoMutation.isPending || jobMutation.isPending}>
                 {memoMutation.isPending || jobMutation.isPending ? 'Saving…' : 'Save'}
               </Button>
             </div>
