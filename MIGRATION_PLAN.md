@@ -702,4 +702,24 @@ browser flow before committing.
     (it previously pointed at `php_action/`, `includes/`, etc. as required reading). Verified with
     `tsc --noEmit` in both `client/` and `server/` and a live health-check/page-load against both
     running dev servers — nothing in the new app referenced anything under the deleted paths (the
-    one real cross-reference, the logo, was already identified and `images/` was kept for it).
+    one real cross-reference, the logo, was already identified and `images/` was kept for it). A
+    leftover untracked build artifact (`assets/plugins/fullcalendar/dist/`, never tracked in git,
+    left on disk by `git rm` since that only touches tracked files) was also deleted directly.
+
+18. **Memo due-date reminder popup (done).** The one piece explicitly left out of the Memos feature
+    at §10.7 — the auto-popping "this memo is due" alert from `feature/marketer-memos` (commit
+    `376fe3c`) — checked in the legacy's shared sidebar on every page load, so it fired app-wide.
+    Added `Memo.acknowledgedAt` support end-to-end: `memo.repository.ts#findDueUnacknowledged`
+    (mirrors `sidebarMarketing.php`'s `$dueMemosStmt` — own Pending, not-yet-acknowledged memos
+    whose due date has passed) and `#acknowledge` (mirrors `acknowledgeMemo.php`'s bulk
+    ownership-guarded update), exposed as `GET /api/memos/due-reminders` and
+    `POST /api/memos/acknowledge`. New `DueMemosReminder` component, mounted once in `AppShell`
+    (not per-page) so it applies to every role — same "Marketer no longer exists" precedent as the
+    rest of Memos/Quotations/Office Tasks. Polls every 30s (matching `TaskCalendar`'s existing
+    polling cadence) so a memo that becomes due mid-session is still caught, since an SPA has no
+    per-navigation full-page-load moment to hook the check into the way the legacy did. Visibility
+    is driven purely by the due-reminders query result (not separate local "dismissed" state) so a
+    failed acknowledge just leaves the modal open for a retry instead of silently going away.
+    Verified via curl (create a past-due memo → appears in due-reminders → acknowledge → disappears)
+    and Playwright (popup appears on login, "Got it" dismisses it, memo still shows Pending in the
+    Memos list afterward, and it doesn't reappear on a subsequent navigation).

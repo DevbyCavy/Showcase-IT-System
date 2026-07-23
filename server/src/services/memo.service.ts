@@ -1,8 +1,8 @@
-// Translated from memos.php + createMemo.php/updateMemoStatus.php/deleteMemo.php (scoped from the
-// Marketer Memos feature, see MIGRATION_PLAN.md §10.7). Legacy gated this to requireRole('Marketer'),
-// a role dropped in Module 2's normalization — open to any authenticated user instead, same
-// precedent as Requisitions/Quotations/Office Tasks. The due-date reminder popup/acknowledge flow
-// from that feature is out of scope (never requested); this is just the to-do list itself.
+// Translated from memos.php + createMemo.php/updateMemoStatus.php/deleteMemo.php + the due-date
+// reminder popup (getDueReminders/acknowledge, translated from sidebarMarketing.php's
+// $dueMemosStmt + acknowledgeMemo.php — see MIGRATION_PLAN.md §10.18). Legacy gated all of this to
+// requireRole('Marketer'), a role dropped in Module 2's normalization — open to any authenticated
+// user instead, same precedent as Requisitions/Quotations/Office Tasks.
 
 import { ApiError } from '../middleware/errorHandler'
 import * as memoRepository from '../repositories/memo.repository'
@@ -47,4 +47,14 @@ export async function remove(userId: number, id: number) {
   if (!ok) {
     throw new ApiError(400, 'Could not delete — not found.')
   }
+}
+
+export async function getDueReminders(userId: number) {
+  const memos = await memoRepository.findDueUnacknowledged(userId)
+  return memos.map(toPublicMemo)
+}
+
+export async function acknowledge(userId: number, ids: number[]) {
+  const acknowledged = await memoRepository.acknowledge(ids, userId)
+  return { acknowledged }
 }

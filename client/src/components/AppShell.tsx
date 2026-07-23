@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { DashboardSidePanel } from '@/components/DashboardSidePanel'
+import { DueMemosReminder } from '@/components/DueMemosReminder'
 import { Button } from '@/components/ui/button'
 
 // Quick "jump to page" search for the header's left-aligned rounded search bar — filters the
@@ -178,6 +179,9 @@ export function AppShell() {
           </div>
         </main>
       </div>
+
+      {/* Mounted once for the whole authenticated app, not per-page — see DueMemosReminder for why. */}
+      <DueMemosReminder />
     </div>
   )
 }

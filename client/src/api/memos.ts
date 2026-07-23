@@ -42,3 +42,11 @@ export function markDone(id: number) {
 export function remove(id: number) {
   return api.delete(`/memos/${id}`)
 }
+
+export function getDueReminders() {
+  return api.get<MemoListResponse>('/memos/due-reminders').then((r) => r.data.data.memos)
+}
+
+export function acknowledge(ids: number[]) {
+  return api.post('/memos/acknowledge', { ids })
+}

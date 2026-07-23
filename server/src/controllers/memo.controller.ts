@@ -29,3 +29,13 @@ export async function remove(req: Request, res: Response) {
   await memoService.remove(req.user!.id, parseId(req))
   res.json({ success: true })
 }
+
+export async function getDueReminders(req: Request, res: Response) {
+  const memos = await memoService.getDueReminders(req.user!.id)
+  res.json({ success: true, data: { memos } })
+}
+
+export async function acknowledge(req: Request, res: Response) {
+  const result = await memoService.acknowledge(req.user!.id, req.body.ids)
+  res.json({ success: true, data: result })
+}

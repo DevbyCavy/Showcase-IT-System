@@ -8,3 +8,11 @@ export const createMemoSchema = z.object({
 })
 
 export type CreateMemoBody = z.infer<typeof createMemoSchema>
+
+// Translated from acknowledgeMemo.php's `memo_ids` (comma-separated string there; a JSON array of
+// ids here since this is a JSON API, not a form POST).
+export const acknowledgeMemosSchema = z.object({
+  ids: z.array(z.coerce.number().int().positive()).min(1, 'At least one memo id is required.'),
+})
+
+export type AcknowledgeMemosBody = z.infer<typeof acknowledgeMemosSchema>
