@@ -38,6 +38,7 @@ export async function signup(input: SignupBody) {
     userType: input.userType,
     department: input.department,
     email: input.email ?? '',
+    whatsappNumber: input.whatsappNumber,
   })
 
   return toPublicUser(user)
@@ -65,6 +66,7 @@ export async function update(id: number, input: UpdateUserBody) {
     department: input.department,
     userType: input.userType,
     email: input.email,
+    whatsappNumber: input.whatsappNumber,
     ...(passwordHash ? { passwordHash } : {}),
   })
 

@@ -723,3 +723,37 @@ browser flow before committing.
     Verified via curl (create a past-due memo → appears in due-reminders → acknowledge → disappears)
     and Playwright (popup appears on login, "Got it" dismisses it, memo still shows Pending in the
     Memos list afterward, and it doesn't reappear on a subsequent navigation).
+
+19. **WhatsApp order-assignment notifications + combined Sign In/Sign Up redesign (done, 2026-07-23).**
+    New feature: assignees now get a WhatsApp message the moment they're put on an order. Added a
+    required `whatsappNumber` field to signup (nullable at the DB level so the existing/seeded users
+    aren't broken by the migration; enforced required by Zod on the signup path only, validated with
+    `libphonenumber-js`'s `isValidPhoneNumber`). New `whatsapp.service.ts` calls the Meta WhatsApp
+    Cloud API (Graph API) via native `fetch` — no HTTP client dependency existed or was needed —
+    fired fire-and-forget from `order.service.ts#create` right after `orderRepository.create`
+    resolves (it already returns `assignments[].user` with the full row via its existing `include`),
+    so it can never block or fail order creation; failures (including "not configured" when the Meta
+    env vars are blank, which they are by default) are just logged. Meta's Cloud API requires
+    business-initiated messages to use a pre-approved template (plain free-text is rejected outside
+    an open 24h conversation window) — real delivery needs a template named `order_assignment`
+    (configurable via `WHATSAPP_TEMPLATE_NAME`) approved in Meta Business Manager, plus real
+    `WHATSAPP_ACCESS_TOKEN`/`WHATSAPP_PHONE_NUMBER_ID` values in `server/.env`.
+
+    Also redesigned `/login` and `/signup` from two separate pages into one combined `Auth.tsx`
+    component per a reference image Calvin supplied: a white card holding both forms side by side,
+    with an oversized circular gradient panel (`--brand-orange-*` tokens, not the reference's literal
+    colors — Calvin confirmed no green was actually wanted) that slides via a plain CSS
+    `transition-transform` (no animation library in the app, matching existing slide-over precedent
+    in `OfficeTaskCalendarPage`/`AppShell`'s mobile sidebar) to cover whichever form isn't active. The
+    page background reuses the sidebar's `--sidebar-from`/`--sidebar-to` gradient (§10.14), per
+    explicit request. New `components/ui/pill-input.tsx` (`PillInput`/`PillSelect`) generalizes the
+    icon-prefixed rounded-full input style already established ad-hoc in `AppShell`'s `HeaderSearch`.
+    The panel currently covered by the overlay is marked `inert` + `aria-hidden` — without it, the
+    hidden form's fields stayed focusable/fillable despite being visually covered, caught while
+    writing an end-to-end Playwright test against the signup form. Below the `md` breakpoint the
+    slide is dropped in favor of a single active form with a text toggle link, since a two-panel
+    layout doesn't fit a narrow screen. Verified: `tsc --noEmit` (client + server) and `oxlint` clean;
+    Playwright screenshots of the login/signup toggle (desktop + mobile); a real signup via curl
+    confirming `whatsappNumber` persists; and a real order creation via curl confirming the
+    WhatsApp side effect fires and logs its skip reason without affecting the `201` response. Test
+    user/order removed afterward.

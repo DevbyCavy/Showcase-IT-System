@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { Role } from '@prisma/client'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 
 // signup.php's role dropdown excludes Super Admin — preserved exactly (see MIGRATION_PLAN.md).
 const SIGNUP_ROLES = [
@@ -18,6 +19,12 @@ const emailField = z
   .optional()
   .default('')
 
+const whatsappNumberField = z
+  .string()
+  .trim()
+  .min(1, 'WhatsApp Number is required')
+  .refine((v) => isValidPhoneNumber(v), 'Invalid WhatsApp number — include the country code, e.g. +27821234567')
+
 // Translated from signup.php's validation block.
 export const signupSchema = z
   .object({
@@ -29,6 +36,7 @@ export const signupSchema = z
     department: z.string().trim().min(1, 'Department is required'),
     userType: z.enum(SIGNUP_ROLES, { message: 'User Type is required' }),
     email: emailField,
+    whatsappNumber: whatsappNumberField,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -45,6 +53,7 @@ export const updateUserSchema = z.object({
   department: z.string().trim().min(1).optional(),
   userType: z.enum(Role).optional(),
   email: emailField,
+  whatsappNumber: whatsappNumberField.optional(),
   password: z.string().min(1).optional(),
 })
 

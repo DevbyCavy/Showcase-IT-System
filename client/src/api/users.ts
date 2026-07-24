@@ -20,6 +20,7 @@ export interface SignupInput {
   department: string
   userType: string
   email?: string
+  whatsappNumber: string
 }
 
 export function signup(input: SignupInput) {
@@ -53,6 +54,7 @@ export interface UpdateUserInput {
   department?: string
   userType?: string
   email?: string
+  whatsappNumber?: string
   password?: string
 }
 

@@ -18,4 +18,5 @@ export interface AuthUser {
   role: Role
   department: string
   email: string
+  whatsappNumber: string | null
 }

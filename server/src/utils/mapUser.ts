@@ -9,5 +9,6 @@ export function toPublicUser(user: User) {
     role: user.userType,
     department: user.department,
     email: user.email,
+    whatsappNumber: user.whatsappNumber,
   }
 }

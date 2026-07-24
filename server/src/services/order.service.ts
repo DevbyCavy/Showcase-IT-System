@@ -5,6 +5,7 @@
 import type { Order, OrderAssignment, OrderStatus, User } from '@prisma/client'
 import { ApiError } from '../middleware/errorHandler'
 import * as orderRepository from '../repositories/order.repository'
+import * as whatsappService from './whatsapp.service'
 import type { OrderBody } from '../validations/order.validation'
 
 type OrderWithAssignments = Order & { assignments: (OrderAssignment & { user: User })[] }
@@ -30,6 +31,12 @@ export interface UploadedOrderFiles {
 
 export async function create(input: OrderBody, files: UploadedOrderFiles) {
   const order = await orderRepository.create({ ...input, ...files })
+
+  // Fire-and-forget: whatsapp.service.ts never throws, so notifying assignees can't block or fail order creation.
+  for (const assignment of order.assignments) {
+    void whatsappService.sendOrderAssignmentNotification(assignment.user, order)
+  }
+
   return toPublicOrder(order)
 }
 
