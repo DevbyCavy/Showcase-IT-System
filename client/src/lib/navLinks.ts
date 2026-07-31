@@ -19,6 +19,8 @@ import {
   Users,
   StickyNote,
   CalendarClock,
+  Palette,
+  MapPin,
 } from 'lucide-react'
 
 export interface NavLink {
@@ -37,11 +39,19 @@ export interface NavLink {
 // navigation grounded in what each role's pages actually are, since no per-role link list survives
 // to translate literally (see MIGRATION_PLAN.md Module 17).
 //
-// "Make Quotation", "Memos", and "Office Task Calendar" all appear for every role: each was gated
-// in the legacy app to a "Marketer" role that doesn't exist in our normalized 7-role set (dropped
-// during Module 2's role-normalization decision), so each backend treats its endpoints as open to
-// any authenticated user — hiding the nav entry from some roles while the API allows it for all of
-// them would be inconsistent.
+// Marketer was reintroduced per MIGRATION_PLAN.md §21. "Make Quotation" and "Memos" are Marketer +
+// Super Admin only now (both nav and API), reverting the "open to every role" interim state from
+// when Marketer didn't exist. "Office Task Calendar" stays on every role's nav — it's not purely a
+// Marketer feature, it's also how any role sees office tasks assigned to them by someone else;
+// only the ability to add a new To-Do/Job is Marketer + Super Admin (enforced in the page itself,
+// not by hiding the nav link, since view access is still meant for everyone).
+//
+// "Assign Design Job" (Marketer + Super Admin) / "My Design Jobs" (Graphic Designer + Super
+// Admin) added per MIGRATION_PLAN.md §22 — a standalone feature for assigning Artwork/3D Design
+// work to a designer, distinct from Manage Orders.
+//
+// "Tracking" (Logistics + Super Admin) added per MIGRATION_PLAN.md §24 — live GPS map of drivers
+// on Active trips, same audience as the rest of the vehicle module.
 export const roleNavLinks: Record<Role, NavLink[]> = {
   SuperAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -53,6 +63,7 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/memos', label: 'Memos', icon: StickyNote },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
     { to: '/quotations/process', label: 'Process Quotations', icon: FileSpreadsheet },
+    { to: '/design-jobs/assign', label: 'Assign Design Job', icon: Palette },
     { to: '/categories', label: 'Categories', icon: Tag },
     { to: '/brands', label: 'Brands', icon: Bookmark },
     { to: '/products', label: 'Products', icon: Package },
@@ -63,6 +74,7 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/maintenance-logs', label: 'Maintenance Log', icon: Wrench },
     { to: '/trip-logbook', label: 'Trip Logbook', icon: Route },
     { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2 },
+    { to: '/tracking', label: 'Tracking', icon: MapPin },
     { to: '/users', label: 'Manage Users', icon: Users },
   ],
   StoresAdmin: [
@@ -72,8 +84,7 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/products', label: 'Products', icon: Package },
     { to: '/store', label: 'Store', icon: Store },
     { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3 },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
-    { to: '/memos', label: 'Memos', icon: StickyNote },
+    { to: '/trip-logbook', label: 'Trip Logbook', icon: Route },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
   ProjectManager: [
@@ -81,21 +92,17 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList },
     { to: '/boq', label: 'BOQ', icon: FileText },
     { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
-    { to: '/memos', label: 'Memos', icon: StickyNote },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
   Accountant: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
-    { to: '/memos', label: 'Memos', icon: StickyNote },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
   GraphicDesigner: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
+    { to: '/design-jobs/mine', label: 'My Design Jobs', icon: Palette },
+    { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
     { to: '/memos', label: 'Memos', icon: StickyNote },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
@@ -103,8 +110,6 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/store', label: 'Store', icon: Store },
     { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3 },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
-    { to: '/memos', label: 'Memos', icon: StickyNote },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
   Logistics: [
@@ -114,8 +119,16 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/maintenance-logs', label: 'Maintenance Log', icon: Wrench },
     { to: '/trip-logbook', label: 'Trip Logbook', icon: Route },
     { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2 },
+    { to: '/tracking', label: 'Tracking', icon: MapPin },
+    { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
+  ],
+  Marketer: [
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList },
+    { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
     { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
     { to: '/memos', label: 'Memos', icon: StickyNote },
+    { to: '/design-jobs/assign', label: 'Assign Design Job', icon: Palette },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
 }

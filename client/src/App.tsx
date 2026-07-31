@@ -16,12 +16,15 @@ import ProcessRequisitions from '@/pages/ProcessRequisitions'
 import MakeQuotation from '@/pages/MakeQuotation'
 import ProcessQuotations from '@/pages/ProcessQuotations'
 import Memos from '@/pages/Memos'
+import AssignDesignJob from '@/pages/AssignDesignJob'
+import MyDesignJobs from '@/pages/MyDesignJobs'
 import OfficeTaskCalendarPage from '@/pages/OfficeTaskCalendarPage'
 import Vehicles from '@/pages/Vehicles'
 import FuelLogs from '@/pages/FuelLogs'
 import MaintenanceLogs from '@/pages/MaintenanceLogs'
 import TripLogbook from '@/pages/TripLogbook'
 import VehicleDocuments from '@/pages/VehicleDocuments'
+import TrackingDashboard from '@/pages/TrackingDashboard'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
 import { useAuth } from '@/hooks/useAuth'
@@ -74,19 +77,34 @@ function App() {
           <Route path="/orders/manage" element={<ManageOrders />} />
           <Route path="/boq" element={<BOQ />} />
           <Route path="/requisitions" element={<Requisitions />} />
-          <Route path="/quotations" element={<MakeQuotation />} />
-          <Route path="/memos" element={<Memos />} />
           <Route path="/task-calendar" element={<OfficeTaskCalendarPage />} />
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/fuel-logs" element={<FuelLogs />} />
           <Route path="/maintenance-logs" element={<MaintenanceLogs />} />
           <Route path="/trip-logbook" element={<TripLogbook />} />
           <Route path="/vehicle-documents" element={<VehicleDocuments />} />
+          <Route path="/tracking" element={<TrackingDashboard />} />
 
           <Route element={<ProtectedRoute roles={['SuperAdmin']} />}>
             <Route path="/users" element={<ManageUsers />} />
             <Route path="/requisitions/process" element={<ProcessRequisitions />} />
             <Route path="/quotations/process" element={<ProcessQuotations />} />
+          </Route>
+
+          {/* Quotations/Assign Design Job restricted to Marketer + Super Admin (see MIGRATION_PLAN.md §21) */}
+          <Route element={<ProtectedRoute roles={['Marketer', 'SuperAdmin']} />}>
+            <Route path="/quotations" element={<MakeQuotation />} />
+            <Route path="/design-jobs/assign" element={<AssignDesignJob />} />
+          </Route>
+
+          {/* Memos: Marketer + Super Admin, plus Graphic Designer per Calvin's request (§22) */}
+          <Route element={<ProtectedRoute roles={['Marketer', 'SuperAdmin', 'GraphicDesigner']} />}>
+            <Route path="/memos" element={<Memos />} />
+          </Route>
+
+          {/* My Design Jobs restricted to Graphic Designer + Super Admin (see MIGRATION_PLAN.md §22) */}
+          <Route element={<ProtectedRoute roles={['GraphicDesigner', 'SuperAdmin']} />}>
+            <Route path="/design-jobs/mine" element={<MyDesignJobs />} />
           </Route>
         </Route>
       </Route>

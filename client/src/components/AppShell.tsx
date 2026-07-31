@@ -6,6 +6,7 @@ import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { DashboardSidePanel } from '@/components/DashboardSidePanel'
 import { DueMemosReminder } from '@/components/DueMemosReminder'
+import { LiveTripTracker } from '@/components/LiveTripTracker'
 import { Button } from '@/components/ui/button'
 
 // Quick "jump to page" search for the header's left-aligned rounded search bar — filters the
@@ -180,8 +181,14 @@ export function AppShell() {
         </main>
       </div>
 
-      {/* Mounted once for the whole authenticated app, not per-page — see DueMemosReminder for why. */}
-      <DueMemosReminder />
+      {/* Mounted once for the whole authenticated app, not per-page — see DueMemosReminder for why.
+          Only Marketer/Super Admin/Graphic Designer can have memos (§21, §22), so it's a no-op for
+          every other role — gating the mount just avoids a pointless 403'd poll. */}
+      {(user?.role === 'Marketer' || user?.role === 'SuperAdmin' || user?.role === 'GraphicDesigner') && <DueMemosReminder />}
+
+      {/* Mounted app-wide (not per-page) so GPS reporting survives navigation during an Active
+          trip — see MIGRATION_PLAN.md §24. Renders nothing unless the current user has one. */}
+      <LiveTripTracker />
     </div>
   )
 }
