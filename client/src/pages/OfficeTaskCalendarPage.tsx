@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import * as taskCalendarApi from '@/api/taskCalendar'
 import * as usersApi from '@/api/users'
 import type { CalendarItemType } from '@/api/taskCalendar'
+import { useAuth } from '@/hooks/useAuth'
 
 const TYPE_LABEL: Record<CalendarItemType, string> = {
   memo: 'To-Do',
@@ -49,6 +50,10 @@ function extractError(err: unknown, fallback: string) {
 // choice, only this page's add-task form is a right-anchored slide-in panel instead of a centered
 // modal — every other modal in the app is unchanged.
 export default function OfficeTaskCalendarPage() {
+  const { user } = useAuth()
+  // Creating To-Dos/Jobs is Marketer + Super Admin only (see MIGRATION_PLAN.md §21); everyone else
+  // gets a view-only calendar (own memos, tasks assigned to/by them, still shown inline per day).
+  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin'
   const queryClient = useQueryClient()
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState(() => {
@@ -259,9 +264,11 @@ export default function OfficeTaskCalendarPage() {
               </label>
             ))}
           </div>
-          <Button size="sm" className="mt-4 w-full" onClick={() => openPanel(selectedDate)}>
-            <Plus className="mr-1.5 h-4 w-4" /> New
-          </Button>
+          {canManage && (
+            <Button size="sm" className="mt-4 w-full" onClick={() => openPanel(selectedDate)}>
+              <Plus className="mr-1.5 h-4 w-4" /> New
+            </Button>
+          )}
         </div>
 
         {/* Main day-column grid */}
@@ -283,8 +290,8 @@ export default function OfficeTaskCalendarPage() {
               return (
                 <div
                   key={i}
-                  className={`min-h-[104px] cursor-pointer border-r border-b p-1.5 ${inMonth ? '' : 'bg-secondary/20 opacity-50'} hover:bg-secondary/40`}
-                  onClick={() => openPanel(key)}
+                  className={`min-h-[104px] border-r border-b p-1.5 ${inMonth ? '' : 'bg-secondary/20 opacity-50'} ${canManage ? 'cursor-pointer hover:bg-secondary/40' : ''}`}
+                  onClick={canManage ? () => openPanel(key) : undefined}
                 >
                   <div className="mb-1 flex justify-end">
                     <span

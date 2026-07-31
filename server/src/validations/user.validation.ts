@@ -3,6 +3,8 @@ import { Role } from '@prisma/client'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
 // signup.php's role dropdown excludes Super Admin — preserved exactly (see MIGRATION_PLAN.md).
+// Marketer added per MIGRATION_PLAN.md §21 — it wasn't part of the original preserved list since
+// the role didn't exist as a live option at migration time.
 const SIGNUP_ROLES = [
   Role.StoresAdmin,
   Role.ProjectManager,
@@ -10,6 +12,7 @@ const SIGNUP_ROLES = [
   Role.GraphicDesigner,
   Role.ProductionTeam,
   Role.Logistics,
+  Role.Marketer,
 ] as const
 
 const emailField = z

@@ -9,6 +9,7 @@ export type Role =
   | 'GraphicDesigner'
   | 'ProductionTeam'
   | 'Logistics'
+  | 'Marketer'
 
 export interface AuthUser {
   id: number

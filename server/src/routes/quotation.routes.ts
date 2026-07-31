@@ -6,13 +6,15 @@ import { validateBody } from '../middleware/validate'
 import { createUploader } from '../middleware/upload'
 import { quotationSchema } from '../validations/quotation.validation'
 
-// makeQuotation.php: legacy gated to requireRole('Marketer'), a role dropped in Module 2's
-// normalization — submission is open to any authenticated user instead (see MIGRATION_PLAN.md §10).
+// makeQuotation.php: legacy gated to requireRole('Marketer'). Marketer was dropped in Module 2's
+// normalization (open to any authenticated user in the interim) and reintroduced in §21 — access
+// is restricted back to Marketer + Super Admin (Super Admin as the catch-all admin override).
 export const quotationRouter = Router()
 
 const upload = createUploader('quotations', ['pdf', 'jpg', 'jpeg', 'png'])
 
 quotationRouter.use(authenticate)
+quotationRouter.use(requireRole(Role.Marketer, Role.SuperAdmin))
 quotationRouter.get('/', quotationController.list)
 quotationRouter.get('/:id', quotationController.getOne)
 quotationRouter.get('/:id/pdf', quotationController.downloadPdf)

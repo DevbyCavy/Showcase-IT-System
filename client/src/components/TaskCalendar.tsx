@@ -8,6 +8,7 @@ import * as taskCalendarApi from '@/api/taskCalendar'
 import * as usersApi from '@/api/users'
 import type { CalendarItem, CalendarItemType } from '@/api/taskCalendar'
 import { LogoWatermark } from '@/components/LogoWatermark'
+import { useAuth } from '@/hooks/useAuth'
 
 const TYPE_LABEL: Record<CalendarItemType, string> = {
   memo: 'To-Do',
@@ -46,6 +47,10 @@ function extractError(err: unknown, fallback: string) {
 // to any user/department). Polls every 25s like the legacy widget so a newly-assigned job shows up
 // without a reload.
 export function TaskCalendar() {
+  const { user } = useAuth()
+  // Creating To-Dos/Jobs is Marketer + Super Admin only (see MIGRATION_PLAN.md §21); everyone else
+  // can still view their own calendar (memos, tasks assigned to/by them) via this widget.
+  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin'
   const queryClient = useQueryClient()
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState(() => {
@@ -264,8 +269,11 @@ export function TaskCalendar() {
                   isSelected ? 'bg-indigo-50' : 'hover:bg-secondary'
                 }`}
                 onClick={() => {
-                  selectDate(key)
-                  openModalFor(key)
+                  if (canManage) {
+                    openModalFor(key)
+                  } else {
+                    selectDate(key)
+                  }
                 }}
               >
                 <span
