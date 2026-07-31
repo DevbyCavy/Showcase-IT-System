@@ -13,10 +13,15 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
   UPLOADS_DIR: z.string().default('uploads'),
+  WHATSAPP_PROVIDER: z.enum(['twilio', 'meta']).default('twilio'),
   WHATSAPP_ACCESS_TOKEN: z.string().default(''),
   WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
   WHATSAPP_API_VERSION: z.string().default('v21.0'),
   WHATSAPP_TEMPLATE_NAME: z.string().default('order_assignment'),
+  TWILIO_ACCOUNT_SID: z.string().default(''),
+  TWILIO_AUTH_TOKEN: z.string().default(''),
+  TWILIO_WHATSAPP_FROM: z.string().default(''),
+  TWILIO_CONTENT_SID: z.string().default(''),
 })
 
 export const env = envSchema.parse(process.env)

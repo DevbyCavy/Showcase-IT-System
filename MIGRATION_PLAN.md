@@ -757,3 +757,18 @@ browser flow before committing.
     confirming `whatsappNumber` persists; and a real order creation via curl confirming the
     WhatsApp side effect fires and logs its skip reason without affecting the `201` response. Test
     user/order removed afterward.
+
+20. **WhatsApp provider swapped behind a dispatcher — Twilio for now, Meta later (done, 2026-07-24).**
+    Calvin wants to develop against Twilio (its sandbox sends free-text with no template-approval
+    wait, unlike Meta's Cloud API) but switch to Meta once this deploys. `whatsapp.service.ts` (the
+    function `order.service.ts` calls) is now a thin dispatcher that reads `WHATSAPP_PROVIDER`
+    (`"twilio"` default, or `"meta"`) and delegates to `whatsappProviders/twilio.ts` or
+    `whatsappProviders/meta.ts` — `order.service.ts` itself needed zero changes, so moving providers
+    at deploy time is a `server/.env` edit, not a code change. Each provider function just sends and
+    throws on failure; the dispatcher is the single place that catches and logs, so both providers
+    share identical fire-and-forget/error-handling behavior. Twilio's implementation uses native
+    `fetch` with HTTP Basic Auth (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`) posting to its Messages
+    API, matching the existing no-new-HTTP-client-dependency precedent from the Meta implementation.
+    Verified by creating real test orders with `WHATSAPP_PROVIDER` set to each value in turn and
+    confirming the server log names the correct provider's "not configured" skip reason for both,
+    with the order creation response unaffected either way; test users/orders removed afterward.
