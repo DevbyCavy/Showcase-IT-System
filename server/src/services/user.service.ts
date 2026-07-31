@@ -18,9 +18,12 @@ export async function list() {
 // management list, which manage_users.php gates to Super Admin). Also reused by the Office Task
 // Calendar's department -> assignee picker (mirrors superDashboard.php's
 // `SELECT user_id, name, surname, department FROM users`), hence `department` on the response.
+// `role` added for the Assign Design Job form's designer picker (needs to filter to
+// GraphicDesigner specifically, not just department) — a small additive field, safe for the
+// existing Orders/Task Calendar callers to ignore.
 export async function listAssignable() {
   const users = await userRepository.findAllOrderedByName()
-  return users.map((u) => ({ id: u.id, name: u.name, surname: u.surname, department: u.department }))
+  return users.map((u) => ({ id: u.id, name: u.name, surname: u.surname, department: u.department, role: u.userType }))
 }
 
 export async function signup(input: SignupBody) {

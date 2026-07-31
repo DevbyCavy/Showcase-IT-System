@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { AuthUser } from '@/types/auth'
+import type { AuthUser, Role } from '@/types/auth'
 
 interface UserResponse {
   success: true
@@ -36,6 +36,7 @@ export interface AssignableUser {
   name: string
   surname: string
   department: string
+  role: Role
 }
 
 interface AssignableUserListResponse {
