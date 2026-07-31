@@ -1,27 +1,50 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Zap, HardHat, CircleCheck, MapPin, Clock, CheckCircle2, XCircle, Users, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import * as ordersApi from '@/api/orders'
-import type { Order } from '@/api/orders'
+import type { Order, OrderStatus } from '@/api/orders'
 
-const badgeClass: Record<Order['status'], string> = {
-  New: 'bg-blue-600',
-  Assigned: 'bg-sky-500',
-  OnGoing: 'bg-amber-500',
-  Completed: 'bg-green-600',
+// Same status → color/icon grouping as SuperAdminDashboard's OrdersCarousel (New/Assigned share
+// orange, OnGoing is purple, Completed is green) so a card looks the same whether it's seen on the
+// admin dashboard's compact carousel or here — see MIGRATION_PLAN.md (Orders card redesign, per
+// Calvin's reference screenshots).
+const STATUS_STYLE: Record<OrderStatus, { gradient: string; icon: typeof Zap }> = {
+  New: { gradient: 'from-brand-orange to-brand-orange-dark', icon: Zap },
+  Assigned: { gradient: 'from-brand-orange to-brand-orange-dark', icon: Zap },
+  OnGoing: { gradient: 'from-brand-purple to-brand-purple-dark', icon: HardHat },
+  Completed: { gradient: 'from-emerald-500 to-emerald-700', icon: CircleCheck },
+}
+
+function FileStatus({ label, href }: { label: string; href: string | null }) {
+  return href ? (
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">
+      <CheckCircle2 className="h-3.5 w-3.5" /> {label}
+    </a>
+  ) : (
+    <span className="inline-flex items-center gap-1 opacity-70">
+      <XCircle className="h-3.5 w-3.5" /> {label}
+    </span>
+  )
 }
 
 // Translated from php_action/order_card.php's inline countdown IIFE + orders.php's shared
-// orderUpdateStatus(). New/Assigned counts down to the deadline (auto-flips to OnGoing at zero);
-// OnGoing counts down 24h from ongoingSince (auto-flips to Completed at zero) — mirrors the
-// server's own lazy-cron in order.repository.ts#autoTransition, just responsive without a reload.
+// orderUpdateStatus(), redesigned per Calvin's reference screenshots to match the admin dashboard's
+// gradient-tile look: fixed card size regardless of description length (description dropped from
+// this compact card — full detail lives on /orders/manage), a static deadline instead of a
+// per-second-ticking countdown (still auto-transitions status once, right at the deadline instant,
+// via a single scheduled timeout rather than a repeating one — no visual jitter, same eventual
+// behavior, and it's also mirrored by the server's own lazy-cron in order.repository.ts#autoTransition
+// so nothing is lost if the tab isn't open when the deadline hits), B.O.Q/Artwork as a check/x
+// status instead of link-or-muted-text, a Location pin icon, and Team as a disclosure button
+// listing assigned members instead of inline comma-separated text.
 export function OrderCard({ order }: { order: Order }) {
   const queryClient = useQueryClient()
-  const [countdown, setCountdown] = useState('')
   const firedRef = useRef(false)
 
   const statusMutation = useMutation({
-    mutationFn: (status: Order['status']) => ordersApi.updateStatus(order.id, status),
+    mutationFn: (status: OrderStatus) => ordersApi.updateStatus(order.id, status),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   })
 
@@ -39,88 +62,77 @@ export function OrderCard({ order }: { order: Order }) {
       onZero = () => statusMutation.mutate('OnGoing')
     }
 
-    if (deadline === null) {
-      setCountdown('')
+    if (deadline === null || onZero === null) return
+
+    const msLeft = deadline - Date.now()
+    const fire = () => {
+      if (firedRef.current) return
+      firedRef.current = true
+      onZero!()
+    }
+
+    if (msLeft <= 0) {
+      fire()
       return
     }
-
-    const tick = () => {
-      const dist = deadline! - Date.now()
-      if (dist <= 0) {
-        setCountdown(order.status === 'OnGoing' ? 'Completing…' : 'Deadline passed')
-        if (!firedRef.current) {
-          firedRef.current = true
-          onZero?.()
-        }
-        return
-      }
-      const d = Math.floor(dist / 86400000)
-      const h = Math.floor((dist % 86400000) / 3600000)
-      const m = Math.floor((dist % 3600000) / 60000)
-      const s = Math.floor((dist % 60000) / 1000)
-      setCountdown(order.status === 'OnGoing' ? `${h}h ${m}m ${s}s` : `${d}d ${h}h ${m}m ${s}s`)
-    }
-
-    tick()
-    const timer = setInterval(tick, 1000)
-    return () => clearInterval(timer)
+    const timer = setTimeout(fire, msLeft)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.status, order.ongoingSince, order.deadlineDatetime])
 
+  const { gradient, icon: StatusIcon } = STATUS_STYLE[order.status]
+
   return (
-    <div className="flex h-full flex-col rounded-2xl border bg-card p-4">
-      <div className="mb-2 flex items-start justify-between">
-        <div>
-          <div className="text-lg font-bold">Order #{order.orderNumber}</div>
-          <div className="font-semibold">{order.orderName}</div>
-          {order.description && <div className="text-muted-foreground text-sm">{order.description}</div>}
-        </div>
-        <div className="text-right">
-          {order.status === 'Completed' ? (
-            <span className="font-bold text-green-600">Done</span>
-          ) : (
-            <>
-              <div className="text-muted-foreground text-xs">
-                {order.status === 'OnGoing' ? 'Completes in' : 'Time Left'}
-              </div>
-              <div className="font-bold">{countdown}</div>
-            </>
-          )}
-        </div>
+    <div className={`flex min-h-[260px] flex-col gap-2.5 rounded-2xl bg-gradient-to-br p-4 text-white ${gradient}`}>
+      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white/20">
+        <StatusIcon className="h-4 w-4" />
       </div>
 
-      <hr className="my-2" />
-      <p className="mb-2 text-sm">{order.location}</p>
-      <p className="mb-3">
-        <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${badgeClass[order.status]}`}>
-          {order.status === 'OnGoing' ? 'On Going' : order.status}
-        </span>
-      </p>
+      <h3 className="line-clamp-2 text-sm font-bold">{order.orderName}</h3>
+      <div className="text-xs opacity-90">Order #{order.orderNumber}</div>
 
-      <div className="mt-auto flex flex-wrap items-center gap-2">
-        {order.boqFile ? (
-          <a href={order.boqFile} target="_blank" rel="noreferrer" className="text-xs underline">
-            B.O.Q
-          </a>
-        ) : (
-          <span className="text-muted-foreground text-xs">No B.O.Q</span>
-        )}
-        {order.artworkFile ? (
-          <a href={order.artworkFile} target="_blank" rel="noreferrer" className="text-xs underline">
-            Artwork
-          </a>
-        ) : (
-          <span className="text-muted-foreground text-xs">No Artwork</span>
-        )}
-        <span className="text-xs">
-          Team: {order.assignedUsers.map((u) => `${u.name} ${u.surname}`).join(', ') || 'None'}
-        </span>
+      <div className="flex items-center gap-1 text-xs opacity-90">
+        <MapPin className="h-3 w-3 shrink-0" />
+        <span className="truncate">{order.location}</span>
+      </div>
 
+      <div className="flex items-center gap-1 text-xs opacity-90">
+        <Clock className="h-3 w-3 shrink-0" />
+        {order.deadlineDatetime
+          ? new Date(order.deadlineDatetime).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+          : 'No deadline'}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs opacity-90">
+        <FileStatus label="B.O.Q" href={order.boqFile} />
+        <FileStatus label="Artwork" href={order.artworkFile} />
+      </div>
+
+      <details className="relative">
+        <summary className="inline-flex list-none items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold [&::-webkit-details-marker]:hidden">
+          <Users className="h-3 w-3" /> Team ({order.assignedUsers.length}) <ChevronDown className="h-3 w-3" />
+        </summary>
+        <div className="text-foreground absolute z-10 mt-1 w-48 rounded-lg bg-white p-2 text-xs shadow-lg">
+          {order.assignedUsers.length === 0 ? (
+            <div className="text-muted-foreground px-1 py-0.5">No one assigned</div>
+          ) : (
+            order.assignedUsers.map((u) => (
+              <div key={u.id} className="px-1 py-0.5">
+                {u.name} {u.surname}
+              </div>
+            ))
+          )}
+        </div>
+      </details>
+
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+        <Link to="/orders/manage" className="text-foreground rounded-full bg-white px-3 py-1 text-xs font-bold">
+          Manage
+        </Link>
         {order.status === 'OnGoing' && (
           <Button
             size="sm"
             variant="secondary"
-            className="ml-auto"
             onClick={() => {
               if (confirm('Mark this order as Completed?')) statusMutation.mutate('Completed')
             }}
