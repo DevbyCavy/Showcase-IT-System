@@ -24,6 +24,7 @@ import { quotationRouter } from './routes/quotation.routes'
 import { taskCalendarRouter } from './routes/taskCalendar.routes'
 import { memoRouter } from './routes/memo.routes'
 import { designJobRouter } from './routes/designJob.routes'
+import { trackingRouter } from './routes/tracking.routes'
 
 export const app = express()
 
@@ -60,6 +61,7 @@ app.use('/api/quotations', quotationRouter)
 app.use('/api/task-calendar', taskCalendarRouter)
 app.use('/api/memos', memoRouter)
 app.use('/api/design-jobs', designJobRouter)
+app.use('/api/tracking', trackingRouter)
 
 // Further module routers mount here as they land
 
