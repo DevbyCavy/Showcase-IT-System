@@ -772,3 +772,196 @@ browser flow before committing.
     Verified by creating real test orders with `WHATSAPP_PROVIDER` set to each value in turn and
     confirming the server log names the correct provider's "not configured" skip reason for both,
     with the order creation response unaffected either way; test users/orders removed afterward.
+
+21. **Marketer role reintroduced (done, 2026-07-30).** The legacy `Marketer` role was dropped
+    during Module 2's role-normalization (§2.2) because it was *broken* — the login switch mapped
+    `user_type = 'Marketers'` to `marketingDashboard.php`, but that page's own gate required
+    `"Marketing"`, so a marketer account bounced immediately; the page itself was also an empty
+    shell (header/footer only, no real content, confirmed by reading it from git history before
+    rebuilding). Dropping it was a bug fix, not a decision that marketers shouldn't exist, and
+    Calvin asked for the role back with a real, working design. Added `Marketer` to the `Role`
+    enum (`server/prisma/schema.prisma`, migration `20260730103634_add_marketer_role`) and to the
+    client `Role` type. Nav: `client/src/lib/navLinks.ts` gives Marketer Dashboard, Manage Orders,
+    Requisitions, Make Quotation, Memos, and Office Task Calendar.
+
+    Reintroducing a live Marketer role meant deciding what happens to Quotations/Memos/Task
+    Calendar, which had been opened to every authenticated role specifically because "no live role
+    is really the marketer" (§10, §10.18) — that precedent no longer holds. Quotations and Memos
+    are now fully restricted to Marketer + Super Admin, both nav (`navLinks.ts`, `App.tsx`'s
+    `ProtectedRoute roles={['Marketer','SuperAdmin']}`) and API (`quotationRouter`/`memoRouter` now
+    `requireRole(Role.Marketer, Role.SuperAdmin)` at the router level) — every other role loses
+    those nav entries and gets a 403/redirect if they hit the routes directly. `AppShell`'s
+    `DueMemosReminder` popup is now only mounted for Marketer/Super Admin, since only those roles
+    can have memos going forward (avoids a pointlessly-403'ing background poll for everyone else).
+
+    Task Calendar (`taskCalendar.routes.ts`) is *not* fully restricted the same way, because
+    `GET /task-calendar` also serves a general cross-role feature unrelated to Marketer: seeing
+    office tasks assigned to you by anyone, in any department (§10.8). Fully gating it would have
+    broken task visibility for whoever it's assigned to. Instead: `GET /` stays open to any
+    authenticated user (own memos + tasks assigned to/by them, unchanged); only the two POST
+    routes (`/memos` quick-add, `/office-tasks` create) now require Marketer/Super Admin. On the
+    client, both calendar surfaces (`TaskCalendar.tsx` widget and `OfficeTaskCalendarPage.tsx`)
+    compute `canManage = role is Marketer or SuperAdmin` and use it to gate the "New"
+    button/panel and day-cell click-to-create — other roles keep full read access (items already
+    render inline in cells/day panel) but clicking a cell no longer opens a create form that would
+    just 403.
+
+    `client/src/lib/userOptions.ts`'s `JOB_TITLE_OPTIONS` (shared by Signup and Manage Users) gets
+    a `Marketer` entry; `DEPARTMENT_OPTIONS` already had `"Marketing"` from the preserved legacy
+    list, so no department change was needed. Verified: `tsc --noEmit` clean in both `client/` and
+    `server/`.
+
+22. **Design Jobs — Marketer assigns Artwork/3D Design work to a Graphic Designer (done,
+    2026-07-30).** Brand-new feature and Prisma model, no legacy equivalent. Calvin's explicit
+    scope decisions: standalone, not linked to an Order; a dedicated new page rather than folded
+    into Manage Orders or Task Calendar; and Graphic Designers get their own list/mark-done view
+    rather than assignment-only. New `DesignJob` model (`server/prisma/schema.prisma`, migration
+    `20260730113336_add_design_jobs`): `title`, `jobType` (`Artwork` | `ThreeDDesign` — the "3D
+    Design" `@map` matches the enum's DB label to the human label), optional `description`,
+    optional `sampleFile` (an uploaded reference image/PDF — png/jpg/jpeg/pdf, reusing
+    `createUploader` from `upload.ts`, same as Quotations' `designFile`), a required `deadline`,
+    `status` (`Pending`/`Done`), and `assignedBy`/`assignedTo` relations — same shape as
+    `OfficeTask`'s assign-by/assign-to pair.
+
+    Full CRUD stack follows the established per-module layering (routes → validation → controller
+    → service → repository): `designJob.routes.ts` restricts the whole router to
+    Marketer/SuperAdmin/GraphicDesigner (nobody else has a reason to see this), with `POST /`
+    further restricted to Marketer/SuperAdmin — same nested-`requireRole` pattern as
+    `taskCalendar.routes.ts`'s POST routes. `designJob.service.ts#list` scopes what a
+    GraphicDesigner sees to jobs assigned to *them* (mirrors `memo.service.ts`'s
+    own-records-only guard); Marketer/SuperAdmin see every job, since they're the ones tracking
+    what they've handed out. Marking a job Done is ownership-guarded at the repository level via
+    an atomic `updateMany({ where: { id, assignedToId } })` (`designJob.repository.ts#markDone`,
+    same WHERE-guard pattern as `quotation.repository.ts#markApproved`) rather than role-gated in
+    the route, so a designer can only complete their own jobs.
+
+    The designer picker needed to filter to `GraphicDesigner` specifically, not just department
+    text — `GET /users/assignable` (`userService.listAssignable`) gained a `role` field on each
+    returned user (previously just `id`/`name`/`surname`/`department`), a small additive field
+    safe for the existing Orders/Task Calendar callers to ignore.
+
+    Two new pages: `client/src/pages/AssignDesignJob.tsx` (Marketer + SuperAdmin — form: title,
+    job type select, designer select filtered to `role === 'GraphicDesigner'`, deadline
+    `datetime-local`, optional description textarea, optional file input, plus a table of jobs
+    already assigned) and `client/src/pages/MyDesignJobs.tsx` (GraphicDesigner + SuperAdmin — table
+    of jobs assigned to the current designer with a Mark Done action; the server already scopes
+    the list, so no client-side filtering needed). Both routes gated in `App.tsx` via
+    `ProtectedRoute roles={[...]}`, and both nav entries added in `navLinks.ts` only for the roles
+    that can reach them. Verified via curl: created test Marketer + GraphicDesigner accounts,
+    assigned a design job with a real file upload, confirmed the GraphicDesigner's list is scoped
+    to only their own job, marked it Done, confirmed a second designer's ownership-guard rejects
+    marking someone else's job done, then cleaned up all test data. `tsc --noEmit` and `oxlint`
+    clean in both `client/` and `server/`.
+
+23. **Stores Admin gets Trip Logbook nav; Graphic Designer nav cleanup + Design Jobs get a real
+    completion flow (done, 2026-07-30).** Three small, Calvin-directed changes to the per-role nav
+    and Design Jobs from §22:
+
+    - **Stores Admin can assign a driver to a trip.** `/trip-logbook` (`TripLogbook.tsx`) already
+      let any authenticated user pick a vehicle and a driver to start a trip — `vehicleTripRouter`
+      was never role-gated (`authenticate` only) and the frontend route wasn't wrapped in a
+      role-restricted `ProtectedRoute` either. It was just missing from Stores Admin's nav. Added
+      the nav entry only — no functional/permission change needed since the capability already
+      existed for any logged-in user.
+    - **Graphic Designer nav: dropped "Manage Orders," added "Memos."** Memos was Marketer +
+      SuperAdmin only per §21; Calvin asked for Graphic Designer to get it too. Since memos are
+      personal, own-records-only to-dos (not a Marketer-exclusive business workflow like
+      Quotations), extending access doesn't conflict with §21's intent — added `GraphicDesigner`
+      to `memoRouter`'s `requireRole`, the `/memos` `ProtectedRoute`, and the `DueMemosReminder`
+      mount gate in `AppShell.tsx`.
+    - **Design Jobs get an actual completion flow.** Previously "Mark Done" was a bare status flip
+      with nothing attached — doesn't match a real "submit your finished work back" workflow.
+      Added `completedFile`/`completedAt` to the `DesignJob` model (migration
+      `20260730120210_add_design_job_completed_file`). `PUT /design-jobs/:id/done` now requires a
+      multipart `completedFile` upload (png/jpg/jpeg/pdf, reusing the same uploader as
+      `sampleFile`) — the controller 400s if it's missing, and `designJob.repository.ts#markDone`
+      writes `completedFile`/`completedAt` alongside the ownership-guarded status flip in the same
+      atomic `updateMany`. `MyDesignJobs.tsx`'s one-click button became a modal
+      (`SubmitCompletedWorkModal`) requiring the file before submitting; `AssignDesignJob.tsx`'s
+      table gained a "Completed Work" column so the Marketer can see/download what came back.
+      Verified via curl: confirmed `PUT .../done` without a file 400s, then with a real file upload
+      flips status to Done and the Marketer's list shows the completed file; test data cleaned up
+      afterward. `tsc --noEmit` and `oxlint` clean in both `client/` and `server/`.
+
+24. **Live vehicle tracking — driver's-phone GPS on a Leaflet/OpenStreetMap map (done,
+    2026-07-30/31).** Brand-new feature per Calvin's detailed spec: track drivers' live location
+    via `navigator.geolocation` in the browser (no external GPS hardware) on a "Tracking" page.
+    Shipped in two passes: the backend/capture layer first (against Calvin's initial Google Maps
+    spec), then the map-rendering layer was fully swapped from Google Maps to Leaflet +
+    OpenStreetMap on Calvin's explicit follow-up ("no Google Maps, no API key, free/open-source
+    only") — nothing below the map layer changed between the two passes. Adaptations from the spec
+    as given: (1) tables live in Postgres via Prisma, not MySQL — this project's actual stack
+    (`CLAUDE.md`) — same columns/indexes, just the real DB. (2) trip lifecycle (start/end,
+    departure/return time, odometer-based distance) stays owned by the *existing* `VehicleTrip`
+    model/endpoints (`vehicleTrip.routes.ts`, unchanged) rather than duplicating it — tracking is
+    purely a GPS breadcrumb log layered on top of an already-Active trip, not a second trip
+    concept. The spec's `distanceTravelled`/duration/avg-speed calculations are additionally
+    computed from GPS breadcrumbs for the Route History view (see below), but the trip's
+    authoritative distance is still the existing odometer-difference figure.
+
+    New `TrackingLocation` model (migration `20260730124128_add_tracking_locations`):
+    `tripId`/`vehicleId`/`userId`, `latitude`/`longitude`/`accuracy`/`speed`/`heading`,
+    `timestamp`, indexed on `tripId`/`vehicleId`/`timestamp` per spec. Full layered stack
+    (`tracking.routes/controller/service/repository.ts`): `POST /tracking/start|update|end` (all
+    three are the same "record one GPS ping" shape — the endpoint hit just conveys intent, not a
+    different payload), `GET /tracking/live` (latest ping per Active trip), `GET
+    /tracking/history/:tripId` (all pings for a trip, ordered, plus GPS-derived distance/duration/
+    avg-speed), `GET /tracking/stats` (Vehicles Online/Offline, Trips In Progress, Average Speed,
+    Distance Today). No `requireRole()` — matches the rest of the vehicle module (Vehicles/Trip
+    Logbook are `authenticate`-only) — the real security boundary the spec asked for
+    ("users can only update their own vehicle") is `tracking.service.ts#recordPing`'s ownership
+    check: a location ping is only accepted if the trip is Active *and* `trip.userId` matches the
+    requesting user — verified via curl with a second test account, which got a 403.
+    "Online"/"Offline" is a 60-second last-ping-recency window
+    (`tracking.repository.ts#ONLINE_WINDOW_MS`).
+
+    Client: `useLiveTripTracking` hook drives the whole capture lifecycle for one tripId —
+    `getCurrentPosition` on a 20s interval (splits the spec's 15–30s range), `/start` for the
+    first successful fix then `/update` after, a `🟢/🟡/🔴` status (`tracking`/`waiting`/`offline`/
+    `denied`), and a best-effort `/end` ping when the trip stops being Active. Failed sends queue
+    into `localStorage` (`trackingQueue.ts`) and retry on the next successful ping or the browser's
+    `online` event, satisfying the spec's offline-caching requirement without a service worker.
+    `LiveTripTracker` (mounted once in `AppShell`, same "app-wide not per-page" pattern as
+    `DueMemosReminder`) finds the current user's own Active trip from the same `/trips/active` list
+    Trip Logbook already uses and runs the hook for it — so tracking survives navigation, matching
+    "background tracking must continue while the browser tab remains open."
+
+    The map layer is `leaflet` + `react-leaflet` rendering OpenStreetMap raster tiles
+    (`{s}.tile.openstreetmap.org`) — no API key, no billing account, nothing to configure; the
+    earlier Google-Maps-based `lib/googleMaps.ts`, `LiveTrackingMap.tsx`, `RouteHistoryMap.tsx`,
+    `@types/google.maps`, and `VITE_GOOGLE_MAPS_API_KEY` (and the `client/.env`/`.env.example`
+    files that only existed to hold it) were all deleted, not just deprecated. Four components,
+    matching Calvin's requested names/shapes as closely as this project's TS-only convention
+    allows (`.tsx`, not `.jsx` — every other file in `client/src` is `.tsx`, and `tsconfig`/Vite
+    aren't set up for a mixed `.jsx` file, so introducing one file's worth of plain JSX would be an
+    inconsistent one-off): `pages/TrackingDashboard.tsx` (was `VehicleTracking.tsx` — same route
+    `/tracking`, same content, renamed to match), `components/VehicleMap.tsx` (the live map:
+    `MapContainer` + OSM `TileLayer` + one `LiveVehicleMarker` per vehicle with a GPS fix, controls
+    via `MapControls`, auto-updates every 15s through the page's polling query),
+    `components/LiveVehicleMarker.tsx` (a colored `L.divIcon` — green online / gray offline — with
+    a `Popup` showing driver, vehicle, destination, speed, last update), and
+    `components/TripHistoryMap.tsx` (a completed trip's full `Polyline` route with green/red A/B
+    endpoint markers, auto-fit to bounds). `components/MapControls.tsx` is shared by both maps:
+    Leaflet's built-in zoom and `L.control.scale()`, plus two small custom `L.Control` subclasses
+    for fullscreen (native Fullscreen API on the map container) and "my location"
+    (`getCurrentPosition` + `map.setView`) — implemented directly rather than pulling in
+    `leaflet.fullscreen`/`leaflet.locatecontrol`, since two buttons didn't justify two more
+    packages on top of `leaflet`/`react-leaflet`/`@types/leaflet`. Vehicle/endpoint markers use
+    inline-SVG-free `L.divIcon` HTML strings instead of Leaflet's default marker images
+    specifically to sidestep the well-known bundler-breaks-the-default-icon-path issue, so there's
+    no marker-asset copying step needed in the Vite config.
+
+    **Still needed from Calvin: none for configuration** — Leaflet/OSM needs no key or account, so
+    (unlike the Google Maps pass) there's nothing left to plug in before the map itself works.
+    What's still unverified without a browser (none available either session): real device GPS
+    behavior (`navigator.geolocation` requires a secure context — HTTPS or localhost — worth
+    checking once deployed) and actual map/marker/popup rendering and interaction (zoom,
+    fullscreen, locate button, popup content). Backend re-verified unaffected by the rewrite (curl,
+    both sessions): created a real trip, confirmed a non-driver gets 403 on `/tracking/start`, the
+    actual driver's start/update pings succeed, `/live` and `/stats` reflect them correctly, ending
+    the trip (existing `/trips/:id/end`) makes further pings 400 ("not active"), and
+    `/history/:tripId` returns the ordered points with computed GPS distance/duration/speed; test
+    data cleaned up afterward each time. Confirmed the new Leaflet files transform cleanly through
+    the live Vite dev server (module fetch returned 200 for each, and `leaflet`/`react-leaflet`
+    show up pre-bundled under `node_modules/.vite/deps`) as a stand-in for an actual render check.
+    `tsc --noEmit` and `oxlint` clean in both `client/` and `server/`.
