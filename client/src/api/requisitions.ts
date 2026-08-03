@@ -1,7 +1,9 @@
 import { api } from './client'
 import type { AuthUser } from '@/types/auth'
 
-export type RequisitionType = 'Food' | 'Transport' | 'Tool' | 'Other'
+// "Product" isn't offered on the manual submission form (see Requisitions.tsx's TYPES) — it's
+// only ever set by BOQ's auto-filed stock-shortfall requisitions (see MIGRATION_PLAN.md §29).
+export type RequisitionType = 'Food' | 'Transport' | 'Tool' | 'Product' | 'Other'
 export type RequisitionStatus = 'Pending' | 'Processed' | 'Approved' | 'Rejected'
 
 export interface Requisition {
@@ -15,6 +17,8 @@ export interface Requisition {
   reqType: RequisitionType
   reqTypeOther: string | null
   displayType: string
+  product: { id: number; name: string } | null
+  quantity: string | null
   status: RequisitionStatus
   submittedBy: AuthUser
   processedBy: AuthUser | null

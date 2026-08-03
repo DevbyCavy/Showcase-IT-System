@@ -965,3 +965,257 @@ browser flow before committing.
     the live Vite dev server (module fetch returned 200 for each, and `leaflet`/`react-leaflet`
     show up pre-bundled under `node_modules/.vite/deps`) as a stand-in for an actual render check.
     `tsc --noEmit` and `oxlint` clean in both `client/` and `server/`.
+
+25. **Enforce approval-before-send on Quotations; real-time submitted/approved alerts (done,
+    2026-07-31).** The Marketer → Super Admin approval workflow already existed (§21), but nothing
+    actually stopped a quotation's PDF — the thing that goes to the client — from being downloaded
+    while still Pending. `quotation.service.ts#getForPdf` now 403s unless `status === 'Approved'`,
+    closing that gap; both `MakeQuotation.tsx` and `ProcessQuotations.tsx` hide the PDF button for
+    Pending rows (Make Quotation shows "Awaiting Super Admin approval" instead) so the UI doesn't
+    offer an action that would just fail.
+
+    Real-time alerts (polling-based — no websockets in this app, matches the existing near-live
+    patterns like Task Calendar's 25s poll and Tracking's 15s poll, here 15s): `MakeQuotation.tsx`
+    diffs each poll's statuses for the current Marketer's own quotations against the previous
+    poll's, and a Pending→Approved transition fires a toast ("Your quotation QUO-004 was
+    approved!") plus a temporary highlighted/pulsing row. `ProcessQuotations.tsx` diffs Pending IDs
+    the same way — any id not seen last poll is a newly-submitted quotation, firing a toast ("New
+    quotation submitted: QUO-005 by...") plus the same row-highlight treatment. Both use a
+    first-poll baseline (record, don't alert) so opening the page doesn't announce the existing
+    backlog as "new." New shared `components/ui/toast.tsx` (`ToastStack`/`ToastItem`, self-dismiss
+    after 6s) — no toast library, matches the app's existing rounded-card aesthetic. `DataTable`
+    (`components/ui/data-table.tsx`) gained an optional `rowClassName?: (row: T) => string` prop to
+    support the highlight — small additive change, ignored by every other existing caller.
+
+    `NotificationsBell.tsx`'s "Pending Quotations" section is now Super Admin-only (they're the one
+    who acts on it — a Marketer's personal approval alert lives on Make Quotation itself instead)
+    and its query is `enabled`-gated to that role, since quotations access is Marketer/Super
+    Admin-only (§21) and every other role would just 403. Also now polls every 15s and briefly
+    bounces/tints the bell icon when a new Pending quotation shows up between polls.
+
+    Verified via curl (a temporary `superadmin_test` account created directly via Prisma, since
+    signup deliberately excludes Super Admin from self-registration — deleted afterward): Marketer
+    submits a quotation, downloading its PDF while Pending 403s, Super Admin approves it, the PDF
+    then downloads successfully (a real generated PDF, verified by file size and `%PDF-1.4`
+    header). The real-time polling/toast/highlight behavior itself needs a browser to actually see
+    (none available this session) — logic verified by reading, not by watching it fire.
+    `tsc --noEmit` and `oxlint` clean in both `client/` and `server/`.
+
+26. **Group Super Admin's sidebar by department (done, 2026-07-31).** Super Admin's nav had grown
+    to 22 flat items (it's the one role with every module in its list) — Calvin asked for it
+    grouped by department instead, e.g. Logistics/Stores/Marketing/Production/Graphics.
+    `NavLink` (`navLinks.ts`) gained an optional `group?: string`; only Super Admin's entries set
+    it — every other role's list is short enough to stay flat and is completely unaffected.
+    Mapping: **Marketing** = Manage Orders, Make/Process Quotation(s), Memos (the Marketer-owned
+    set from §21); **Production** = BOQ; **Graphics** = Assign Design Job; **Stores** =
+    Categories/Brands/Products/Store/Issued Products Report; **Logistics** = the whole vehicle
+    module (Vehicles, Fuel Log, Maintenance Log, Trip Logbook, Vehicle Documents, Tracking);
+    **Administration** (a catch-all Calvin's example list didn't name, but needed for what's left)
+    = Requisitions/Process Requisitions (any role can submit one — not department-specific),
+    Office Task Calendar (same), Manage Users (Super Admin-only account administration). Dashboard
+    stays ungrouped at the top, matching every other role. `AppShell.tsx`'s sidebar renders a
+    small uppercase section header whenever consecutive items' `group` differs — a no-op for
+    every role except Super Admin, since only its entries ever set `group`. Verified: `tsc
+    --noEmit` and `oxlint` clean; actual sidebar rendering unverified without a browser (none
+    available this session).
+
+27. **Super Admin sidebar groups: collapsible, fixed order (done, 2026-07-31).** Follow-up to §26.
+    Reordered after Dashboard to Admin → Marketing → Design → Stores → Logistics → Production per
+    Calvin's explicit order (also renamed the two groups whose labels he wrote differently:
+    "Administration" → "Admin", "Graphics" → "Design" — same membership as §26, just relabeled).
+    Each group header in `AppShell.tsx` is now a button (not a static div) that toggles a
+    `collapsedGroups` Set in component state; a chevron rotates to show expanded/collapsed.
+    Collapsed-group items are simply not rendered (not just visually hidden), so collapsing a
+    section doesn't leave inactive nav items in the tab order. State is plain `useState`, not
+    persisted — resets on reload, matching the app's existing precedent for this kind of
+    view-only UI state (e.g. Task Calendar's month/week toggle). `tsc --noEmit` and `oxlint`
+    clean; actual expand/collapse interaction unverified without a browser (none available this
+    session).
+
+28. **Production Team nav gains Requisitions, minus the submitted-requisitions table (done,
+    2026-07-31).** Dashboard (Orders + Work Log Sheet) was already there for every non-Super-Admin
+    role via the shared `OrdersKanban`/`Dashboard()` routing (§10.11/§23) — nothing to add.
+    `Requisitions.tsx` is shared across every role that has it in nav and previously always showed
+    a table of every submitted requisition (not scoped to the current user, any status) alongside
+    the submission form; Calvin asked for Production to only get the form. `showTable = user role
+    !== 'ProductionTeam'` now gates both the table's render and its query (`enabled: showTable`,
+    so Production's page doesn't even fetch the list) — every other role's behavior is unchanged.
+    Layout collapses to a single-column `max-w-xl` form when the table is hidden, rather than
+    leaving an empty second grid column. Nav entry added in `navLinks.ts`.
+
+    Created a `production_test` account for Calvin to check in a browser (I still don't have one
+    this session, so this is verified by reading, not a real page load): `tsc --noEmit` and
+    `oxlint` clean in `client/`.
+
+29. **Filling a BOQ deducts from Store stock; shortfalls auto-file a requisition (done,
+    2026-07-31).** BOQ items were free-text and never touched inventory (`createBOQ.php` never
+    had a working stock link — confirmed by reading it before this change). Calvin asked for BOQ
+    to actually subtract from Stores stock, only from Stores. Two follow-up decisions from him
+    shaped the exact behavior: items become a real Product picker (was free text), and instead of
+    blocking the whole submission when a line's quantity exceeds stock, it deducts whatever *is*
+    available (capped, never negative) and auto-files a Pending Requisition for the shortfall
+    under a new "Product" requisition type.
+
+    Schema (migration `20260731101119_boq_product_link_and_shortfall_requisitions`): `BoqItem`
+    gained `productId` (nullable at the DB level only — 2 pre-existing BOQ rows predate this field
+    and were never tied to a product; the create path requires it for every new item via Zod).
+    `productName` stays as a snapshot of the product's name at creation time, not re-derived live.
+    `RequisitionType` gained `Product` (not offered on the manual requisition form — system-only,
+    filed exclusively by the BOQ shortfall path). `Requisition` gained nullable `productId`/
+    `quantity`, set only for that type.
+
+    `boq.repository.ts#create` is now one transaction: for each item, look up the Product, deduct
+    `min(quantity, available)` from its stock (`Product.quantity` is a whole-unit Int column while
+    `BoqItem.quantity` allows fractional amounts like "2.5 rolls" — the needed amount is rounded up
+    with `Math.ceil` before touching the Int field, so Prisma never sees a fractional decrement),
+    and if there's a shortfall, file a `Product`-type Requisition for exactly that remainder
+    (reusing the same max+1 req-number sequence as `requisition.repository.ts`, but run against the
+    transaction client so multiple shortfalls in one BOQ still get correctly sequential numbers).
+    Everything — the BOQ, every item, every stock decrement, every shortfall requisition — commits
+    or rolls back together. `requisition.service.ts#toPublicRequisition` gives Product-type rows a
+    descriptive `displayType` ("Product — Vinyl Banner") instead of the bare enum value, and
+    exposes `product`/`quantity` to the client.
+
+    `BOQ.tsx`'s item rows are now a Product `<select>` (fed by the same `productsApi.list()` the
+    Store/Products pages already use — which only returns Active products, so a soft-deleted one
+    can't be picked from the UI; the backend doesn't re-check status either, matching the exact
+    same precedent already set by `inventory.service.ts#issueProduct`, which never checked it) with
+    a live "In Stock" column that turns red if the requested quantity would exceed it, and a
+    post-save banner naming how many items were short and got auto-requisitioned.
+
+    Verified via curl against real (not test-created) catalog data, restored afterward: a BOQ line
+    requesting more than available stock deducted the product down to exactly 0 and filed a
+    Pending Product requisition for precisely the remainder; a second line within normal stock
+    deducted cleanly with `shortfallCount: 0` and no requisition created. Product quantities reset
+    to their original values and the test BOQs/requisition deleted afterward. `tsc --noEmit` and
+    `oxlint` clean in both `client/` and `server/`.
+
+30. **Restocking a product auto-fulfills its pending BOQ shortfalls (done, 2026-07-31).** Direct
+    follow-up to §29, per Calvin's explicit example: a BOQ still needs 3 Superwood Boards (an
+    outstanding Product requisition from §29); restocking that product should consume the new
+    stock against the shortfall first, flip the BOQ line's status, and notify whoever needed it —
+    rather than the restock just silently becoming generic available stock while the shortfall
+    request sits there unresolved forever.
+
+    Schema (migration `20260731103856_boq_item_status_and_requisition_link`): `BoqItem` gained a
+    `status` (`Pending`/`Fulfilled`, defaults to `Fulfilled` so the pre-existing rows that were
+    never stock-linked don't show a false shortfall) — set at BOQ creation time (§29: `Pending` if
+    the line had a shortfall, `Fulfilled` otherwise) and flipped to `Fulfilled` later once its
+    shortfall is fully covered. `Requisition` gained `boqItemId` (nullable, set only on the
+    Product-type rows §29 creates), tracing a shortfall requisition back to the exact BOQ line so a
+    later restock knows what to update. `boq.repository.ts#create` was restructured to create each
+    `BoqItem` individually (was one nested `items: { create: [...] }`) specifically so the
+    shortfall `Requisition` has a real item id to link to before it exists.
+
+    `product.repository.ts#fulfillShortfallsInTx` is the core logic, shared by both `updateQuantity`
+    (the Store page's +/− buttons, the primary "add stock" interaction) and the full product edit
+    form (`update`) — both wrapped in a transaction now, since either can raise `quantity`. When
+    quantity increases, it walks that product's Pending Product-type requisitions oldest-first
+    (FIFO) and consumes the increase against them: each requisition's remaining `quantity` shrinks
+    by whatever it absorbs; hitting 0 marks it `Processed` and flips its linked `BoqItem` to
+    `Fulfilled`; not reaching 0 leaves it `Pending` with a smaller remainder (partial restocks
+    work incrementally — clicking Store's "+" repeatedly behaves correctly since each click is its
+    own transaction that re-reads current state). Critically, the amount consumed this way is
+    subtracted back out of the final stock figure — "adds the quantity available, and requisitions
+    the negative" from §29 implies the inverse here too: stock that immediately covers a backlog
+    was never really new available stock, so the net quantity saved is `requested - totalApplied`,
+    not the raw requested number.
+
+    Notification (per Calvin's explicit "notify user of this action"): two layers, both reusing
+    the exact `ToastStack`/`rowClassName` pattern already built for quotations (§25) rather than a
+    new mechanism. (1) `Requisitions.tsx` gained the same real-time "your requisition was
+    processed" poll-and-diff alert `MakeQuotation.tsx` has for approvals — scoped to the current
+    user's own submitted requisitions, Pending→Processed, with a Product-aware message ("Superwood
+    Boards you needed is now back in stock"). This is the primary notification: it reaches the
+    person who actually needed the item, and it fires identically whether a requisition was
+    fulfilled by this auto-restock path or manually processed by Super Admin, since both are just
+    the same status transition. (2) `Store.tsx` shows an immediate inline confirmation to whoever
+    is doing the restocking ("This restock covered N units of M pending requisitions") using the
+    `fulfilled` array now returned alongside the product from both update endpoints.
+    `BOQ.tsx`'s saved-BOQs table also gained a live "Stock Status" column ("2/3 in stock") so the
+    BOQ's creator can see the same thing there.
+
+    Verified via curl against real (non-test) catalog data, restored afterward end to end: created
+    a BOQ needing 20 units of a product with 14 in stock (shortfall 6, requisition filed, BoqItem
+    Pending) → restocked to 3 (partial: requisition reduced to 3 remaining, still Pending, product
+    net quantity correctly 0) → restocked to 5 (fully covers the remaining 3: requisition
+    `Processed`, BoqItem `Fulfilled`, product net quantity correctly 2 — the 2 units genuinely left
+    over after the backlog was paid down). `tsc --noEmit` and `oxlint` clean in both `client/` and
+    `server/`. The client-side real-time alert/highlight itself is unverified without a browser
+    (none available this session) — the underlying Pending→Processed transition it watches for is
+    confirmed correct by the curl trace above.
+
+31. **BOQ product picker: type-to-search instead of a plain `<select>` (done, 2026-07-31).** §29's
+    product `<select>` doesn't scale — Calvin pointed out scrolling a long catalog to find one item
+    is slow. Replaced with a text input per line (`itemSearches`, a parallel array alongside
+    `items` since the API only needs `productId`, not a display string) that filters the catalog
+    by substring match as you type and shows up to 8 suggestions (name + current stock) in a
+    dropdown below; clicking one sets that row's `productId`, same as the old `<select>` did.
+    Typing after a selection clears the row's `productId` until a suggestion is clicked again, so
+    a half-edited/unmatched name can't silently submit a stale product. Purely a client-side UX
+    change — the backend deduction/shortfall/fulfillment logic from §29/§30 is untouched. Verified:
+    `tsc --noEmit` and `oxlint` clean, and the page transforms cleanly through the live Vite dev
+    server; the actual typing/dropdown/click interaction is unverified without a browser (none
+    available this session).
+
+32. **Stores Admin can assign Office Task Calendar jobs to Logistics/Production Team (done,
+    2026-07-31).** Creating To-Dos/Jobs from the calendar (`taskCalendarRouter`'s POST routes,
+    `canManage` on the client) was Marketer + Super Admin only per §21. Calvin asked for Stores
+    Admin to also be able to assign tasks to drivers/Production Team accounts from here — added
+    `Role.StoresAdmin` to both POST route guards (`taskCalendar.routes.ts`) and both client
+    `canManage` checks (`TaskCalendar.tsx` widget, `OfficeTaskCalendarPage.tsx`). Quick-add Memo
+    came along with it too, since `canManage` is a single flag gating both actions together in the
+    existing code and memos are personal/own-records-only — not worth splitting into two flags for
+    a harmless side capability. Deliberately did *not* extend the separate `DueMemosReminder`
+    popup or the standalone Memos page/nav to Stores Admin — those are gated by the unrelated
+    `memoRouter` (still Marketer/Super Admin/Graphic Designer only, §21/§22) and weren't part of
+    this request; Stores Admin's quick-added memos still show correctly in the calendar itself,
+    since viewing was already universal.
+
+    Verified via curl: Stores Admin creates an office task assigning it to a Production Team
+    account — succeeds, and that account's `GET /task-calendar` shows it as `job_to_me` from
+    "Stores Test." Stores Admin quick-adding a memo also succeeds. Confirmed a non-privileged role
+    (Production Team) still gets 403 trying to create a task itself — the assignment capability
+    didn't leak beyond the intended roles. Test task/memo deleted afterward. `tsc --noEmit` and
+    `oxlint` clean in both `client/` and `server/`.
+
+33. **Issuing a returnable product asks for a return date and reminds both sides (done,
+    2026-07-31).** Calvin's ask: ask whether an issued product is returnable; if so, prompt for a
+    return date; remind both the collector and Stores Admin. `IssuedTool.dateOfReturn` already
+    existed but was purely a display field ("Not Returned" if blank) with no due-date semantics —
+    it's now the actual reminder due date, gated by a new `isReturnable` boolean.
+
+    The bigger structural change: `collectorName` was free text (any name, not a system account),
+    which can't receive an in-app reminder. Calvin confirmed replacing it with a real user picker
+    (same `GET /users/assignable` dropdown pattern used everywhere else) — `IssuedTool` gained
+    `collectorId` (nullable FK, `onDelete: SetNull` by Prisma's default for optional relations, so
+    a later-deleted collector account doesn't break the row) while `collectorName` stays as an
+    auto-filled snapshot at issue time (mirrors `BoqItem.productName`'s pattern), not manually
+    typed anymore. `issueProductSchema` requires `dateOfReturn` whenever `isReturnable` is true via
+    a `.refine()` (mirrors `boqSchema`'s pattern), and clears it server-side when `isReturnable` is
+    false regardless of what's submitted.
+
+    Reminders reuse Memo's exact `getDueReminders`/`acknowledge` shape
+    (`WHERE ... AND acknowledgedAt IS NULL AND dueDate <= now()`) but with two independent
+    acknowledgment fields — `collectorAckAt` and `storesAckAt` — since two different audiences need
+    their own reminder for the same row; one dismissing theirs must not hide it for the other.
+    `GET /inventory/due-reminders` returns `{ asCollector, asStores }`: `asCollector` is always just
+    the requester's own due items; `asStores` is fetched (team-wide, not scoped to one admin — any
+    Stores Admin acknowledging clears it for all of them, a shared-inbox model) only when the
+    requester's role is Stores Admin or Super Admin. Two acknowledge endpoints:
+    `POST /inventory/acknowledge/collector` (any authenticated user, ownership-guarded to their own
+    `collectorId`) and `POST /inventory/acknowledge/stores` (role-gated to Stores Admin/Super
+    Admin). New `DueReturnsReminder.tsx`, mounted app-wide in `AppShell.tsx` unlike
+    `DueMemosReminder` — not role-gated, since any role can be a collector — showing both sections
+    in one modal when populated, each with its own "Got it" action.
+
+    Verified via curl: submitting `isReturnable: true` with no `dateOfReturn` 400s as expected;
+    issued a returnable item with a past due date to one test account — the collector's
+    `due-reminders` call showed it under `asCollector` (and nothing under `asStores`), a Stores
+    Admin's call showed it under `asStores` only; the collector acknowledging cleared their own
+    view while the Stores Admin's view stayed populated (confirming independent acknowledgment); a
+    non-Stores role got 403 attempting `/acknowledge/stores`; Stores Admin acknowledging then
+    cleared their own view too. Product stock deduction on issue is unaffected (confirmed
+    unchanged). Test data cleaned up and stock restored afterward. `tsc --noEmit` and `oxlint`
+    clean in both `client/` and `server/`. The actual popup/toggle UI is unverified without a
+    browser (none available this session).

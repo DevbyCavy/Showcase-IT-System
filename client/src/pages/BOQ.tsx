@@ -9,24 +9,40 @@ import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import * as boqApi from '@/api/boq'
 import * as ordersApi from '@/api/orders'
+import * as productsApi from '@/api/products'
 import type { Boq, BoqItemInput } from '@/api/boq'
+import type { Product } from '@/api/products'
 
-const emptyItem: BoqItemInput = { productName: '', description: '', unit: '', quantity: 0 }
+const emptyItem: BoqItemInput = { productId: 0, description: '', unit: '', quantity: 0 }
 
 // Translated from createBOQ.php + downloadBOQ.php (scoped from feature/boq-stock-requisitions per
 // MIGRATION_PLAN.md §2.1). Order select auto-fills location, matching the legacy's inline JS.
 // Rebuilt on the shared Card/PageHeader/DataTable primitives as part of the full-app redesign
-// sweep (see MIGRATION_PLAN.md §10.11).
+// sweep (see MIGRATION_PLAN.md §10.11). Items were free-text until §29: each line now picks a
+// real Product (deducted from Store stock on save, capped at what's available — any shortfall
+// auto-files a Product requisition, per Calvin's explicit request), instead of typing any name.
+// §29 first tried a plain <select> for the product picker; Calvin flagged that scrolling a long
+// catalog to find one product doesn't scale, so it's now a type-to-search text field with a
+// filtered suggestion dropdown instead (§31) — same underlying productId, just a faster way to
+// land on it.
 export default function BOQ() {
   const queryClient = useQueryClient()
   const { data: orders } = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list })
-  const { data: boqs } = useQuery({ queryKey: ['boqs'], queryFn: boqApi.list })
+  const { data: products } = useQuery({ queryKey: ['products'], queryFn: productsApi.list })
+  // Polled so a BOQ's items flip from "Shortfall" to "In Stock" live once a restock fulfills the
+  // linked requisition (see product.repository.ts#fulfillShortfallsInTx, MIGRATION_PLAN.md §30) —
+  // matches the app's other near-real-time polls.
+  const { data: boqs } = useQuery({ queryKey: ['boqs'], queryFn: boqApi.list, refetchInterval: 15000 })
 
   const [orderId, setOrderId] = useState('')
   const [eventName, setEventName] = useState('')
   const [clientName, setClientName] = useState('')
   const [location, setLocation] = useState('')
   const [items, setItems] = useState<BoqItemInput[]>([{ ...emptyItem }])
+  // Parallel array (same indices as items) holding each row's typed product-search text — kept
+  // separate from BoqItemInput since the API only needs productId, not a display string.
+  const [itemSearches, setItemSearches] = useState<string[]>([''])
+  const [openSearchIndex, setOpenSearchIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
@@ -40,12 +56,19 @@ export default function BOQ() {
         location,
         items,
       }),
-    onSuccess: (boq) => {
+    onSuccess: ({ boq, shortfallCount }) => {
       queryClient.invalidateQueries({ queryKey: ['boqs'] })
-      setSuccess(`BOQ #${boq.boqNumber} saved successfully!`)
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['requisitions'] })
+      setSuccess(
+        shortfallCount > 0
+          ? `BOQ #${boq.boqNumber} saved. ${shortfallCount} item${shortfallCount > 1 ? 's were' : ' was'} short on stock — a requisition was filed automatically for the shortfall.`
+          : `BOQ #${boq.boqNumber} saved successfully!`,
+      )
       setEventName('')
       setClientName('')
       setItems([{ ...emptyItem }])
+      setItemSearches([''])
     },
     onError: (err) => {
       setError(isAxiosError(err) ? (err.response?.data?.error ?? 'Failed to save BOQ') : 'Failed to save BOQ')
@@ -58,8 +81,35 @@ export default function BOQ() {
     if (order) setLocation(order.location)
   }
 
+  function addItem() {
+    setItems((prev) => [...prev, { ...emptyItem }])
+    setItemSearches((prev) => [...prev, ''])
+  }
+
+  function removeItem(index: number) {
+    setItems((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+    setItemSearches((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+  }
+
+  // Typing clears any previously matched productId — a row only counts as having a product once a
+  // suggestion is actually clicked, so a half-typed/unmatched name can't accidentally submit
+  // whatever was picked before.
+  function setItemSearch(index: number, text: string) {
+    setItemSearches((prev) => prev.map((s, i) => (i === index ? text : s)))
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, productId: 0 } : item)))
+    setOpenSearchIndex(index)
+  }
+
+  function selectProduct(index: number, product: Product) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, productId: product.id } : item)))
+    setItemSearches((prev) => prev.map((s, i) => (i === index ? product.name : s)))
+    setOpenSearchIndex(null)
+  }
+
   function updateItem(index: number, field: keyof BoqItemInput, value: string) {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: field === 'quantity' ? Number(value) : value } : item)))
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: field === 'quantity' || field === 'productId' ? Number(value) : value } : item)),
+    )
   }
 
   async function handleDownload(id: number, boqNumber: string) {
@@ -77,6 +127,19 @@ export default function BOQ() {
     { key: 'eventName', header: 'Event', render: (b) => b.eventName },
     { key: 'clientName', header: 'Client', render: (b) => b.clientName },
     { key: 'location', header: 'Location', render: (b) => b.location },
+    {
+      key: 'stockStatus',
+      header: 'Stock Status',
+      render: (b) => {
+        const fulfilled = b.items.filter((i) => i.status === 'Fulfilled').length
+        const allFulfilled = fulfilled === b.items.length
+        return (
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold text-white ${allFulfilled ? 'bg-green-600' : 'bg-destructive'}`}>
+            {fulfilled}/{b.items.length} in stock
+          </span>
+        )
+      },
+    },
     { key: 'createdAt', header: 'Date Created', render: (b) => new Date(b.createdAt).toLocaleString() },
     {
       key: 'actions',
@@ -90,7 +153,7 @@ export default function BOQ() {
   ]
 
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-8">
+    <div className="mx-auto max-w-6xl p-4 md:p-8">
       <PageHeader title="Bill Of Quantities" />
 
       <Card className="mb-8">
@@ -133,12 +196,15 @@ export default function BOQ() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Items</label>
+            <label className="text-sm font-medium">
+              Items <span className="text-muted-foreground text-xs">— quantities are deducted from Store stock on save</span>
+            </label>
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full text-sm">
                 <thead className="bg-secondary text-left">
                   <tr>
-                    <th className="p-2">Product Name</th>
+                    <th className="p-2">Product</th>
+                    <th className="p-2">In Stock</th>
                     <th className="p-2">Description</th>
                     <th className="p-2">Unit</th>
                     <th className="p-2">Quantity</th>
@@ -146,43 +212,84 @@ export default function BOQ() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="p-1">
-                        <Input value={item.productName} onChange={(e) => updateItem(i, 'productName', e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input value={item.unit} onChange={(e) => updateItem(i, 'unit', e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input
-                          type="number"
-                          step="0.001"
-                          min="0"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(i, 'quantity', e.target.value)}
-                        />
-                      </td>
-                      <td className="p-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="border-destructive text-destructive"
-                          onClick={() => setItems((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))}
-                        >
-                          ×
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {items.map((item, i) => {
+                    const selectedProduct = products?.find((p) => p.id === item.productId)
+                    const search = itemSearches[i] ?? ''
+                    const matches = search.trim()
+                      ? (products ?? []).filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 8)
+                      : []
+                    return (
+                      <tr key={i} className="border-t">
+                        <td className="relative p-1">
+                          <Input
+                            value={search}
+                            onChange={(e) => setItemSearch(i, e.target.value)}
+                            onFocus={() => setOpenSearchIndex(i)}
+                            onBlur={() => setTimeout(() => setOpenSearchIndex((idx) => (idx === i ? null : idx)), 150)}
+                            placeholder="Type a product name..."
+                          />
+                          {openSearchIndex === i && search.trim() && (
+                            <div className="bg-card absolute z-10 mt-1 max-h-48 w-56 overflow-y-auto rounded-md border shadow-lg">
+                              {matches.length === 0 ? (
+                                <div className="text-muted-foreground px-3 py-2 text-sm">No matching products.</div>
+                              ) : (
+                                matches.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    className="hover:bg-secondary flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
+                                    onMouseDown={() => selectProduct(i, p)}
+                                  >
+                                    <span className="truncate">{p.name}</span>
+                                    <span className="text-muted-foreground shrink-0 text-xs">{p.quantity} in stock</span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-1 text-center">
+                          {selectedProduct ? (
+                            <span className={selectedProduct.quantity < item.quantity ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                              {selectedProduct.quantity}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="p-1">
+                          <Input value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} />
+                        </td>
+                        <td className="p-1">
+                          <Input value={item.unit} onChange={(e) => updateItem(i, 'unit', e.target.value)} />
+                        </td>
+                        <td className="p-1">
+                          <Input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(i, 'quantity', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="border-destructive text-destructive"
+                            onClick={() => removeItem(i)}
+                          >
+                            ×
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
-            <Button type="button" size="sm" variant="outline" onClick={() => setItems((prev) => [...prev, { ...emptyItem }])}>
+            <Button type="button" size="sm" variant="outline" onClick={addItem}>
               + Add Item
             </Button>
           </div>

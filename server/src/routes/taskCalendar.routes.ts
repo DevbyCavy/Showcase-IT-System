@@ -8,22 +8,23 @@ import { createOfficeTaskSchema, quickAddMemoSchema } from '../validations/taskC
 // getTaskCalendar.php: no requireRole() — any logged-in user gets their own calendar (own memos,
 // tasks assigned to them, tasks they assigned), unchanged now that Marketer exists (see
 // MIGRATION_PLAN.md §21) since office-task assignment is a general cross-role feature, not a
-// Marketer-specific one. quickAddMemo.php/createOfficeTask.php: creating items is now restricted
-// to Marketer + Super Admin — other roles can still see what's on their calendar, just can't add
-// to it.
+// Marketer-specific one. quickAddMemo.php/createOfficeTask.php: creating items is restricted to
+// Marketer + Super Admin, plus Stores Admin (§32 — needs to assign jobs to Logistics
+// drivers/Production Team via this calendar) — other roles can still see what's on their
+// calendar, just can't add to it.
 export const taskCalendarRouter = Router()
 
 taskCalendarRouter.use(authenticate)
 taskCalendarRouter.get('/', taskCalendarController.getCalendar)
 taskCalendarRouter.post(
   '/memos',
-  requireRole(Role.Marketer, Role.SuperAdmin),
+  requireRole(Role.Marketer, Role.SuperAdmin, Role.StoresAdmin),
   validateBody(quickAddMemoSchema),
   taskCalendarController.quickAddMemo,
 )
 taskCalendarRouter.post(
   '/office-tasks',
-  requireRole(Role.Marketer, Role.SuperAdmin),
+  requireRole(Role.Marketer, Role.SuperAdmin, Role.StoresAdmin),
   validateBody(createOfficeTaskSchema),
   taskCalendarController.createOfficeTask,
 )

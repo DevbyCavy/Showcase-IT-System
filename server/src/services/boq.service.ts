@@ -5,6 +5,7 @@
 import { ApiError } from '../middleware/errorHandler'
 import * as boqRepository from '../repositories/boq.repository'
 import * as orderRepository from '../repositories/order.repository'
+import * as userRepository from '../repositories/user.repository'
 import type { BoqBody } from '../validations/boq.validation'
 
 export function list() {
@@ -19,11 +20,15 @@ export async function getOne(id: number) {
   return boq
 }
 
+// Returns { boq, shortfallCount } — shortfallCount is how many items didn't have enough stock and
+// got an auto-filed Product requisition instead (see boq.repository.ts#create), so the client can
+// tell the user "N items were short and requisitioned."
 export async function create(input: BoqBody, createdById: number) {
   const order = await orderRepository.findById(input.orderId)
   if (!order) {
     throw new ApiError(400, 'Selected order could not be found')
   }
+  const creator = await userRepository.findById(createdById)
 
   return boqRepository.create({
     orderId: input.orderId,
@@ -32,8 +37,9 @@ export async function create(input: BoqBody, createdById: number) {
     clientName: input.clientName,
     location: input.location,
     createdById,
+    createdByName: creator ? `${creator.name} ${creator.surname}` : 'Unknown',
     items: input.items.map((i) => ({
-      productName: i.productName,
+      productId: i.productId,
       description: i.description,
       unit: i.unit,
       quantity: i.quantity,

@@ -65,7 +65,18 @@ enum RequisitionType {
   Food
   Transport
   Tool
+  /// Not user-selectable on the manual requisition form — only ever set by BOQ's auto-filed
+  /// stock-shortfall requisitions (see MIGRATION_PLAN.md §29).
+  Product
   Other
+}
+
+/// Per BOQ line item — Pending means it still has an outstanding stock shortfall (a linked
+/// Product requisition exists); Fulfilled means the full quantity was available, either at BOQ
+/// creation or later once a restock covered the shortfall. See MIGRATION_PLAN.md §30.
+enum BoqItemStatus {
+  Pending
+  Fulfilled
 }
 
 enum RequisitionStatus {
@@ -181,6 +192,7 @@ model User {
   designJobsAssignedBy  DesignJob[]       @relation("DesignJobAssignedBy")
   designJobsAssignedTo  DesignJob[]       @relation("DesignJobAssignedTo")
   trackingLocations     TrackingLocation[]
+  issuedToolsCollected  IssuedTool[]
 
   @@map("users")
 }
@@ -223,26 +235,40 @@ model Product {
   isActive   Boolean      @default(true)
   status     RecordStatus @default(Active)
 
-  brand       Brand        @relation(fields: [brandId], references: [id])
-  category    Category     @relation(fields: [categoryId], references: [id])
-  issuedTools IssuedTool[]
-  orderItems  OrderItem[]
+  brand        Brand         @relation(fields: [brandId], references: [id])
+  category     Category      @relation(fields: [categoryId], references: [id])
+  issuedTools  IssuedTool[]
+  orderItems   OrderItem[]
+  boqItems     BoqItem[]
+  requisitions Requisition[]
 
   @@map("products")
 }
 
+/// Return reminders (§33): isReturnable + dateOfReturn asked at issue time; dateOfReturn is now
+/// the due date a reminder fires on, not just a display field. collectorId replaces free-text
+/// collectorName as the primary field — needed to actually reach that person with an in-app
+/// reminder — but collectorName stays as a snapshot (mirrors BoqItem.productName's pattern) so the
+/// row still reads fine if that account is later deleted. collectorAckAt/storesAckAt are separate
+/// (not one shared field) because the collector and Stores Admin each get their own independent
+/// reminder — one dismissing theirs shouldn't hide it for the other.
 model IssuedTool {
   id               Int       @id @default(autoincrement())
   productId        Int
   dateOfCollection DateTime  @db.Date
+  collectorId      Int?
   collectorName    String
   toolName         String
   quantityIssued   Int
   jobName          String?
+  isReturnable     Boolean   @default(false)
   dateOfReturn     DateTime? @db.Date
+  collectorAckAt   DateTime?
+  storesAckAt      DateTime?
   createdAt        DateTime  @default(now())
 
-  product Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  collector User?   @relation(fields: [collectorId], references: [id])
 
   @@map("issued_tools")
 }
@@ -322,13 +348,24 @@ model Boq {
 model BoqItem {
   id          Int     @id @default(autoincrement())
   boqId       Int
-  /// Free-text product name typed on the BOQ form — not linked to the product catalog (matches createBOQ.php).
+  /// Now catalog-linked (was free-text) so filling a BOQ can deduct real Store stock — see
+  /// MIGRATION_PLAN.md §29. Nullable at the DB level only because pre-existing rows predate this
+  /// field and were never tied to a product; the create path (boq.validation.ts) requires it for
+  /// every new item. productName is a snapshot of the product's name at BOQ creation time
+  /// (survives a later rename), not re-derived from the live product on read.
+  productId   Int?
   productName String
   description String?
   unit        String?
-  quantity    Decimal @db.Decimal(12, 2)
+  quantity    Decimal       @db.Decimal(12, 2)
+  /// See MIGRATION_PLAN.md §30 — flips to Fulfilled once a restock covers the linked shortfall
+  /// requisition (see Requisition.boqItemId below). Defaults to Fulfilled so the 3 pre-existing
+  /// rows that predate this field (never stock-linked, nothing outstanding) don't show as Pending.
+  status      BoqItemStatus @default(Fulfilled)
 
-  boq Boq @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  boq          Boq           @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  product      Product?      @relation(fields: [productId], references: [id])
+  requisitions Requisition[]
 
   @@map("boq_items")
 }
@@ -348,14 +385,24 @@ model Requisition {
   reqType        RequisitionType
   /// Custom label when reqType == Other (see createRequisition.php — also duplicated into reqType itself).
   reqTypeOther   String?
+  /// Set only when reqType == Product — the out-of-stock item a BOQ couldn't fully deduct, and
+  /// how much is still needed. See MIGRATION_PLAN.md §29.
+  productId      Int?
+  quantity       Decimal?          @db.Decimal(12, 2)
+  /// Traces a Product-type requisition back to the exact BOQ line it was filed for, so restocking
+  /// (product.repository.ts#fulfillShortfallsInTx) knows which BoqItem to flip to Fulfilled once
+  /// this requisition's shortfall is covered. See MIGRATION_PLAN.md §30.
+  boqItemId      Int?
   submittedById  Int
   status         RequisitionStatus @default(Pending)
   processedById  Int?
   processedAt    DateTime?
   createdAt      DateTime          @default(now())
 
-  submittedBy User  @relation("RequisitionSubmittedBy", fields: [submittedById], references: [id])
-  processedBy User? @relation("RequisitionProcessedBy", fields: [processedById], references: [id])
+  submittedBy User     @relation("RequisitionSubmittedBy", fields: [submittedById], references: [id])
+  processedBy User?    @relation("RequisitionProcessedBy", fields: [processedById], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
+  boqItem     BoqItem? @relation(fields: [boqItemId], references: [id])
 
   @@map("requisitions")
 }

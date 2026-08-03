@@ -28,7 +28,7 @@ export async function sendViaMeta(user: Pick<User, 'whatsappNumber' | 'name'>, o
       type: 'template',
       template: {
         name: env.WHATSAPP_TEMPLATE_NAME,
-        language: { code: 'en_US' },
+        language: { code: env.WHATSAPP_TEMPLATE_LANGUAGE },
         components: [
           {
             type: 'body',

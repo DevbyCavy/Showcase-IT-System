@@ -15,3 +15,18 @@ export async function issueProduct(req: Request, res: Response) {
   const issuedTool = await inventoryService.issueProduct(req.body)
   res.status(201).json({ success: true, data: { issuedTool } })
 }
+
+export async function getDueReminders(req: Request, res: Response) {
+  const data = await inventoryService.getDueReminders(req.user!.id, req.user!.role)
+  res.json({ success: true, data })
+}
+
+export async function acknowledgeAsCollector(req: Request, res: Response) {
+  const data = await inventoryService.acknowledgeAsCollector(req.user!.id, req.body.ids)
+  res.json({ success: true, data })
+}
+
+export async function acknowledgeAsStores(req: Request, res: Response) {
+  const data = await inventoryService.acknowledgeAsStores(req.body.ids)
+  res.json({ success: true, data })
+}

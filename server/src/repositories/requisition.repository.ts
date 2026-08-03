@@ -4,6 +4,7 @@ import type { RequisitionType } from '@prisma/client'
 const include = {
   submittedBy: true,
   processedBy: true,
+  product: true,
 } as const
 
 export function findAll() {

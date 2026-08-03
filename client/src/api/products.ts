@@ -17,9 +17,23 @@ export interface Product {
   category: Category
 }
 
+export interface FulfilledShortfall {
+  requisitionId: number
+  reqNumber: string
+  amountFulfilled: number
+  fullyFulfilled: boolean
+}
+
 interface ProductResponse {
   success: true
   data: { product: Product }
+}
+
+// Only /quantity and the full edit PUT can raise stock and therefore fulfill shortfalls — see
+// MIGRATION_PLAN.md §30.
+interface ProductUpdateResponse {
+  success: true
+  data: { product: Product; fulfilled: FulfilledShortfall[] }
 }
 
 interface ProductListResponse {
@@ -72,7 +86,7 @@ export interface UpdateProductInput {
 }
 
 export function update(id: number, input: UpdateProductInput) {
-  return api.put<ProductResponse>(`/products/${id}`, input).then((r) => r.data.data.product)
+  return api.put<ProductUpdateResponse>(`/products/${id}`, input).then((r) => r.data.data)
 }
 
 export function updateImage(id: number, image: File) {
@@ -82,7 +96,7 @@ export function updateImage(id: number, image: File) {
 }
 
 export function updateQuantity(id: number, quantity: number) {
-  return api.put<ProductResponse>(`/products/${id}/quantity`, { quantity }).then((r) => r.data.data.product)
+  return api.put<ProductUpdateResponse>(`/products/${id}/quantity`, { quantity }).then((r) => r.data.data)
 }
 
 export function remove(id: number) {

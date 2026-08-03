@@ -22,8 +22,8 @@ export async function getOne(req: Request, res: Response) {
 }
 
 export async function create(req: Request, res: Response) {
-  const boq = await boqService.create(req.body, req.user!.id)
-  res.status(201).json({ success: true, data: { boq } })
+  const { boq, shortfallCount } = await boqService.create(req.body, req.user!.id)
+  res.status(201).json({ success: true, data: { boq, shortfallCount } })
 }
 
 export async function downloadPdf(req: Request, res: Response) {

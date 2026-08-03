@@ -30,16 +30,22 @@ export async function issueProduct(input: IssueProductBody) {
     if (product.quantity < input.quantityIssued) {
       throw new ApiError(400, 'Not enough stock available')
     }
+    const collector = await tx.user.findUnique({ where: { id: input.collectorId } })
+    if (!collector) {
+      throw new ApiError(400, 'Selected collector could not be found')
+    }
 
     const issuedTool = await tx.issuedTool.create({
       data: {
         productId: input.productId,
         dateOfCollection: input.dateOfCollection,
-        collectorName: input.collectorName,
+        collectorId: input.collectorId,
+        collectorName: `${collector.name} ${collector.surname}`,
         toolName: input.toolName,
         quantityIssued: input.quantityIssued,
         jobName: input.jobName,
-        dateOfReturn: input.dateOfReturn ?? null,
+        isReturnable: input.isReturnable,
+        dateOfReturn: input.isReturnable ? (input.dateOfReturn ?? null) : null,
       },
     })
 
@@ -50,4 +56,26 @@ export async function issueProduct(input: IssueProductBody) {
 
     return issuedTool
   })
+}
+
+// Due-date reminder popup, mirroring memo.service.ts's getDueReminders/acknowledge exactly, but
+// with two independent audiences (see MIGRATION_PLAN.md §33): the collector who has the item, and
+// Stores Admin/Super Admin who need it back. `role` decides whether the stores-wide list is even
+// fetched — everyone else always just gets their own collector-side reminders (or none).
+export async function getDueReminders(userId: number, role: string) {
+  const [asCollector, asStores] = await Promise.all([
+    issuedToolRepository.findDueForCollector(userId),
+    role === 'StoresAdmin' || role === 'SuperAdmin' ? issuedToolRepository.findDueForStores() : Promise.resolve([]),
+  ])
+  return { asCollector, asStores }
+}
+
+export async function acknowledgeAsCollector(userId: number, ids: number[]) {
+  const acknowledged = await issuedToolRepository.acknowledgeForCollector(ids, userId)
+  return { acknowledged }
+}
+
+export async function acknowledgeAsStores(ids: number[]) {
+  const acknowledged = await issuedToolRepository.acknowledgeForStores(ids)
+  return { acknowledged }
 }

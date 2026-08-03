@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Menu, X, Mail, LogOut, Search } from 'lucide-react'
+import { Menu, X, Mail, LogOut, Search, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { roleNavLinks } from '@/lib/navLinks'
 import { NotificationsBell } from '@/components/NotificationsBell'
 import { DashboardSidePanel } from '@/components/DashboardSidePanel'
 import { DueMemosReminder } from '@/components/DueMemosReminder'
+import { DueReturnsReminder } from '@/components/DueReturnsReminder'
 import { LiveTripTracker } from '@/components/LiveTripTracker'
 import { Button } from '@/components/ui/button'
 
@@ -75,7 +76,17 @@ export function AppShell() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const links = user ? roleNavLinks[user.role] : []
+
+  function toggleGroup(group: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(group)) next.delete(group)
+      else next.add(group)
+      return next
+    })
+  }
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -97,21 +108,42 @@ export function AppShell() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand-orange text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <link.icon className="h-4 w-4 shrink-0" />
-              {link.label}
-            </NavLink>
-          ))}
+          {links.map((link, i) => {
+            // Section header whenever the group changes — only Super Admin's list sets `group`,
+            // so this (and collapsing) is a no-op for every other role. Clicking the header
+            // toggles that group; ungrouped items (Dashboard) are never collapsible.
+            const isNewGroup = Boolean(link.group) && link.group !== links[i - 1]?.group
+            const isCollapsed = link.group ? collapsedGroups.has(link.group) : false
+
+            return (
+              <div key={link.to}>
+                {isNewGroup && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(link.group!)}
+                    className={`flex w-full items-center justify-between px-3 pb-1 text-[0.68rem] font-bold tracking-wide text-white/50 uppercase hover:text-white/80 ${i === 0 ? '' : 'mt-3'}`}
+                  >
+                    {link.group}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <NavLink
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive ? 'bg-brand-orange text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      }`
+                    }
+                  >
+                    <link.icon className="h-4 w-4 shrink-0" />
+                    {link.label}
+                  </NavLink>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div className="p-3">
@@ -189,6 +221,10 @@ export function AppShell() {
       {/* Mounted app-wide (not per-page) so GPS reporting survives navigation during an Active
           trip — see MIGRATION_PLAN.md §24. Renders nothing unless the current user has one. */}
       <LiveTripTracker />
+
+      {/* Mounted app-wide, not role-gated — anyone can be a collector of a returnable item, and
+          renders nothing when there's nothing due. See MIGRATION_PLAN.md §33. */}
+      <DueReturnsReminder />
     </div>
   )
 }

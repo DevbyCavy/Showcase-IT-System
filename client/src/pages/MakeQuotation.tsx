@@ -1,15 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { Send, FileDown } from 'lucide-react'
+import { Send, FileDown, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
+import { ToastStack, type ToastItem } from '@/components/ui/toast'
 import { useAuth } from '@/hooks/useAuth'
 import * as quotationsApi from '@/api/quotations'
 import type { Quotation, QuotationItemInput } from '@/api/quotations'
+
+// Polling interval for the real-time "your quotation was approved" alert — matches the app's
+// other near-real-time polls (Task Calendar, Tracking).
+const POLL_INTERVAL_MS = 15000
 
 const DEFAULT_TERMS = [
   '1. Invoice valid for 14 working days.',
@@ -28,7 +33,34 @@ const emptyItem: QuotationItemInput = { description: '', quantity: 1, unitPrice:
 export default function MakeQuotation() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list })
+  const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list, refetchInterval: POLL_INTERVAL_MS })
+
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set())
+  const nextToastId = useRef(0)
+  const prevStatusRef = useRef<Map<number, string> | null>(null)
+
+  const myQuotations = (quotations ?? []).filter((q) => q.submittedBy.id === user?.id)
+
+  // Real-time "your quotation was approved" alert: on every poll, compare each of my quotations'
+  // status against what it was last poll. First run just records the baseline (a page load
+  // shouldn't announce quotations that were already Approved before you opened the page) —
+  // afterwards, a Pending -> Approved transition triggers a toast + a temporary row highlight.
+  useEffect(() => {
+    const currentStatus = new Map(myQuotations.map((q) => [q.id, q.status]))
+    if (prevStatusRef.current) {
+      const prev = prevStatusRef.current
+      for (const q of myQuotations) {
+        if (q.status === 'Approved' && prev.get(q.id) === 'Pending') {
+          setToasts((t) => [...t, { id: nextToastId.current++, message: `Your quotation ${q.quotationNumber} was approved!`, tone: 'success' }])
+          setHighlightedIds((h) => new Set(h).add(q.id))
+          setTimeout(() => setHighlightedIds((h) => { const next = new Set(h); next.delete(q.id); return next }), 8000)
+        }
+      }
+    }
+    prevStatusRef.current = currentStatus
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotations])
 
   const [customerName, setCustomerName] = useState('')
   const [customerId, setCustomerId] = useState('')
@@ -91,8 +123,6 @@ export default function MakeQuotation() {
     }
   }
 
-  const myQuotations = (quotations ?? []).filter((q) => q.submittedBy.id === user?.id)
-
   const columns: DataTableColumn<Quotation>[] = [
     { key: 'quotationNumber', header: 'Quotation #', render: (q) => <span className="font-medium">{q.quotationNumber}</span> },
     { key: 'customer', header: 'Customer', render: (q) => q.customerName },
@@ -111,11 +141,16 @@ export default function MakeQuotation() {
     {
       key: 'actions',
       header: 'Actions',
-      render: (q) => (
-        <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
-          <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
-        </Button>
-      ),
+      render: (q) =>
+        q.status === 'Approved' ? (
+          <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
+            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+          </Button>
+        ) : (
+          <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+            <Clock className="h-3.5 w-3.5" /> Awaiting Super Admin approval
+          </span>
+        ),
     },
   ]
 
@@ -259,7 +294,15 @@ export default function MakeQuotation() {
 
       <h2 className="mb-3 font-semibold">My Submitted Quotations</h2>
       {downloadError && <div className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{downloadError}</div>}
-      <DataTable columns={columns} data={myQuotations} keyExtractor={(q) => q.id} emptyMessage="No quotations submitted yet." />
+      <DataTable
+        columns={columns}
+        data={myQuotations}
+        keyExtractor={(q) => q.id}
+        emptyMessage="No quotations submitted yet."
+        rowClassName={(q) => (highlightedIds.has(q.id) ? 'bg-green-50 animate-pulse' : '')}
+      />
+
+      <ToastStack items={toasts} onDismiss={(id) => setToasts((t) => t.filter((item) => item.id !== id))} />
     </div>
   )
 }

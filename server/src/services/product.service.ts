@@ -42,20 +42,20 @@ export async function update(id: number, input: UpdateProductBody) {
   return productRepository.update(id, input)
 }
 
-export async function updateImage(id: number, imageUrl: string) {
-  const product = await productRepository.findById(id)
-  if (!product || product.status === 'Deleted') {
-    throw new ApiError(404, 'Product not found')
-  }
-  return productRepository.updateImage(id, imageUrl)
-}
-
 export async function updateQuantity(id: number, quantity: number) {
   const product = await productRepository.findById(id)
   if (!product) {
     throw new ApiError(404, 'Product not found')
   }
   return productRepository.updateQuantity(id, quantity)
+}
+
+export async function updateImage(id: number, imageUrl: string) {
+  const product = await productRepository.findById(id)
+  if (!product || product.status === 'Deleted') {
+    throw new ApiError(404, 'Product not found')
+  }
+  return productRepository.updateImage(id, imageUrl)
 }
 
 export async function remove(id: number) {

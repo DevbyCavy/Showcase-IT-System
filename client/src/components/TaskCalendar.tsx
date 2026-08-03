@@ -48,9 +48,10 @@ function extractError(err: unknown, fallback: string) {
 // without a reload.
 export function TaskCalendar() {
   const { user } = useAuth()
-  // Creating To-Dos/Jobs is Marketer + Super Admin only (see MIGRATION_PLAN.md §21); everyone else
-  // can still view their own calendar (memos, tasks assigned to/by them) via this widget.
-  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin'
+  // Creating To-Dos/Jobs is Marketer + Super Admin (see MIGRATION_PLAN.md §21), plus Stores Admin
+  // (§32); everyone else can still view their own calendar (memos, tasks assigned to/by them) via
+  // this widget.
+  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin' || user?.role === 'StoresAdmin'
   const queryClient = useQueryClient()
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState(() => {

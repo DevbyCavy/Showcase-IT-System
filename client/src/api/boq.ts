@@ -1,11 +1,15 @@
 import { api } from './client'
 
+export type BoqItemStatus = 'Pending' | 'Fulfilled'
+
 export interface BoqItem {
   id: number
+  productId: number | null
   productName: string
   description: string | null
   unit: string | null
   quantity: string
+  status: BoqItemStatus
 }
 
 export interface Boq {
@@ -22,7 +26,7 @@ export interface Boq {
 
 interface BoqResponse {
   success: true
-  data: { boq: Boq }
+  data: { boq: Boq; shortfallCount: number }
 }
 
 interface BoqListResponse {
@@ -35,7 +39,7 @@ export function list() {
 }
 
 export interface BoqItemInput {
-  productName: string
+  productId: number
   description?: string
   unit?: string
   quantity: number
@@ -50,7 +54,7 @@ export interface BoqFormInput {
 }
 
 export function create(input: BoqFormInput) {
-  return api.post<BoqResponse>('/boqs', input).then((r) => r.data.data.boq)
+  return api.post<BoqResponse>('/boqs', input).then((r) => r.data.data)
 }
 
 // A plain <a href> wouldn't send the Bearer token (unlike the legacy's cookie-based PHP session,

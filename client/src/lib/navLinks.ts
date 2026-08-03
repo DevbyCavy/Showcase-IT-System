@@ -27,6 +27,9 @@ export interface NavLink {
   to: string
   label: string
   icon: LucideIcon
+  // Optional section header shown above this item in the sidebar — only Super Admin's list uses
+  // it (see below); every other role's flat list just leaves it undefined and renders unchanged.
+  group?: string
 }
 
 // Every one of the 7 legacy per-role dashboards turned out to be identical — auth_guard +
@@ -52,40 +55,62 @@ export interface NavLink {
 //
 // "Tracking" (Logistics + Super Admin) added per MIGRATION_PLAN.md §24 — live GPS map of drivers
 // on Active trips, same audience as the rest of the vehicle module.
+//
+// Super Admin's list is grouped by department per Calvin's request (§26), collapsible with a
+// fixed group order (§27): Admin, Marketing, Design, Stores, Logistics, Production — it's the one
+// role with every module in its nav, so it's the one that actually benefits from section headers;
+// every other role's list is short enough to stay flat. Mapping: Admin catches the genuinely
+// cross-departmental/admin-only pages (Requisitions — any role can submit one, regardless of
+// department; Office Task Calendar — same; Manage Users — Super Admin-only account
+// administration); Marketing owns Orders/Quotations/Memos (§21's Marketer-restricted set); Design
+// owns Assign Design Job; Stores owns the catalog/stock pages; Logistics owns the vehicle module;
+// Production owns BOQ.
 export const roleNavLinks: Record<Role, NavLink[]> = {
   SuperAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList },
-    { to: '/boq', label: 'BOQ', icon: FileText },
-    { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
-    { to: '/requisitions/process', label: 'Process Requisitions', icon: FileCheck2 },
-    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet },
-    { to: '/memos', label: 'Memos', icon: StickyNote },
-    { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
-    { to: '/quotations/process', label: 'Process Quotations', icon: FileSpreadsheet },
-    { to: '/design-jobs/assign', label: 'Assign Design Job', icon: Palette },
-    { to: '/categories', label: 'Categories', icon: Tag },
-    { to: '/brands', label: 'Brands', icon: Bookmark },
-    { to: '/products', label: 'Products', icon: Package },
-    { to: '/store', label: 'Store', icon: Store },
-    { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3 },
-    { to: '/vehicles', label: 'Vehicles', icon: Truck },
-    { to: '/fuel-logs', label: 'Fuel Log', icon: Fuel },
-    { to: '/maintenance-logs', label: 'Maintenance Log', icon: Wrench },
-    { to: '/trip-logbook', label: 'Trip Logbook', icon: Route },
-    { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2 },
-    { to: '/tracking', label: 'Tracking', icon: MapPin },
-    { to: '/users', label: 'Manage Users', icon: Users },
+
+    { to: '/requisitions', label: 'Requisitions', icon: FileCheck2, group: 'Admin' },
+    { to: '/requisitions/process', label: 'Process Requisitions', icon: FileCheck2, group: 'Admin' },
+    { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock, group: 'Admin' },
+    { to: '/users', label: 'Manage Users', icon: Users, group: 'Admin' },
+
+    { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList, group: 'Marketing' },
+    { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet, group: 'Marketing' },
+    { to: '/quotations/process', label: 'Process Quotations', icon: FileSpreadsheet, group: 'Marketing' },
+    { to: '/memos', label: 'Memos', icon: StickyNote, group: 'Marketing' },
+
+    { to: '/design-jobs/assign', label: 'Assign Design Job', icon: Palette, group: 'Design' },
+
+    { to: '/categories', label: 'Categories', icon: Tag, group: 'Stores' },
+    { to: '/brands', label: 'Brands', icon: Bookmark, group: 'Stores' },
+    { to: '/products', label: 'Products', icon: Package, group: 'Stores' },
+    { to: '/store', label: 'Store', icon: Store, group: 'Stores' },
+    { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3, group: 'Stores' },
+
+    { to: '/vehicles', label: 'Vehicles', icon: Truck, group: 'Logistics' },
+    { to: '/fuel-logs', label: 'Fuel Log', icon: Fuel, group: 'Logistics' },
+    { to: '/maintenance-logs', label: 'Maintenance Log', icon: Wrench, group: 'Logistics' },
+    { to: '/trip-logbook', label: 'Trip Logbook', icon: Route, group: 'Logistics' },
+    { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2, group: 'Logistics' },
+    { to: '/tracking', label: 'Tracking', icon: MapPin, group: 'Logistics' },
   ],
   StoresAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/categories', label: 'Categories', icon: Tag },
-    { to: '/brands', label: 'Brands', icon: Bookmark },
-    { to: '/products', label: 'Products', icon: Package },
-    { to: '/store', label: 'Store', icon: Store },
-    { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3 },
-    { to: '/trip-logbook', label: 'Trip Logbook', icon: Route },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
+    { to: '/boq', label: 'BOQ', icon: FileText },
+
+    { to: '/categories', label: 'Categories', icon: Tag, group: 'Stores' },
+    { to: '/brands', label: 'Brands', icon: Bookmark, group: 'Stores' },
+    { to: '/products', label: 'Products', icon: Package, group: 'Stores' },
+    { to: '/store', label: 'Store', icon: Store, group: 'Stores' },
+    { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3, group: 'Stores' },
+
+    { to: '/vehicles', label: 'Vehicles', icon: Truck, group: 'Logistics' },
+    { to: '/fuel-logs', label: 'Fuel Log', icon: Fuel, group: 'Logistics' },
+    { to: '/maintenance-logs', label: 'Maintenance Log', icon: Wrench, group: 'Logistics' },
+    { to: '/trip-logbook', label: 'Trip Logbook', icon: Route, group: 'Logistics' },
+    { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2, group: 'Logistics' },
+    { to: '/tracking', label: 'Tracking', icon: MapPin, group: 'Logistics' },
   ],
   ProjectManager: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -108,8 +133,8 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
   ],
   ProductionTeam: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/store', label: 'Store', icon: Store },
     { to: '/reports/issued-products', label: 'Issued Products Report', icon: BarChart3 },
+    { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],
   Logistics: [

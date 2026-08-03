@@ -51,9 +51,10 @@ function extractError(err: unknown, fallback: string) {
 // modal — every other modal in the app is unchanged.
 export default function OfficeTaskCalendarPage() {
   const { user } = useAuth()
-  // Creating To-Dos/Jobs is Marketer + Super Admin only (see MIGRATION_PLAN.md §21); everyone else
-  // gets a view-only calendar (own memos, tasks assigned to/by them, still shown inline per day).
-  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin'
+  // Creating To-Dos/Jobs is Marketer + Super Admin (see MIGRATION_PLAN.md §21), plus Stores Admin
+  // (§32 — assigns jobs to Logistics drivers/Production Team from here); everyone else gets a
+  // view-only calendar (own memos, tasks assigned to/by them, still shown inline per day).
+  const canManage = user?.role === 'Marketer' || user?.role === 'SuperAdmin' || user?.role === 'StoresAdmin'
   const queryClient = useQueryClient()
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState(() => {

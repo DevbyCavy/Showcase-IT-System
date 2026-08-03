@@ -59,11 +59,16 @@ export async function getOne(id: number) {
 }
 
 // Returns the full Prisma row (with items + submittedBy) for the PDF renderer, which needs the
-// real Decimal/Date values rather than the JSON-shaped public view.
+// real Decimal/Date values rather than the JSON-shaped public view. The PDF is what actually goes
+// to the client, so it's gated to Approved — a Marketer's quotation must clear Super Admin
+// approval before it can be sent out, not just before it's marked Approved in the UI.
 export async function getForPdf(id: number) {
   const quotation = await quotationRepository.findById(id)
   if (!quotation) {
     throw new ApiError(404, 'Quotation not found.')
+  }
+  if (quotation.status !== 'Approved') {
+    throw new ApiError(403, 'This quotation must be approved by Super Admin before it can be sent to the client.')
   }
   return quotation
 }

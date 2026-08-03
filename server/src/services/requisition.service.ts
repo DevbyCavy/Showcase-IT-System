@@ -18,8 +18,16 @@ function toPublicRequisition(r: Awaited<ReturnType<typeof requisitionRepository.
     reqType: r.reqType,
     reqTypeOther: r.reqTypeOther,
     // Mirrors createRequisition.php's $finalType at display time, without storing free text in
-    // the reqType enum column itself.
-    displayType: r.reqType === 'Other' && r.reqTypeOther ? r.reqTypeOther : r.reqType,
+    // the reqType enum column itself. Product-type requisitions (BOQ stock shortfalls — see
+    // boq.repository.ts#create) get a descriptive label instead of the bare enum value.
+    displayType:
+      r.reqType === 'Other' && r.reqTypeOther
+        ? r.reqTypeOther
+        : r.reqType === 'Product' && r.product
+          ? `Product — ${r.product.name}`
+          : r.reqType,
+    product: r.product ? { id: r.product.id, name: r.product.name } : null,
+    quantity: r.quantity,
     status: r.status,
     submittedBy: toPublicUser(r.submittedBy),
     processedBy: r.processedBy ? toPublicUser(r.processedBy) : null,

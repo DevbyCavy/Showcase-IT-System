@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileDown, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
+import { ToastStack, type ToastItem } from '@/components/ui/toast'
 import * as quotationsApi from '@/api/quotations'
 import type { Quotation } from '@/api/quotations'
+
+// Matches the app's other near-real-time polls (Task Calendar, Tracking) — drives the "new
+// quotation submitted" alert below.
+const POLL_INTERVAL_MS = 15000
 
 // Translated from processQuotations.php + processQuotation.php (Super Admin only, scoped from
 // feature/work-log-sheet, see MIGRATION_PLAN.md §10). Same atomic Pending-only approval guard as
@@ -13,10 +18,39 @@ import type { Quotation } from '@/api/quotations'
 // full-app redesign sweep (see MIGRATION_PLAN.md §10.11).
 export default function ProcessQuotations() {
   const queryClient = useQueryClient()
-  const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list })
+  const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list, refetchInterval: POLL_INTERVAL_MS })
   const [tab, setTab] = useState<'pending' | 'all'>('pending')
   const [confirming, setConfirming] = useState<Quotation | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set())
+  const nextToastId = useRef(0)
+  const knownIdsRef = useRef<Set<number> | null>(null)
+
+  const pending = (quotations ?? []).filter((q) => q.status === 'Pending')
+
+  // Real-time "new quotation submitted" alert: on every poll, any Pending quotation whose id
+  // wasn't seen last poll is newly submitted — toast + a temporary row highlight. First run just
+  // records the baseline (a page load shouldn't announce the existing backlog as "new").
+  useEffect(() => {
+    const currentIds = new Set(pending.map((q) => q.id))
+    if (knownIdsRef.current) {
+      const known = knownIdsRef.current
+      for (const q of pending) {
+        if (!known.has(q.id)) {
+          setToasts((t) => [
+            ...t,
+            { id: nextToastId.current++, message: `New quotation submitted: ${q.quotationNumber} by ${q.submittedBy.name} ${q.submittedBy.surname}`, tone: 'info' },
+          ])
+          setHighlightedIds((h) => new Set(h).add(q.id))
+          setTimeout(() => setHighlightedIds((h) => { const next = new Set(h); next.delete(q.id); return next }), 8000)
+        }
+      }
+    }
+    knownIdsRef.current = currentIds
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotations])
 
   const approveMutation = useMutation({
     mutationFn: (id: number) => quotationsApi.approve(id),
@@ -35,7 +69,6 @@ export default function ProcessQuotations() {
     }
   }
 
-  const pending = (quotations ?? []).filter((q) => q.status === 'Pending')
   const rows = tab === 'pending' ? pending : (quotations ?? [])
 
   const actionsColumn: DataTableColumn<Quotation> = {
@@ -43,9 +76,11 @@ export default function ProcessQuotations() {
     header: 'Actions',
     render: (q) => (
       <div className="flex gap-1.5">
-        <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
-          <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
-        </Button>
+        {q.status === 'Approved' && (
+          <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
+            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+          </Button>
+        )}
         {q.status === 'Pending' && (
           <Button size="sm" onClick={() => setConfirming(q)}>
             <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
@@ -104,6 +139,7 @@ export default function ProcessQuotations() {
         data={rows}
         keyExtractor={(q) => q.id}
         emptyMessage={tab === 'pending' ? 'All quotations have been approved.' : 'No quotations found.'}
+        rowClassName={(q) => (highlightedIds.has(q.id) ? 'bg-amber-50 animate-pulse' : '')}
       />
 
       {confirming && (
@@ -128,6 +164,8 @@ export default function ProcessQuotations() {
           </div>
         </div>
       )}
+
+      <ToastStack items={toasts} onDismiss={(id) => setToasts((t) => t.filter((item) => item.id !== id))} />
     </div>
   )
 }

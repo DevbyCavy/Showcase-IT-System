@@ -36,8 +36,8 @@ export async function create(req: Request, res: Response) {
 }
 
 export async function update(req: Request, res: Response) {
-  const product = await productService.update(parseId(req), req.body)
-  res.json({ success: true, data: { product } })
+  const { product, fulfilled } = await productService.update(parseId(req), req.body)
+  res.json({ success: true, data: { product, fulfilled } })
 }
 
 export async function updateImage(req: Request, res: Response) {
@@ -50,8 +50,8 @@ export async function updateImage(req: Request, res: Response) {
 }
 
 export async function updateQuantity(req: Request, res: Response) {
-  const product = await productService.updateQuantity(parseId(req), req.body.quantity)
-  res.json({ success: true, data: { product } })
+  const { product, fulfilled } = await productService.updateQuantity(parseId(req), req.body.quantity)
+  res.json({ success: true, data: { product, fulfilled } })
 }
 
 export async function remove(req: Request, res: Response) {

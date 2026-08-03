@@ -20,6 +20,7 @@ interface DataTableProps<T> {
   isLoading?: boolean
   emptyMessage?: string
   pageSize?: number
+  rowClassName?: (row: T) => string
 }
 
 // Shared table shell for the full-app redesign sweep: rounded container, uppercase column heads, a
@@ -37,6 +38,7 @@ export function DataTable<T>({
   isLoading,
   emptyMessage = 'No records found.',
   pageSize = 10,
+  rowClassName,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(data.length / pageSize))
@@ -93,7 +95,10 @@ export function DataTable<T>({
               )}
               {!isLoading &&
                 pageData.map((row) => (
-                  <tr key={keyExtractor(row)} className="hover:bg-secondary/40 border-t transition-colors">
+                  <tr
+                    key={keyExtractor(row)}
+                    className={`hover:bg-secondary/40 border-t transition-colors ${rowClassName?.(row) ?? ''}`}
+                  >
                     {columns.map((col) => (
                       <td key={col.key} className={`px-4 py-3 ${col.cellClassName ?? ''}`}>
                         {col.render(row)}
