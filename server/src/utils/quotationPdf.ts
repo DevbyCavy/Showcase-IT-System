@@ -4,7 +4,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Quotation, QuotationItem, User } from '@prisma/client'
+import type { Quotation, QuotationItem, User } from '#prisma-client'
 
 const loadPuppeteer = () => import('puppeteer').then((m) => m.default)
 type PuppeteerModule = Awaited<ReturnType<typeof loadPuppeteer>>

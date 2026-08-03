@@ -5,7 +5,7 @@
 // same friendly "already exists" message is produced for both add and edit here, closing that gap
 // rather than leaking a raw constraint-violation error.
 
-import type { Vehicle, User } from '@prisma/client'
+import type { Vehicle, User } from '#prisma-client'
 import { ApiError } from '../middleware/errorHandler'
 import * as vehicleRepository from '../repositories/vehicle.repository'
 import type { VehicleBody } from '../validations/vehicle.validation'

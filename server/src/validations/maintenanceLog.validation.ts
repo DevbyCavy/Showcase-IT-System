@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MaintenanceType } from '@prisma/client'
+import { MaintenanceType } from '#prisma-client'
 
 // Translated from maintananceLog.php's form: vehicle/type/service_date are `required`; everything
 // else is optional there.

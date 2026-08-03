@@ -1,4 +1,4 @@
-import type { Order, User } from '@prisma/client'
+import type { Order, User } from '#prisma-client'
 import { env } from '../../config/env'
 
 // Meta WhatsApp Cloud API requires business-initiated messages (i.e. not a reply within an

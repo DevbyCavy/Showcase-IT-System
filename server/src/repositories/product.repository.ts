@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#prisma-client'
 import { prisma } from '../config/prisma'
 
 // Mirrors fetchProduct.php: `WHERE product.status = 1`, joined with brand/category names.

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { VehicleDocumentType } from '@prisma/client'
+import { VehicleDocumentType } from '#prisma-client'
 
 // vehicleDocuments.php's actual <form> only ever rendered a document_type <select> — every other
 // field the INSERT statement expects (vehicle, document number, dates, reminder days) was simply

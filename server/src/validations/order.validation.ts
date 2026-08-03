@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { OrderStatus } from '@prisma/client'
+import { OrderStatus } from '#prisma-client'
 
 // assignedUserIds arrives from multipart form data — a single selection is a bare string, multiple
 // selections are an array of strings (multer's field parser), so normalize to an array first.

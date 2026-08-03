@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { Role } from '@prisma/client'
+import { Role } from '#prisma-client'
 import * as userController from '../controllers/user.controller'
 import { authenticate, requireRole } from '../middleware/auth'
 import { validateBody } from '../middleware/validate'

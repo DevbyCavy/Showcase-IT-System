@@ -7,7 +7,7 @@
 import { ApiError } from '../middleware/errorHandler'
 import * as memoRepository from '../repositories/memo.repository'
 import type { CreateMemoBody } from '../validations/memo.validation'
-import type { Memo } from '@prisma/client'
+import type { Memo } from '#prisma-client'
 
 function toPublicMemo(m: Memo) {
   return {

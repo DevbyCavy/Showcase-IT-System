@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { RequisitionType } from '@prisma/client'
+import { RequisitionType } from '#prisma-client'
 
 // Translated from createRequisition.php's validation, including the "Other" pattern: req_type is
 // kept as the real category enum here (not overwritten with the free-text label the way

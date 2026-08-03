@@ -9,7 +9,7 @@ import { ApiError } from '../middleware/errorHandler'
 import * as repo from '../repositories/workLogSheet.repository'
 import type { StartTaskBody } from '../validations/workLogSheet.validation'
 import { addDays, isSameDate, mondayOfWeek, todayDateOnly } from '../utils/workDate'
-import type { WorkShift, WorkTask } from '@prisma/client'
+import type { WorkShift, WorkTask } from '#prisma-client'
 
 export const SHIFT_START = '08:30'
 export const SHIFT_END = '16:30'

@@ -5,10 +5,13 @@
 // bcrypt. Seeded users get a placeholder password (logged below) instead of a ported hash; real
 // credential migration/reset is a Module 2 (Auth) task, not a Module 1 (Database) concern.
 
-import { PrismaClient, Role } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient, Role } from '../src/generated/prisma/client'
 import bcrypt from 'bcrypt'
+import { env } from '../src/config/env'
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+const prisma = new PrismaClient({ adapter })
 
 const PLACEHOLDER_PASSWORD = 'ChangeMe123!'
 

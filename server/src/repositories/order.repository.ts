@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma'
-import type { OrderStatus } from '@prisma/client'
+import type { OrderStatus } from '#prisma-client'
 
 const include = {
   assignments: { include: { user: true } },

@@ -1,7 +1,7 @@
 // Replaces downloadBOQ.php's DOMPDF rendering with Puppeteer. The HTML/CSS layout is preserved
 // exactly — only the rendering engine changed.
 
-import type { Boq, BoqItem } from '@prisma/client'
+import type { Boq, BoqItem } from '#prisma-client'
 
 // puppeteer v25+ ships ESM-only; the server is CommonJS, so it must be loaded via dynamic import().
 const loadPuppeteer = () => import('puppeteer').then((m) => m.default)

@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "commonjs",
-  "main": "dist/src/server.js",
+  "main": "dist/server.js",
+  "imports": {
+    "#prisma-client": "./dist/generated/prisma/client.js"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
@@ -17,6 +20,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -28,6 +32,7 @@
     "libphonenumber-js": "^1.13.9",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
+    "pg": "^8.22.0",
     "puppeteer": "^25.3.0",
     "zod": "^4.4.3"
   },
@@ -40,6 +45,7 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.3",
     "prisma": "^6.19.3",
     "tsx": "^4.23.1",
     "typescript": "^5.6.0"

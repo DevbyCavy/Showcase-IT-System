@@ -2,7 +2,7 @@
 // (order + order_assignments creation, BOQ/artwork upload), and update_order_status.php.
 // Order editing is new — see MIGRATION_PLAN.md §"Order editing" decision.
 
-import type { Order, OrderAssignment, OrderStatus, User } from '@prisma/client'
+import type { Order, OrderAssignment, OrderStatus, User } from '#prisma-client'
 import { ApiError } from '../middleware/errorHandler'
 import * as orderRepository from '../repositories/order.repository'
 import * as whatsappService from './whatsapp.service'

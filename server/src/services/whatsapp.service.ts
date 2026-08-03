@@ -1,4 +1,4 @@
-import type { Order, User } from '@prisma/client'
+import type { Order, User } from '#prisma-client'
 import { env } from '../config/env'
 import { sendViaTwilio } from './whatsappProviders/twilio'
 import { sendViaMeta } from './whatsappProviders/meta'

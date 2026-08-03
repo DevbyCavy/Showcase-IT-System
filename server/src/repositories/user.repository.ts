@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#prisma-client'
 import { prisma } from '../config/prisma'
 
 export function findByUsername(username: string) {

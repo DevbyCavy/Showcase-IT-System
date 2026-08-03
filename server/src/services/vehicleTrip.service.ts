@@ -1,7 +1,7 @@
 // Translated from includes/vehicles/tripLogbook.php. Never return the raw Prisma `user` (driver)
 // relation — see vehicle.service.ts's toPublicVehicle for why (it carries passwordHash).
 
-import type { User, Vehicle, VehicleTrip } from '@prisma/client'
+import type { User, Vehicle, VehicleTrip } from '#prisma-client'
 import { ApiError } from '../middleware/errorHandler'
 import * as vehicleTripRepository from '../repositories/vehicleTrip.repository'
 import * as vehicleRepository from '../repositories/vehicle.repository'

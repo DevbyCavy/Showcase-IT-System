@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma'
-import type { RequisitionType } from '@prisma/client'
+import type { RequisitionType } from '#prisma-client'
 
 const include = {
   submittedBy: true,

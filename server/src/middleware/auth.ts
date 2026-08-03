@@ -3,7 +3,7 @@
 
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import type { Role } from '@prisma/client'
+import type { Role } from '#prisma-client'
 import { env } from '../config/env'
 import { ApiError } from './errorHandler'
 import type { AccessTokenPayload, AuthenticatedUser } from '../types/auth.types'

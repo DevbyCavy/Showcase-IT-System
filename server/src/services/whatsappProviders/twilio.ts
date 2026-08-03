@@ -1,4 +1,4 @@
-import type { Order, User } from '@prisma/client'
+import type { Order, User } from '#prisma-client'
 import { env } from '../../config/env'
 
 // Twilio's WhatsApp Sandbox accepts plain free-text with no pre-approved template — the fast path

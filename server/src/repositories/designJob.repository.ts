@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma'
-import type { DesignJobType } from '@prisma/client'
+import type { DesignJobType } from '#prisma-client'
 
 const include = {
   assignedBy: true,

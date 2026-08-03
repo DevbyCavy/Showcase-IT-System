@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Role } from '@prisma/client'
+import { Role } from '#prisma-client'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
 // signup.php's role dropdown excludes Super Admin — preserved exactly (see MIGRATION_PLAN.md).

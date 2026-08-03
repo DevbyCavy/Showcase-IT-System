@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FuelType, VehicleStatus } from '@prisma/client'
+import { FuelType, VehicleStatus } from '#prisma-client'
 
 // Translated from vehicleRegister.php's add/edit forms — only registration_number/make/model are
 // actually `required` in the HTML; everything else is optional there. vehicleYear stays a real Int
