@@ -19,7 +19,8 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   const message = err instanceof Error ? err.message : 'Internal server error'
 
   if (status === 500) {
-    console.error(err)
+    console.error('Unhandled error:', err)
+    if (err instanceof Error) console.error(err.stack)
   }
 
   res.status(status).json({ success: false, error: message })

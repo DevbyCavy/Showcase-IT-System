@@ -150,7 +150,14 @@ let browserPromise: Promise<Browser> | null = null
 async function getBrowser() {
   if (!browserPromise) {
     const puppeteer = await loadPuppeteer()
-    browserPromise = puppeteer.launch({ headless: true })
+    // --no-sandbox is required in most containerized/shared hosting environments, where Chrome's
+    // own OS-level sandboxing needs unprivileged user namespaces that the host doesn't grant.
+    browserPromise = puppeteer
+      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: true })
+      .catch((err) => {
+        browserPromise = null
+        throw err
+      })
   }
   return browserPromise
 }
