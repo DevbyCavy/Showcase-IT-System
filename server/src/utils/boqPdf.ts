@@ -83,8 +83,23 @@ async function getBrowser() {
     const puppeteer = await loadPuppeteer()
     // --no-sandbox is required in most containerized/shared hosting environments, where Chrome's
     // own OS-level sandboxing needs unprivileged user namespaces that the host doesn't grant.
+    // --no-zygote/--disable-gpu trim Chrome's process/thread count, since Hostinger's sandbox
+    // enforces a low ceiling that a normal Chrome launch exceeds (surfaced as a GLib "creating
+    // thread ... Resource temporarily unavailable" crash — Linux EAGAIN from pthread_create).
+    // (--single-process was tried too, but it's genuinely unstable in modern Chrome — GPU context
+    // creation fails outright and crashes the connection — so it's deliberately not used here.)
     browserPromise = puppeteer
-      .launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: true })
+      .launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+        ],
+        dumpio: true,
+      })
       .catch((err) => {
         browserPromise = null
         throw err
