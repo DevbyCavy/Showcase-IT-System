@@ -592,6 +592,11 @@ model Quotation {
   termsConditions String
   designFile      String?
   subtotal        Decimal         @db.Decimal(12, 2)
+  /// Optional 15.5% VAT, on top of subtotal. Stored (not just derived from a flag) so a
+  /// quotation's PDF stays accurate even if the VAT rate itself changes later — total is always
+  /// subtotal + vatAmount, vatAmount is 0 when applyVat is false.
+  applyVat        Boolean         @default(false)
+  vatAmount       Decimal         @db.Decimal(12, 2) @default(0)
   total           Decimal         @db.Decimal(12, 2)
   status          QuotationStatus @default(Pending)
   submittedById   Int

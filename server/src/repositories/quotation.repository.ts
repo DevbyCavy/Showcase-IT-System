@@ -27,6 +27,13 @@ export interface QuotationItemInput {
   unitPrice: number
 }
 
+// Optional VAT, on top of the line-items subtotal — see MIGRATION_PLAN.md's quotation VAT entry.
+export const VAT_RATE = 0.155
+
+function vatOf(subtotal: number, applyVat: boolean) {
+  return applyVat ? subtotal * VAT_RATE : 0
+}
+
 export interface QuotationCreateData {
   customerName: string
   customerId?: string
@@ -36,6 +43,7 @@ export interface QuotationCreateData {
   termsConditions: string
   designFile: string
   submittedById: number
+  applyVat: boolean
   items: QuotationItemInput[]
 }
 
@@ -47,6 +55,7 @@ export async function create(data: QuotationCreateData) {
   const quotationNumber = await nextQuoNumber()
   const withTotals = lineTotalsOf(data.items)
   const subtotal = withTotals.reduce((sum, i) => sum + i.lineTotal, 0)
+  const vatAmount = vatOf(subtotal, data.applyVat)
 
   const quotation = await prisma.quotation.create({
     data: {
@@ -59,7 +68,9 @@ export async function create(data: QuotationCreateData) {
       termsConditions: data.termsConditions,
       designFile: data.designFile,
       subtotal,
-      total: subtotal,
+      applyVat: data.applyVat,
+      vatAmount,
+      total: subtotal + vatAmount,
       submittedById: data.submittedById,
       status: 'Pending',
       items: {
@@ -85,6 +96,7 @@ export interface QuotationUpdateData {
   quoteDate: Date
   termsConditions: string
   designFile?: string
+  applyVat: boolean
   items: QuotationItemInput[]
 }
 
@@ -92,6 +104,7 @@ export interface QuotationUpdateData {
 export async function update(id: number, data: QuotationUpdateData) {
   const withTotals = lineTotalsOf(data.items)
   const subtotal = withTotals.reduce((sum, i) => sum + i.lineTotal, 0)
+  const vatAmount = vatOf(subtotal, data.applyVat)
 
   return prisma.$transaction(async (tx) => {
     await tx.quotationItem.deleteMany({ where: { quotationId: id } })
@@ -106,7 +119,9 @@ export async function update(id: number, data: QuotationUpdateData) {
         termsConditions: data.termsConditions,
         ...(data.designFile ? { designFile: data.designFile } : {}),
         subtotal,
-        total: subtotal,
+        applyVat: data.applyVat,
+        vatAmount,
+        total: subtotal + vatAmount,
         items: {
           create: withTotals.map((i, sortOrder) => ({
             description: i.description,

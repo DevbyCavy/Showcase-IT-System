@@ -113,6 +113,14 @@ ${rows}
             <td colspan="3" style="text-align:right;">Subtotal</td>
             <td style="text-align:right;">$${money(Number(quotation.subtotal))}</td>
         </tr>
+        ${
+          quotation.applyVat
+            ? `<tr class="totals-row">
+            <td colspan="3" style="text-align:right;">VAT (15.5%)</td>
+            <td style="text-align:right;">$${money(Number(quotation.vatAmount))}</td>
+        </tr>`
+            : ''
+        }
         <tr class="totals-row">
             <td colspan="3" style="text-align:right;">TOTAL</td>
             <td style="text-align:right;">$${money(Number(quotation.total))}</td>

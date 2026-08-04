@@ -29,6 +29,10 @@ export const quotationSchema = z
     orderNumber: z.string().trim().optional(),
     quoteDate: z.coerce.date({ message: 'Quote date is required.' }),
     termsConditions: z.string().trim().optional(),
+    // Arrives as the literal string "true"/"false" from FormData (see client/src/api/quotations.ts)
+    // — z.coerce.boolean() would treat "false" as truthy (JS's Boolean("false") === true), so this
+    // only accepts the exact string "true"; anything else (including missing) is false.
+    applyVat: z.preprocess((v) => v === 'true' || v === true, z.boolean()).default(false),
     items: itemsField,
   })
   .transform((data) => ({ ...data, items: data.items.filter((i) => i.description !== '') }))

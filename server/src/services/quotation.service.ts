@@ -28,6 +28,8 @@ function toPublicQuotation(q: Awaited<ReturnType<typeof quotationRepository.find
     termsConditions: q.termsConditions,
     designFile: q.designFile,
     subtotal: q.subtotal,
+    applyVat: q.applyVat,
+    vatAmount: q.vatAmount,
     total: q.total,
     status: q.status,
     submittedBy: toPublicUser(q.submittedBy),
@@ -83,6 +85,7 @@ export async function create(input: QuotationBody, submittedById: number, design
     termsConditions: input.termsConditions || DEFAULT_TERMS,
     designFile,
     submittedById,
+    applyVat: input.applyVat,
     items: input.items,
   })
   return toPublicQuotation(quotation)
@@ -101,6 +104,7 @@ export async function update(id: number, input: QuotationBody, designFile?: stri
     quoteDate: input.quoteDate,
     termsConditions: input.termsConditions || DEFAULT_TERMS,
     designFile,
+    applyVat: input.applyVat,
     items: input.items,
   })
   return toPublicQuotation(quotation)

@@ -69,12 +69,16 @@ export default function MakeQuotation() {
   const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [termsConditions, setTermsConditions] = useState(DEFAULT_TERMS)
   const [items, setItems] = useState<QuotationItemInput[]>([{ ...emptyItem }])
+  const [applyVat, setApplyVat] = useState(false)
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
 
+  const VAT_RATE = 0.155
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
+  const vatAmount = applyVat ? subtotal * VAT_RATE : 0
+  const total = subtotal + vatAmount
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -87,6 +91,7 @@ export default function MakeQuotation() {
           orderNumber: orderNumber || undefined,
           quoteDate,
           termsConditions,
+          applyVat,
           items: items.filter((i) => i.description.trim() !== ''),
         },
         designFile,
@@ -100,6 +105,7 @@ export default function MakeQuotation() {
       setProjectName('')
       setOrderNumber('')
       setItems([{ ...emptyItem }])
+      setApplyVat(false)
       setDesignFile(null)
       setError(null)
     },
@@ -246,19 +252,41 @@ export default function MakeQuotation() {
                 ))}
               </tbody>
               <tfoot>
+                <tr className="border-t">
+                  <td colSpan={3} className="p-2 text-right text-muted-foreground">
+                    Subtotal
+                  </td>
+                  <td className="p-2 text-right">{subtotal.toFixed(2)}</td>
+                  <td></td>
+                </tr>
+                {applyVat && (
+                  <tr>
+                    <td colSpan={3} className="p-2 text-right text-muted-foreground">
+                      VAT (15.5%)
+                    </td>
+                    <td className="p-2 text-right">{vatAmount.toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                )}
                 <tr className="border-t bg-secondary font-semibold">
                   <td colSpan={3} className="p-2 text-right">
                     TOTAL
                   </td>
-                  <td className="p-2 text-right">{subtotal.toFixed(2)}</td>
+                  <td className="p-2 text-right">{total.toFixed(2)}</td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
           </div>
-          <Button type="button" size="sm" variant="outline" onClick={() => setItems((prev) => [...prev, { ...emptyItem }])}>
-            + Add Item
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button type="button" size="sm" variant="outline" onClick={() => setItems((prev) => [...prev, { ...emptyItem }])}>
+              + Add Item
+            </Button>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={applyVat} onChange={(e) => setApplyVat(e.target.checked)} />
+              Apply VAT (15.5%)
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">

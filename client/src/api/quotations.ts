@@ -23,6 +23,8 @@ export interface Quotation {
   termsConditions: string
   designFile: string | null
   subtotal: string
+  applyVat: boolean
+  vatAmount: string
   total: string
   status: QuotationStatus
   submittedBy: AuthUser
@@ -63,6 +65,7 @@ export interface QuotationInput {
   orderNumber?: string
   quoteDate: string
   termsConditions?: string
+  applyVat?: boolean
   items: QuotationItemInput[]
 }
 
@@ -74,6 +77,7 @@ function toFormData(input: QuotationInput, designFile?: File) {
   if (input.orderNumber) form.append('orderNumber', input.orderNumber)
   form.append('quoteDate', input.quoteDate)
   if (input.termsConditions) form.append('termsConditions', input.termsConditions)
+  form.append('applyVat', input.applyVat ? 'true' : 'false')
   form.append('items', JSON.stringify(input.items))
   if (designFile) form.append('designFile', designFile)
   return form
