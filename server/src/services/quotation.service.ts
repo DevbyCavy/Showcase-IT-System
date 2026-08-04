@@ -75,7 +75,7 @@ export async function getForPdf(id: number) {
   return quotation
 }
 
-export async function create(input: QuotationBody, submittedById: number, designFile: string) {
+export async function create(input: QuotationBody, submittedById: number, designFile?: string) {
   const quotation = await quotationRepository.create({
     customerName: input.customerName,
     customerId: input.customerId,

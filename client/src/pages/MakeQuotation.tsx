@@ -81,9 +81,8 @@ export default function MakeQuotation() {
   const total = subtotal + vatAmount
 
   const mutation = useMutation({
-    mutationFn: () => {
-      if (!designFile) throw new Error('Please attach a design file for this quotation.')
-      return quotationsApi.create(
+    mutationFn: () =>
+      quotationsApi.create(
         {
           customerName,
           customerId: customerId || undefined,
@@ -94,9 +93,8 @@ export default function MakeQuotation() {
           applyVat,
           items: items.filter((i) => i.description.trim() !== ''),
         },
-        designFile,
-      )
-    },
+        designFile ?? undefined,
+      ),
     onSuccess: (quotation) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] })
       setSuccess(`Quotation ${quotation.quotationNumber} submitted for approval!`)
@@ -300,9 +298,7 @@ export default function MakeQuotation() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Design Attachment <span className="text-destructive">*</span>
-            </label>
+            <label className="text-sm font-medium">Design Attachment</label>
             <input
               type="file"
               accept="image/*,.pdf"

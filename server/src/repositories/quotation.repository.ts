@@ -41,7 +41,7 @@ export interface QuotationCreateData {
   orderNumber?: string
   quoteDate: Date
   termsConditions: string
-  designFile: string
+  designFile?: string
   submittedById: number
   applyVat: boolean
   items: QuotationItemInput[]

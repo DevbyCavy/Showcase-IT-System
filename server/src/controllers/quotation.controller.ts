@@ -28,11 +28,7 @@ export async function getOne(req: Request, res: Response) {
 }
 
 export async function create(req: Request, res: Response) {
-  const designFile = extractDesignFile(req)
-  if (!designFile) {
-    throw new ApiError(400, 'Please attach a design file for this quotation.')
-  }
-  const quotation = await quotationService.create(req.body, req.user!.id, designFile)
+  const quotation = await quotationService.create(req.body, req.user!.id, extractDesignFile(req))
   res.status(201).json({ success: true, data: { quotation } })
 }
 

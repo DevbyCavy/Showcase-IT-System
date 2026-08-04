@@ -83,7 +83,7 @@ function toFormData(input: QuotationInput, designFile?: File) {
   return form
 }
 
-export function create(input: QuotationInput, designFile: File) {
+export function create(input: QuotationInput, designFile?: File) {
   return api
     .post<QuotationResponse>('/quotations', toFormData(input, designFile), { headers: { 'Content-Type': 'multipart/form-data' } })
     .then((r) => r.data.data.quotation)
