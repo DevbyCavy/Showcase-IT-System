@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as authApi from '@/api/auth'
+import { setOnAuthExpired } from '@/api/client'
 import type { AuthUser } from '@/types/auth'
 
 interface AuthContextValue {
@@ -28,6 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('accessToken')
       })
       .finally(() => setIsLoading(false))
+
+    setOnAuthExpired(() => setUser(null))
+    return () => setOnAuthExpired(null)
   }, [])
 
   async function login(username: string, password: string) {
