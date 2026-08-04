@@ -186,11 +186,13 @@ export function AppShell() {
             <HeaderSearch />
           </div>
           <div className="flex items-center gap-1.5">
-            {user?.email && (
+            {(user?.role === 'Marketer' || user?.role === 'SuperAdmin') && (
               <a
-                href={`mailto:${user.email}`}
+                href="https://mail.hostinger.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:bg-secondary flex h-9 w-9 items-center justify-center rounded-full"
-                title={user.email}
+                title="Work email — info@showcaseit.co.zw (Hostinger webmail)"
               >
                 <Mail className="h-5 w-5" />
               </a>
