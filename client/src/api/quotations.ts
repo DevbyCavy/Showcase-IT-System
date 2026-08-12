@@ -113,3 +113,27 @@ export async function downloadPdf(id: number, quotationNumber: string) {
   link.remove()
   URL.revokeObjectURL(url)
 }
+
+async function fetchPdfFile(id: number, quotationNumber: string): Promise<File> {
+  const response = await api.get(`/quotations/${id}/pdf`, { responseType: 'blob' })
+  return new File([response.data as Blob], `Quotation_${quotationNumber}.pdf`, { type: 'application/pdf' })
+}
+
+// Neither WhatsApp (wa.me) nor mailto: links can attach a file via URL — both only pre-fill
+// text. The only way to hand over the actual PDF is the OS share sheet via the Web Share API's
+// `files` support, which lets the user pick a WhatsApp contact or mail client and attaches the
+// file directly. Returns 'unsupported' when the browser/device can't share files so the caller
+// can fall back to a plain download instead.
+async function shareFile(file: File, title: string): Promise<'shared' | 'unsupported'> {
+  if (!navigator.canShare?.({ files: [file] })) return 'unsupported'
+  await navigator.share({ files: [file], title })
+  return 'shared'
+}
+
+export async function sharePdfToWhatsApp(id: number, quotationNumber: string) {
+  return shareFile(await fetchPdfFile(id, quotationNumber), `Quotation ${quotationNumber}`)
+}
+
+export async function sharePdfByEmail(id: number, quotationNumber: string) {
+  return shareFile(await fetchPdfFile(id, quotationNumber), `Quotation ${quotationNumber}`)
+}

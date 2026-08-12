@@ -53,25 +53,44 @@ function buildHtml(quotation: QuotationWithRelations): string {
   return `
 <style>
 body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
-.header { width: 100%; margin-bottom: 20px; }
+.page { border: 1px solid #ccc; padding: 20px; }
+.header { width: 100%; margin-bottom: 18px; }
 .header td { vertical-align: top; }
-.header h1 { margin: 0; color: #ff7b00; text-align: right; }
+.header h1 { margin: 0 0 8px; color: #ff7b00; text-align: right; font-size: 28px; letter-spacing: 1px; }
 .header .company-info { font-size: 11px; color: #666; }
-.customer-block { background: #fff7ef; border-left: 4px solid #ff7b00; padding: 8px 12px; margin-bottom: 15px; }
-.customer-block .label { color: #ff7b00; font-weight: bold; font-size: 11px; }
-.items-table { width: 100%; border-collapse: collapse; }
-.items-table th { background-color: #ff7b00; color: #fff; padding: 8px; border: 1px solid #ddd; }
-.items-table td { border: 1px solid #ddd; padding: 6px 8px; }
-.totals-row td { font-weight: bold; background: #f8f9fa; }
+.meta-box { width: 100%; font-size: 11px; border: 1px solid #ddd; border-collapse: collapse; }
+.meta-box td { padding: 5px 8px; border: 1px solid #ddd; }
+.meta-box .label { color: #888; background: #f8f9fa; }
+.meta-box .value { text-align: right; }
+.bar { background-color: #ff7b00; color: #fff; font-weight: bold; font-size: 11px; padding: 6px 10px; letter-spacing: 0.5px; }
+.customer-block { border: 1px solid #ddd; border-top: none; padding: 8px 10px; margin-bottom: 15px; }
+.items-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
+.items-table th { background-color: #ff7b00; color: #fff; padding: 8px; text-align: left; }
+.items-table th.num, .items-table td.num { text-align: right; }
+.items-table td { border-bottom: 1px solid #eee; padding: 6px 8px; }
+.items-table tbody tr:nth-child(even) { background: #f8f9fa; }
+.totals-row td { font-weight: bold; background: #fff !important; border-bottom: none; }
+.totals-row.total td { background: #fff7ef !important; border-top: 2px solid #ff7b00; font-size: 13px; padding-top: 8px; }
 .bottom-section { width: 100%; margin-top: 20px; }
 .bottom-section td { vertical-align: top; }
-.footer { margin-top: 30px; text-align: right; font-size: 10px; color: #777; }
+.bank-details { width: 100%; margin-top: 15px; border-collapse: separate; border-spacing: 8px 0; }
+.bank-details td { width: 33.33%; vertical-align: top; border: 1px solid #ddd; padding: 0; }
+.bank-details .bank-header { background-color: #ff7b00; color: #fff; font-weight: bold; font-size: 11px; padding: 5px 8px; }
+.bank-details table { width: 100%; font-size: 10px; border-collapse: collapse; }
+.bank-details table td { border: none; border-bottom: 1px solid #eee; padding: 3px 8px; }
+.bank-details table tr:last-child td { border-bottom: none; }
+.bank-details .label { color: #888; }
+.thank-you { margin-top: 30px; text-align: center; font-size: 11px; color: #555; }
+.thank-you strong { display: block; margin-top: 4px; font-size: 13px; font-style: italic; color: #333; }
+.footer { margin-top: 15px; text-align: right; font-size: 10px; color: #777; }
 </style>
+
+<div class="page">
 
 <table class="header">
     <tr>
         <td style="width:55%;">
-            ${logoSrc ? `<img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:55px; margin-bottom:8px;">` : ''}
+            ${logoSrc ? `<img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:90px; margin-bottom:8px;">` : ''}
             <div class="company-info">
                 32 Jacana Drive, Greystone Park, Harare<br>
                 Phone: +263 772 548792<br>
@@ -82,18 +101,18 @@ body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         </td>
         <td style="width:45%;">
             <h1>QUOTATION</h1>
-            <table style="width:100%; font-size:11px;">
-                <tr><td style="color:#888;">Date</td><td style="text-align:right;">${quotation.quoteDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td></tr>
-                <tr><td style="color:#888;">Quotation #</td><td style="text-align:right;">${escapeHtml(quotation.quotationNumber)}</td></tr>
-                <tr><td style="color:#888;">Order #</td><td style="text-align:right;">${escapeHtml(quotation.orderNumber || '-')}</td></tr>
-                <tr><td style="color:#888;">Customer ID</td><td style="text-align:right;">${escapeHtml(quotation.customerId || '-')}</td></tr>
+            <table class="meta-box">
+                <tr><td class="label">Date</td><td class="value">${quotation.quoteDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td></tr>
+                <tr><td class="label">Quotation #</td><td class="value">${escapeHtml(quotation.quotationNumber)}</td></tr>
+                <tr><td class="label">Order #</td><td class="value">${escapeHtml(quotation.orderNumber || '-')}</td></tr>
+                <tr><td class="label">Customer ID</td><td class="value">${escapeHtml(quotation.customerId || '-')}</td></tr>
             </table>
         </td>
     </tr>
 </table>
 
+<div class="bar">CUSTOMER</div>
 <div class="customer-block">
-    <div class="label">CUSTOMER</div>
     <div><strong>${escapeHtml(quotation.customerName)}</strong></div>
     ${quotation.projectName ? `<div>${escapeHtml(quotation.projectName)}</div>` : ''}
 </div>
@@ -102,53 +121,94 @@ body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
     <thead>
         <tr>
             <th style="width:45%">Description</th>
-            <th style="width:15%">Quantity</th>
-            <th style="width:20%">Unit Price</th>
-            <th style="width:20%">Amount</th>
+            <th class="num" style="width:15%">Quantity</th>
+            <th class="num" style="width:20%">Unit Price</th>
+            <th class="num" style="width:20%">Amount</th>
         </tr>
     </thead>
     <tbody>
 ${rows}
         <tr class="totals-row">
-            <td colspan="3" style="text-align:right;">Subtotal</td>
-            <td style="text-align:right;">$${money(Number(quotation.subtotal))}</td>
+            <td colspan="3" class="num">Subtotal</td>
+            <td class="num">$${money(Number(quotation.subtotal))}</td>
         </tr>
         ${
           quotation.applyVat
             ? `<tr class="totals-row">
-            <td colspan="3" style="text-align:right;">VAT (15.5%)</td>
-            <td style="text-align:right;">$${money(Number(quotation.vatAmount))}</td>
+            <td colspan="3" class="num">VAT (15.5%)</td>
+            <td class="num">$${money(Number(quotation.vatAmount))}</td>
         </tr>`
             : ''
         }
-        <tr class="totals-row">
-            <td colspan="3" style="text-align:right;">TOTAL</td>
-            <td style="text-align:right;">$${money(Number(quotation.total))}</td>
+        <tr class="totals-row total">
+            <td colspan="3" class="num">TOTAL</td>
+            <td class="num">$${money(Number(quotation.total))}</td>
         </tr>
     </tbody>
 </table>
 
 <table class="bottom-section">
     <tr>
-        <td style="width:60%;">
-            <strong style="color:#ff7b00;">Terms &amp; Conditions</strong>
-            <div style="white-space:pre-wrap; font-size:11px; margin-top:4px;">${escapeHtml(quotation.termsConditions)}</div>
+        <td style="width:100%;">
+            <div class="bar">TERMS &amp; CONDITIONS</div>
+            <div style="white-space:pre-wrap; font-size:11px; margin-top:8px;">${escapeHtml(quotation.termsConditions)}</div>
         </td>
-        <td style="width:40%;">
-            <strong style="color:#ff7b00;">Bank Details</strong>
-            <table style="width:100%; font-size:11px; margin-top:4px;">
-                <tr><td style="color:#888;">Account Name</td><td>-</td></tr>
-                <tr><td style="color:#888;">Bank</td><td>-</td></tr>
-                <tr><td style="color:#888;">Account Number</td><td>-</td></tr>
-                <tr><td style="color:#888;">Branch</td><td>-</td></tr>
-                <tr><td style="color:#888;">Type</td><td>-</td></tr>
+    </tr>
+</table>
+
+<table class="bank-details">
+    <tr>
+        <td>
+            <div class="bank-header">BANKING DETAILS</div>
+            <table>
+                <tr><td class="label">Account Name</td><td>SHOWCASE IT PVT LTD</td></tr>
+                <tr><td class="label">Bank</td><td>NEDBANK</td></tr>
+                <tr><td class="label">Address</td><td>BORROWDALE, HARARE</td></tr>
+                <tr><td class="label">Account Number</td><td>11992308223</td></tr>
+                <tr><td class="label">Branch</td><td>BORROWDALE</td></tr>
+                <tr><td class="label">Branch Code</td><td>18101</td></tr>
+                <tr><td class="label">Currency</td><td>USD</td></tr>
+                <tr><td class="label">Swift Code</td><td>MBCA2WHX</td></tr>
+            </table>
+        </td>
+        <td>
+            <div class="bank-header">BANKING DETAILS</div>
+            <table>
+                <tr><td class="label">Account Name</td><td>SHOWCASE IT PVT LTD</td></tr>
+                <tr><td class="label">Bank</td><td>CBZ BANK LIMITED</td></tr>
+                <tr><td class="label">Address</td><td>BORROWDALE, HARARE</td></tr>
+                <tr><td class="label">Account Number</td><td>029 26159120023</td></tr>
+                <tr><td class="label">Branch</td><td>BORROWDALE</td></tr>
+                <tr><td class="label">Branch Code</td><td>029</td></tr>
+                <tr><td class="label">Currency</td><td>USD</td></tr>
+                <tr><td class="label">Swift Code</td><td>COBZZWHA</td></tr>
+            </table>
+        </td>
+        <td>
+            <div class="bank-header">BANKING DETAILS</div>
+            <table>
+                <tr><td class="label">Account Name</td><td>SHOWCASE IT PVT LTD</td></tr>
+                <tr><td class="label">Bank</td><td>CBZ BANK LIMITED</td></tr>
+                <tr><td class="label">Address</td><td>BORROWDALE, HARARE</td></tr>
+                <tr><td class="label">Account Number</td><td>029 26159120013</td></tr>
+                <tr><td class="label">Branch</td><td>BORROWDALE</td></tr>
+                <tr><td class="label">Branch Code</td><td>029</td></tr>
+                <tr><td class="label">Currency</td><td>ZWG</td></tr>
+                <tr><td class="label">Swift Code</td><td>COBZZWHA</td></tr>
             </table>
         </td>
     </tr>
 </table>
 
+<div class="thank-you">
+    If you have any questions about this quotation, please contact ${escapeHtml(preparedBy || 'us')} on +263 772 548792
+    <strong>Thank You For Your Business!</strong>
+</div>
+
 <div class="footer">
-    Generated by ShowcaseIT${logoSrc ? ` <img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:16px; vertical-align:middle; margin-left:6px;">` : ''}
+    Generated by ShowcaseIT${logoSrc ? ` <img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:20px; vertical-align:middle; margin-left:6px;">` : ''}
+</div>
+
 </div>
 `
 }
