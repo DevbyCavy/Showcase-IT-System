@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { Send, FileDown, Clock, Mail } from 'lucide-react'
+import { Send, FileDown, Clock, Mail, Pencil, Search, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { ToastStack, type ToastItem } from '@/components/ui/toast'
+import { QuotationEditModal } from '@/components/QuotationEditModal'
 import { useAuth } from '@/hooks/useAuth'
 import * as quotationsApi from '@/api/quotations'
 import type { Quotation, QuotationItemInput } from '@/api/quotations'
@@ -44,26 +45,34 @@ export default function MakeQuotation() {
   const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list, refetchInterval: POLL_INTERVAL_MS })
 
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set())
+  const [highlightTones, setHighlightTones] = useState<Map<number, 'success' | 'error'>>(new Map())
   const nextToastId = useRef(0)
   const prevStatusRef = useRef<Map<number, string> | null>(null)
 
   const myQuotations = (quotations ?? []).filter((q) => q.submittedBy.id === user?.id)
 
-  // Real-time "your quotation was approved" alert: on every poll, compare each of my quotations'
-  // status against what it was last poll. First run just records the baseline (a page load
-  // shouldn't announce quotations that were already Approved before you opened the page) —
-  // afterwards, a Pending -> Approved transition triggers a toast + a temporary row highlight.
+  // Real-time "your quotation was approved/rejected" alert: on every poll, compare each of my
+  // quotations' status against what it was last poll. First run just records the baseline (a page
+  // load shouldn't announce quotations already resolved before you opened the page) — afterwards,
+  // a Pending -> Approved/Rejected transition triggers a toast + a temporary row highlight.
   useEffect(() => {
     const currentStatus = new Map(myQuotations.map((q) => [q.id, q.status]))
     if (prevStatusRef.current) {
       const prev = prevStatusRef.current
       for (const q of myQuotations) {
-        if (q.status === 'Approved' && prev.get(q.id) === 'Pending') {
+        if (prev.get(q.id) !== 'Pending') continue
+        if (q.status === 'Approved') {
           setToasts((t) => [...t, { id: nextToastId.current++, message: `Your quotation ${q.quotationNumber} was approved!`, tone: 'success' }])
-          setHighlightedIds((h) => new Set(h).add(q.id))
-          setTimeout(() => setHighlightedIds((h) => { const next = new Set(h); next.delete(q.id); return next }), 8000)
+        } else if (q.status === 'Rejected') {
+          setToasts((t) => [
+            ...t,
+            { id: nextToastId.current++, message: `Your quotation ${q.quotationNumber} was rejected: ${q.rejectionReason}`, tone: 'error' },
+          ])
+        } else {
+          continue
         }
+        setHighlightTones((h) => new Map(h).set(q.id, q.status === 'Approved' ? 'success' : 'error'))
+        setTimeout(() => setHighlightTones((h) => { const next = new Map(h); next.delete(q.id); return next }), 8000)
       }
     }
     prevStatusRef.current = currentStatus
@@ -82,6 +91,9 @@ export default function MakeQuotation() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Quotation | null>(null)
+  const [tab, setTab] = useState<'new' | 'submitted'>('new')
+  const [search, setSearch] = useState('')
 
   const VAT_RATE = 0.155
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
@@ -171,7 +183,11 @@ export default function MakeQuotation() {
       key: 'status',
       header: 'Status',
       render: (q) => (
-        <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${q.status === 'Approved' ? 'bg-green-600' : 'bg-amber-500'}`}>
+        <span
+          className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
+            q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
+          }`}
+        >
           {q.status}
         </span>
       ),
@@ -179,42 +195,85 @@ export default function MakeQuotation() {
     {
       key: 'actions',
       header: 'Actions',
-      render: (q) =>
-        q.status === 'Approved' ? (
-          <div className="flex items-center gap-1.5">
-            <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
-              <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+      render: (q) => {
+        if (q.status === 'Approved') {
+          return (
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
+                <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+              </Button>
+              <Button
+                size="icon"
+                title="Send PDF via WhatsApp"
+                onClick={() => handleShareWhatsApp(q.id, q.quotationNumber)}
+                className="h-8 w-8 bg-[#25D366] text-white hover:opacity-90"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                title="Send PDF via Email"
+                onClick={() => handleShareEmail(q.id, q.quotationNumber)}
+                className="h-8 w-8"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+            </div>
+          )
+        }
+        if (q.status === 'Rejected') {
+          return (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setEditing(q)}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+              </Button>
+              <span className="text-destructive inline-flex items-center gap-1 text-xs" title={q.rejectionReason ?? undefined}>
+                <XCircle className="h-3.5 w-3.5 shrink-0" /> {q.rejectionReason}
+              </span>
+            </div>
+          )
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setEditing(q)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
             </Button>
-            <Button
-              size="icon"
-              title="Send PDF via WhatsApp"
-              onClick={() => handleShareWhatsApp(q.id, q.quotationNumber)}
-              className="h-8 w-8 bg-[#25D366] text-white hover:opacity-90"
-            >
-              <WhatsAppIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              title="Send PDF via Email"
-              onClick={() => handleShareEmail(q.id, q.quotationNumber)}
-              className="h-8 w-8"
-            >
-              <Mail className="h-4 w-4" />
-            </Button>
+            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+              <Clock className="h-3.5 w-3.5" /> Awaiting approval
+            </span>
           </div>
-        ) : (
-          <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-            <Clock className="h-3.5 w-3.5" /> Awaiting Super Admin approval
-          </span>
-        ),
+        )
+      },
     },
   ]
+
+  const searchTerm = search.trim().toLowerCase()
+  const visibleQuotations = searchTerm
+    ? myQuotations.filter((q) =>
+        [q.quotationNumber, q.customerName, q.projectName, q.orderNumber].some((field) => field?.toLowerCase().includes(searchTerm)),
+      )
+    : myQuotations
 
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
       <PageHeader title="Make Quotation" />
 
+      <div className="mb-5 flex w-fit gap-0.5 rounded-full bg-secondary p-1">
+        {(['new', 'submitted'] as const).map((t) => (
+          <button
+            key={t}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+              tab === t ? 'bg-brand-orange text-white' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setTab(t)}
+          >
+            {t === 'new' ? 'New Quotation' : 'My Submitted Quotations'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'new' && (
       <Card className="mb-8">
         <CardContent className="space-y-3">
         {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -368,18 +427,36 @@ export default function MakeQuotation() {
         </Button>
         </CardContent>
       </Card>
+      )}
 
-      <h2 className="mb-3 font-semibold">My Submitted Quotations</h2>
+      {tab === 'submitted' && (
+      <>
+      <div className="relative mb-3 max-w-sm">
+        <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by quotation #, customer, project, order #…"
+          className="pl-9"
+        />
+      </div>
       {downloadError && <div className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{downloadError}</div>}
       <DataTable
         columns={columns}
-        data={myQuotations}
+        data={visibleQuotations}
         keyExtractor={(q) => q.id}
-        emptyMessage="No quotations submitted yet."
-        rowClassName={(q) => (highlightedIds.has(q.id) ? 'bg-green-50 animate-pulse' : '')}
+        emptyMessage={searchTerm ? 'No quotations match your search.' : 'No quotations submitted yet.'}
+        rowClassName={(q) => {
+          const tone = highlightTones.get(q.id)
+          return tone === 'success' ? 'bg-green-50 animate-pulse' : tone === 'error' ? 'bg-red-50 animate-pulse' : ''
+        }}
       />
+      </>
+      )}
 
       <ToastStack items={toasts} onDismiss={(id) => setToasts((t) => t.filter((item) => item.id !== id))} />
+
+      {editing && <QuotationEditModal quotation={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }

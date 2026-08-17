@@ -1,7 +1,7 @@
 import { api } from './client'
 import type { AuthUser } from '@/types/auth'
 
-export type QuotationStatus = 'Pending' | 'Approved'
+export type QuotationStatus = 'Pending' | 'Approved' | 'Rejected'
 
 export interface QuotationItem {
   id: number
@@ -30,6 +30,9 @@ export interface Quotation {
   submittedBy: AuthUser
   approvedBy: AuthUser | null
   approvedAt: string | null
+  rejectedBy: AuthUser | null
+  rejectedAt: string | null
+  rejectionReason: string | null
   createdAt: string
   items: QuotationItem[]
 }
@@ -97,6 +100,10 @@ export function update(id: number, input: QuotationInput, designFile?: File) {
 
 export function approve(id: number) {
   return api.put<QuotationResponse>(`/quotations/${id}/approve`).then((r) => r.data.data.quotation)
+}
+
+export function reject(id: number, reason: string) {
+  return api.put<QuotationResponse>(`/quotations/${id}/reject`, { reason }).then((r) => r.data.data.quotation)
 }
 
 // A plain <a href> wouldn't send the Bearer token (unlike the legacy's cookie-based PHP session,

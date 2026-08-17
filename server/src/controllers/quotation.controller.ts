@@ -33,12 +33,17 @@ export async function create(req: Request, res: Response) {
 }
 
 export async function update(req: Request, res: Response) {
-  const quotation = await quotationService.update(parseId(req), req.body, extractDesignFile(req))
+  const quotation = await quotationService.update(parseId(req), req.body, req.user!, extractDesignFile(req))
   res.json({ success: true, data: { quotation } })
 }
 
 export async function approve(req: Request, res: Response) {
   const quotation = await quotationService.approve(parseId(req), req.user!.id)
+  res.json({ success: true, data: { quotation } })
+}
+
+export async function reject(req: Request, res: Response) {
+  const quotation = await quotationService.reject(parseId(req), req.user!.id, req.body.reason)
   res.json({ success: true, data: { quotation } })
 }
 

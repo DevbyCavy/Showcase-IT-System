@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma'
 const include = {
   submittedBy: true,
   approvedBy: true,
+  rejectedBy: true,
   items: { orderBy: { sortOrder: 'asc' as const } },
 }
 
@@ -101,7 +102,9 @@ export interface QuotationUpdateData {
 }
 
 // Mirrors updateQuotation.php: delete + reinsert items, keep design_file unless a new one was uploaded.
-export async function update(id: number, data: QuotationUpdateData) {
+// `resubmit` is set when the caller is editing a Rejected quotation — it flips the status back to
+// Pending and clears the prior rejection so it re-enters the Super Admin approval queue.
+export async function update(id: number, data: QuotationUpdateData, resubmit: boolean) {
   const withTotals = lineTotalsOf(data.items)
   const subtotal = withTotals.reduce((sum, i) => sum + i.lineTotal, 0)
   const vatAmount = vatOf(subtotal, data.applyVat)
@@ -122,6 +125,7 @@ export async function update(id: number, data: QuotationUpdateData) {
         applyVat: data.applyVat,
         vatAmount,
         total: subtotal + vatAmount,
+        ...(resubmit ? { status: 'Pending' as const, rejectedById: null, rejectedAt: null, rejectionReason: null } : {}),
         items: {
           create: withTotals.map((i, sortOrder) => ({
             description: i.description,
@@ -144,6 +148,16 @@ export async function markApproved(id: number, approvedById: number) {
   const result = await prisma.quotation.updateMany({
     where: { id, status: 'Pending' },
     data: { status: 'Approved', approvedById, approvedAt: new Date() },
+  })
+  return result.count > 0
+}
+
+// Same atomic Pending-only guard as markApproved, so a quotation can't be both approved and
+// rejected under concurrent clicks.
+export async function markRejected(id: number, rejectedById: number, reason: string) {
+  const result = await prisma.quotation.updateMany({
+    where: { id, status: 'Pending' },
+    data: { status: 'Rejected', rejectedById, rejectedAt: new Date(), rejectionReason: reason },
   })
   return result.count > 0
 }

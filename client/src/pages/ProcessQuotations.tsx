@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileDown, Check } from 'lucide-react'
+import { FileDown, Check, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { ToastStack, type ToastItem } from '@/components/ui/toast'
+import { QuotationEditModal } from '@/components/QuotationEditModal'
 import * as quotationsApi from '@/api/quotations'
 import type { Quotation } from '@/api/quotations'
 
@@ -21,7 +22,10 @@ export default function ProcessQuotations() {
   const { data: quotations } = useQuery({ queryKey: ['quotations'], queryFn: quotationsApi.list, refetchInterval: POLL_INTERVAL_MS })
   const [tab, setTab] = useState<'pending' | 'all'>('pending')
   const [confirming, setConfirming] = useState<Quotation | null>(null)
+  const [rejecting, setRejecting] = useState<Quotation | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Quotation | null>(null)
 
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set())
@@ -60,6 +64,15 @@ export default function ProcessQuotations() {
     },
   })
 
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) => quotationsApi.reject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      setRejecting(null)
+      setRejectReason('')
+    },
+  })
+
   async function handleDownload(id: number, quotationNumber: string) {
     setDownloadError(null)
     try {
@@ -82,10 +95,18 @@ export default function ProcessQuotations() {
           </Button>
         )}
         {q.status === 'Pending' && (
-          <Button size="sm" onClick={() => setConfirming(q)}>
-            <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
-          </Button>
+          <>
+            <Button size="sm" onClick={() => setConfirming(q)}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
+            </Button>
+            <Button size="sm" variant="outline" className="border-destructive text-destructive" onClick={() => setRejecting(q)}>
+              <X className="mr-1.5 h-3.5 w-3.5" /> Reject
+            </Button>
+          </>
         )}
+        <Button size="sm" variant="outline" onClick={() => setEditing(q)}>
+          <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+        </Button>
       </div>
     ),
   }
@@ -103,7 +124,12 @@ export default function ProcessQuotations() {
     key: 'status',
     header: 'Status',
     render: (q) => (
-      <span className={`rounded px-2 py-0.5 text-xs font-medium text-white ${q.status === 'Approved' ? 'bg-green-600' : 'bg-amber-500'}`}>
+      <span
+        className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
+          q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
+        }`}
+        title={q.status === 'Rejected' ? (q.rejectionReason ?? undefined) : undefined}
+      >
         {q.status}
       </span>
     ),
@@ -165,7 +191,53 @@ export default function ProcessQuotations() {
         </div>
       )}
 
+      {rejecting && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            setRejecting(null)
+            setRejectReason('')
+          }}
+        >
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-2 text-lg font-semibold">Reject Quotation</h3>
+            <p className="mb-1">Reject quotation</p>
+            <p className="mb-2 text-lg font-bold">{rejecting.quotationNumber}</p>
+            <p className="text-muted-foreground mb-3 text-sm">
+              This sends it back to {rejecting.submittedBy.name} {rejecting.submittedBy.surname} to fix and resubmit.
+            </p>
+            <textarea
+              className="border-input mb-4 w-full rounded-md border bg-transparent px-3 py-2 text-left text-sm"
+              rows={3}
+              placeholder="Reason for rejecting…"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <div className="flex justify-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setRejecting(null)
+                  setRejectReason('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-destructive text-white hover:bg-destructive/90"
+                onClick={() => rejectMutation.mutate({ id: rejecting.id, reason: rejectReason.trim() })}
+                disabled={rejectMutation.isPending || rejectReason.trim() === ''}
+              >
+                {rejectMutation.isPending ? 'Rejecting…' : 'Yes, Reject It'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastStack items={toasts} onDismiss={(id) => setToasts((t) => t.filter((item) => item.id !== id))} />
+
+      {editing && <QuotationEditModal quotation={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }

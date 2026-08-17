@@ -39,3 +39,9 @@ export const quotationSchema = z
   .refine((data) => data.items.length > 0, { message: 'Please add at least one line item.', path: ['items'] })
 
 export type QuotationBody = z.infer<typeof quotationSchema>
+
+export const quotationRejectSchema = z.object({
+  reason: z.string().trim().min(1, 'Please provide a reason for rejecting this quotation.'),
+})
+
+export type QuotationRejectBody = z.infer<typeof quotationRejectSchema>

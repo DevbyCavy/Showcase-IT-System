@@ -140,6 +140,7 @@ enum WorkTaskStatus {
 enum QuotationStatus {
   Pending
   Approved
+  Rejected
 }
 
 enum MemoStatus {
@@ -189,6 +190,7 @@ model User {
   workTasks             WorkTask[]
   quotationsSubmitted   Quotation[]       @relation("QuotationSubmittedBy")
   quotationsApproved    Quotation[]       @relation("QuotationApprovedBy")
+  quotationsRejected    Quotation[]       @relation("QuotationRejectedBy")
   memosCreated          Memo[]
   officeTasksAssignedBy OfficeTask[]      @relation("OfficeTaskAssignedBy")
   officeTasksAssignedTo OfficeTask[]      @relation("OfficeTaskAssignedTo")
@@ -602,10 +604,14 @@ model Quotation {
   submittedById   Int
   approvedById    Int?
   approvedAt      DateTime?
+  rejectedById    Int?
+  rejectedAt      DateTime?
+  rejectionReason String?
   createdAt       DateTime        @default(now())
 
   submittedBy User            @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
   approvedBy  User?           @relation("QuotationApprovedBy", fields: [approvedById], references: [id])
+  rejectedBy  User?           @relation("QuotationRejectedBy", fields: [rejectedById], references: [id])
   items       QuotationItem[]
 
   @@map("quotations")

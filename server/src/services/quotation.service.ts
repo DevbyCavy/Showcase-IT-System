@@ -6,6 +6,7 @@ import { ApiError } from '../middleware/errorHandler'
 import * as quotationRepository from '../repositories/quotation.repository'
 import type { QuotationBody } from '../validations/quotation.validation'
 import { toPublicUser } from '../utils/mapUser'
+import type { AuthenticatedUser } from '../types/auth.types'
 
 export const DEFAULT_TERMS = [
   '1. Invoice valid for 14 working days.',
@@ -35,6 +36,9 @@ function toPublicQuotation(q: Awaited<ReturnType<typeof quotationRepository.find
     submittedBy: toPublicUser(q.submittedBy),
     approvedBy: q.approvedBy ? toPublicUser(q.approvedBy) : null,
     approvedAt: q.approvedAt,
+    rejectedBy: q.rejectedBy ? toPublicUser(q.rejectedBy) : null,
+    rejectedAt: q.rejectedAt,
+    rejectionReason: q.rejectionReason,
     createdAt: q.createdAt,
     items: q.items.map((i) => ({
       id: i.id,
@@ -91,22 +95,40 @@ export async function create(input: QuotationBody, submittedById: number, design
   return toPublicQuotation(quotation)
 }
 
-export async function update(id: number, input: QuotationBody, designFile?: string) {
+// Super Admin can edit any quotation, any status (legacy editQuotation.php behavior). The
+// submitting Marketer may only fix their own quotation while it's still Pending — once Super
+// Admin approves it, it's locked to them (Marketer's own confirmation of intent, matching the
+// approve flow's one-way Pending -> Approved transition).
+export async function update(id: number, input: QuotationBody, editor: AuthenticatedUser, designFile?: string) {
   const existing = await quotationRepository.findById(id)
   if (!existing) {
     throw new ApiError(404, 'Quotation not found.')
   }
-  const quotation = await quotationRepository.update(id, {
-    customerName: input.customerName,
-    customerId: input.customerId,
-    projectName: input.projectName,
-    orderNumber: input.orderNumber,
-    quoteDate: input.quoteDate,
-    termsConditions: input.termsConditions || DEFAULT_TERMS,
-    designFile,
-    applyVat: input.applyVat,
-    items: input.items,
-  })
+  if (editor.role !== 'SuperAdmin') {
+    if (existing.submittedById !== editor.id) {
+      throw new ApiError(403, 'You can only edit your own quotations.')
+    }
+    if (existing.status === 'Approved') {
+      throw new ApiError(403, 'This quotation has already been approved and can no longer be edited.')
+    }
+  }
+  // Editing a Rejected quotation is treated as a resubmission — it re-enters the Pending queue
+  // rather than staying Rejected with stale edits underneath it.
+  const quotation = await quotationRepository.update(
+    id,
+    {
+      customerName: input.customerName,
+      customerId: input.customerId,
+      projectName: input.projectName,
+      orderNumber: input.orderNumber,
+      quoteDate: input.quoteDate,
+      termsConditions: input.termsConditions || DEFAULT_TERMS,
+      designFile,
+      applyVat: input.applyVat,
+      items: input.items,
+    },
+    existing.status === 'Rejected',
+  )
   return toPublicQuotation(quotation)
 }
 
@@ -118,6 +140,18 @@ export async function approve(id: number, approvedById: number) {
   const approved = await quotationRepository.markApproved(id, approvedById)
   if (!approved) {
     throw new ApiError(400, 'Could not approve — already approved or not found.')
+  }
+  return toPublicQuotation((await quotationRepository.findById(id))!)
+}
+
+export async function reject(id: number, rejectedById: number, reason: string) {
+  const quotation = await quotationRepository.findById(id)
+  if (!quotation) {
+    throw new ApiError(404, 'Quotation not found.')
+  }
+  const rejected = await quotationRepository.markRejected(id, rejectedById, reason)
+  if (!rejected) {
+    throw new ApiError(400, 'Could not reject — already processed or not found.')
   }
   return toPublicQuotation((await quotationRepository.findById(id))!)
 }

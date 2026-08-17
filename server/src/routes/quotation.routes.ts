@@ -4,7 +4,7 @@ import * as quotationController from '../controllers/quotation.controller'
 import { authenticate, requireRole } from '../middleware/auth'
 import { validateBody } from '../middleware/validate'
 import { createUploader } from '../middleware/upload'
-import { quotationSchema } from '../validations/quotation.validation'
+import { quotationSchema, quotationRejectSchema } from '../validations/quotation.validation'
 
 // makeQuotation.php: legacy gated to requireRole('Marketer'). Marketer was dropped in Module 2's
 // normalization (open to any authenticated user in the interim) and reintroduced in §21 — access
@@ -19,7 +19,10 @@ quotationRouter.get('/', quotationController.list)
 quotationRouter.get('/:id', quotationController.getOne)
 quotationRouter.get('/:id/pdf', quotationController.downloadPdf)
 quotationRouter.post('/', upload.single('designFile'), validateBody(quotationSchema), quotationController.create)
-// editQuotation.php/updateQuotation.php: requireRole('Super Admin').
-quotationRouter.put('/:id', requireRole(Role.SuperAdmin), upload.single('designFile'), validateBody(quotationSchema), quotationController.update)
+// editQuotation.php/updateQuotation.php: requireRole('Super Admin'). Loosened so the submitting
+// Marketer can also fix their own quotation while it's still Pending — ownership + status are
+// enforced in quotation.service.ts#update since that needs the existing row, not just the role.
+quotationRouter.put('/:id', upload.single('designFile'), validateBody(quotationSchema), quotationController.update)
 // processQuotation.php: hardcoded `$_SESSION['user_type'] !== 'Super Admin'` check.
 quotationRouter.put('/:id/approve', requireRole(Role.SuperAdmin), quotationController.approve)
+quotationRouter.put('/:id/reject', requireRole(Role.SuperAdmin), validateBody(quotationRejectSchema), quotationController.reject)

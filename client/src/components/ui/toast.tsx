@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
-import { X, CheckCircle2, Bell } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Bell } from 'lucide-react'
 
 export interface ToastItem {
   id: number
   message: string
-  tone: 'success' | 'info'
+  tone: 'success' | 'info' | 'error'
 }
 
 // Minimal toast stack — no library, matches the app's existing rounded-card/colored-icon-badge
@@ -28,13 +28,13 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
     return () => clearTimeout(timer)
   }, [item.id, onDismiss])
 
-  const Icon = item.tone === 'success' ? CheckCircle2 : Bell
+  const Icon = item.tone === 'success' ? CheckCircle2 : item.tone === 'error' ? XCircle : Bell
 
   return (
     <div className="flex items-start gap-2.5 rounded-xl border bg-card p-3 text-sm shadow-lg">
       <span
         className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${
-          item.tone === 'success' ? 'bg-green-600' : 'bg-brand-orange'
+          item.tone === 'success' ? 'bg-green-600' : item.tone === 'error' ? 'bg-destructive' : 'bg-brand-orange'
         }`}
       >
         <Icon className="h-3.5 w-3.5" />
