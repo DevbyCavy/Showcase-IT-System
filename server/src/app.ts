@@ -1,3 +1,4 @@
+import path from 'node:path'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -64,6 +65,17 @@ app.use('/api/design-jobs', designJobRouter)
 app.use('/api/tracking', trackingRouter)
 
 // Further module routers mount here as they land
+
+const clientDistDir = path.resolve(__dirname, 'public')
+app.use(express.static(clientDistDir))
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+    next()
+    return
+  }
+  res.sendFile(path.join(clientDistDir, 'index.html'))
+})
 
 app.use(notFoundHandler)
 app.use(errorHandler)
