@@ -222,9 +222,13 @@ export async function renderQuotationPdf(quotation: QuotationWithRelations): Pro
   }
 }
 
-// Standalone HTML version of the same layout, for opening directly in a browser tab so the user
-// can print it (Ctrl+P -> Save as PDF) without going through server-side Puppeteer rendering at
-// all — useful on hosts where launching headless Chrome is unreliable (see pdfBrowser.ts).
+// Standalone HTML version of the same layout, for opening directly in a browser tab — without
+// going through server-side Puppeteer rendering at all, since that's unreliable on hosts like
+// Hostinger (see pdfBrowser.ts). Offers two ways to get a PDF: a one-click "Download PDF" button
+// that rasterizes the page into a real .pdf client-side via html2pdf.js (vendored as a same-origin
+// script in client/public/vendor/ — helmet's CSP has no 'unsafe-inline'/CDN allowance on
+// script-src, so it can't be loaded inline or from a CDN), or the browser's own Ctrl+P -> Save as
+// PDF as a fallback that always works even if that JS fails to load.
 export function renderQuotationHtml(quotation: QuotationWithRelations): string {
   return `<!DOCTYPE html>
 <html>
@@ -234,11 +238,27 @@ export function renderQuotationHtml(quotation: QuotationWithRelations): string {
 <style>
   @page { size: A4; margin: 12mm; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 0; }
+  body { margin: 0; background: #f2f2f2; }
+  .toolbar { max-width: 850px; margin: 12px auto; padding: 0 20px; display: flex; align-items: center; gap: 12px; }
+  .toolbar button { background: #ff7b00; color: #fff; border: none; border-radius: 6px; padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; }
+  .toolbar button:disabled { opacity: 0.6; cursor: default; }
+  .toolbar .hint { font-size: 12px; color: #666; }
+  #download-pdf-error { display: none; max-width: 850px; margin: 0 auto 12px; padding: 0 20px; color: #b91c1c; font-size: 13px; }
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none; }
+  }
 </style>
 </head>
 <body>
+<div class="toolbar no-print">
+  <button id="download-pdf-btn" type="button">Download PDF</button>
+  <span class="hint">Or press Ctrl+P / Cmd+P to print.</span>
+</div>
+<div id="download-pdf-error" class="no-print">Failed to generate the PDF automatically — use Ctrl+P / Cmd+P and choose "Save as PDF" instead.</div>
 ${buildHtml(quotation)}
+<script src="/vendor/html2pdf.bundle.min.js"></script>
+<script src="/quotation-view.js"></script>
 </body>
 </html>`
 }
