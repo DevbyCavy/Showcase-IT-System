@@ -16,6 +16,16 @@ export type Browser = Awaited<ReturnType<PuppeteerModule['launch']>>
 let browserPromise: Promise<Browser> | null = null
 
 export async function getBrowser(): Promise<Browser> {
+  // A cached browser can die after a successful launch (e.g. the renderer-process spawn for a
+  // newPage() call itself hits the same pthread_create ceiling and takes the connection down).
+  // Without this check, every request after that first crash would keep reusing the dead
+  // reference and fail immediately with ConnectionClosedError instead of relaunching.
+  if (browserPromise) {
+    const browser = await browserPromise
+    if (!browser.connected) {
+      browserPromise = null
+    }
+  }
   if (!browserPromise) {
     const puppeteer = await loadPuppeteer()
     browserPromise = puppeteer
