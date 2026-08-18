@@ -221,3 +221,24 @@ export async function renderQuotationPdf(quotation: QuotationWithRelations): Pro
     await page.close()
   }
 }
+
+// Standalone HTML version of the same layout, for opening directly in a browser tab so the user
+// can print it (Ctrl+P -> Save as PDF) without going through server-side Puppeteer rendering at
+// all — useful on hosts where launching headless Chrome is unreliable (see pdfBrowser.ts).
+export function renderQuotationHtml(quotation: QuotationWithRelations): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Quotation ${escapeHtml(quotation.quotationNumber)}</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; }
+</style>
+</head>
+<body>
+${buildHtml(quotation)}
+</body>
+</html>`
+}

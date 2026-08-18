@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileDown, Check, Pencil, X } from 'lucide-react'
+import { FileDown, Eye, Check, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
@@ -82,6 +82,15 @@ export default function ProcessQuotations() {
     }
   }
 
+  async function handleView(id: number) {
+    setDownloadError(null)
+    try {
+      await quotationsApi.viewHtml(id)
+    } catch {
+      setDownloadError('Failed to open quotation.')
+    }
+  }
+
   const rows = tab === 'pending' ? pending : (quotations ?? [])
 
   const actionsColumn: DataTableColumn<Quotation> = {
@@ -90,9 +99,14 @@ export default function ProcessQuotations() {
     render: (q) => (
       <div className="flex gap-1.5">
         {q.status === 'Approved' && (
-          <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
-            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={() => handleView(q.id)}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
+              <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+            </Button>
+          </>
         )}
         {q.status === 'Pending' && (
           <>
