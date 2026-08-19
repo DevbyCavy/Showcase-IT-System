@@ -23,6 +23,10 @@ const envSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().default(''),
   TWILIO_WHATSAPP_FROM: z.string().default(''),
   TWILIO_CONTENT_SID: z.string().default(''),
+  BROWSERLESS_TOKEN: z.string().default(''),
+  // Region-pinned at account creation (shown in the Browserless dashboard) — not the same for
+  // every account, so it's configurable rather than hardcoded.
+  BROWSERLESS_WS_ENDPOINT: z.string().default('wss://production-sfo.browserless.io'),
 })
 
 export const env = envSchema.parse(process.env)

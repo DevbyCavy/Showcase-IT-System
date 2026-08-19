@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "npm install --include=dev && puppeteer browsers install chrome && npm --prefix ../client install --include=dev && npm --prefix ../client run build && tsc -p tsconfig.json && node scripts/copy-client-dist.js",
+    "build": "npm install --include=dev && npm --prefix ../client install --include=dev && npm --prefix ../client run build && tsc -p tsconfig.json && node scripts/copy-client-dist.js",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -33,7 +33,7 @@
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
     "pg": "^8.22.0",
-    "puppeteer": "^25.3.0",
+    "puppeteer-core": "^25.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
