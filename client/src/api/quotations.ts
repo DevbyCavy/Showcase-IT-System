@@ -121,6 +121,22 @@ export async function downloadPdf(id: number, quotationNumber: string) {
   URL.revokeObjectURL(url)
 }
 
+// Opens the quotation as a standalone HTML page in a new tab so it can be previewed or printed
+// (Ctrl+P -> Save as PDF) via the browser's own renderer. window.open must be called synchronously
+// (before the first await) so browsers still attribute it to the click that triggered this, or
+// popup blockers will swallow it.
+export async function viewHtml(id: number) {
+  const win = window.open('', '_blank')
+  const response = await api.get(`/quotations/${id}/view`, { responseType: 'blob' })
+  const url = URL.createObjectURL(response.data as Blob)
+  if (win) {
+    win.location.href = url
+  } else {
+    window.open(url, '_blank')
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 30_000)
+}
+
 async function fetchPdfFile(id: number, quotationNumber: string): Promise<File> {
   const response = await api.get(`/quotations/${id}/pdf`, { responseType: 'blob' })
   return new File([response.data as Blob], `Quotation_${quotationNumber}.pdf`, { type: 'application/pdf' })
