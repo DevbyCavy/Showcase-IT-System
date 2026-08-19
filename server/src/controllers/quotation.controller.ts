@@ -56,6 +56,6 @@ export async function downloadPdf(req: Request, res: Response) {
 }
 
 export async function viewHtml(req: Request, res: Response) {
-  const quotation = await quotationService.getForPdf(parseId(req))
+  const quotation = await quotationService.getForView(parseId(req))
   res.type('html').send(renderQuotationHtml(quotation))
 }

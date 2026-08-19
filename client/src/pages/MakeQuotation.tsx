@@ -248,6 +248,9 @@ export default function MakeQuotation() {
         }
         return (
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleView(q.id)}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setEditing(q)}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
             </Button>

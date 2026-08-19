@@ -110,6 +110,9 @@ export default function ProcessQuotations() {
         )}
         {q.status === 'Pending' && (
           <>
+            <Button size="sm" variant="outline" onClick={() => handleView(q.id)}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+            </Button>
             <Button size="sm" onClick={() => setConfirming(q)}>
               <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
             </Button>

@@ -79,6 +79,17 @@ export async function getForPdf(id: number) {
   return quotation
 }
 
+// Same full row as getForPdf, but for the browser preview (View button) rather than the
+// client-facing PDF — a Marketer previewing their own Pending or Rejected quotation isn't "sending
+// it to the client", so this isn't gated to Approved.
+export async function getForView(id: number) {
+  const quotation = await quotationRepository.findById(id)
+  if (!quotation) {
+    throw new ApiError(404, 'Quotation not found.')
+  }
+  return quotation
+}
+
 export async function create(input: QuotationBody, submittedById: number, designFile?: string) {
   const quotation = await quotationRepository.create({
     customerName: input.customerName,
