@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileDown, Check, Pencil, X } from 'lucide-react'
+import { FileDown, Check, Pencil, X, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
@@ -124,14 +124,20 @@ export default function ProcessQuotations() {
     key: 'status',
     header: 'Status',
     render: (q) => (
-      <span
-        className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
-          q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
-        }`}
-        title={q.status === 'Rejected' ? (q.rejectionReason ?? undefined) : undefined}
-      >
-        {q.status}
-      </span>
+      <div className="space-y-1">
+        <span
+          className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
+            q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
+          }`}
+        >
+          {q.status}
+        </span>
+        {q.status === 'Rejected' && q.rejectionReason && (
+          <div className="text-destructive flex items-start gap-1 text-xs">
+            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{q.rejectionReason}</span>
+          </div>
+        )}
+      </div>
     ),
   }
 

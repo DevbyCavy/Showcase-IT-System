@@ -2,10 +2,9 @@
 // preserved exactly (customer block, items table, terms/bank-details split, footer) — only the
 // rendering engine changed.
 
-import fs from 'node:fs'
-import path from 'node:path'
 import type { Quotation, QuotationItem, User } from '#prisma-client'
 import { getBrowser } from './pdfBrowser'
+import { loadLogoDataUri } from './logo'
 
 type QuotationWithRelations = Quotation & { items: QuotationItem[]; submittedBy: User }
 
@@ -23,12 +22,6 @@ const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 
 // `rtrim(rtrim(number_format($q,2),'0'),'.')` did (e.g. "2.00" -> "2", "1.50" -> "1.5").
 function formatQuantity(n: number) {
   return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
-}
-
-function loadLogoDataUri(): string {
-  const logoPath = path.join(__dirname, '..', '..', '..', 'images', 'showcaseit_logo.png')
-  if (!fs.existsSync(logoPath)) return ''
-  return `data:image/png;base64,${fs.readFileSync(logoPath).toString('base64')}`
 }
 
 function buildHtml(quotation: QuotationWithRelations): string {
