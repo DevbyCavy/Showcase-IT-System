@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { Send, FileDown, Eye, Clock, Mail, Pencil, Search, XCircle } from 'lucide-react'
+import { Send, FileDown, Clock, Mail, Pencil, Search, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -147,15 +147,6 @@ export default function MakeQuotation() {
     }
   }
 
-  async function handleView(id: number) {
-    setDownloadError(null)
-    try {
-      await quotationsApi.viewHtml(id)
-    } catch {
-      setDownloadError('Failed to open quotation.')
-    }
-  }
-
   async function handleShareWhatsApp(id: number, quotationNumber: string) {
     setDownloadError(null)
     try {
@@ -208,9 +199,6 @@ export default function MakeQuotation() {
         if (q.status === 'Approved') {
           return (
             <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="outline" onClick={() => handleView(q.id)}>
-                <Eye className="mr-1.5 h-3.5 w-3.5" /> View
-              </Button>
               <Button size="sm" variant="outline" onClick={() => handleDownload(q.id, q.quotationNumber)}>
                 <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
               </Button>

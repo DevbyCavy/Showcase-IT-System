@@ -2,7 +2,7 @@ import type { Request, Response } from 'express'
 import * as quotationService from '../services/quotation.service'
 import { ApiError } from '../middleware/errorHandler'
 import { publicUploadPath } from '../middleware/upload'
-import { renderQuotationPdf, renderQuotationHtml } from '../utils/quotationPdf'
+import { renderQuotationPdf } from '../utils/quotationPdf'
 
 function parseId(req: Request): number {
   const id = Number(req.params.id)
@@ -53,9 +53,4 @@ export async function downloadPdf(req: Request, res: Response) {
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quotation.quotationNumber}.pdf"`)
   res.send(pdfBuffer)
-}
-
-export async function viewHtml(req: Request, res: Response) {
-  const quotation = await quotationService.getForPdf(parseId(req))
-  res.type('html').send(renderQuotationHtml(quotation))
 }

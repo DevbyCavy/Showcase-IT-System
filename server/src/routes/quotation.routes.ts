@@ -18,7 +18,6 @@ quotationRouter.use(requireRole(Role.Marketer, Role.SuperAdmin))
 quotationRouter.get('/', quotationController.list)
 quotationRouter.get('/:id', quotationController.getOne)
 quotationRouter.get('/:id/pdf', quotationController.downloadPdf)
-quotationRouter.get('/:id/view', quotationController.viewHtml)
 quotationRouter.post('/', upload.single('designFile'), validateBody(quotationSchema), quotationController.create)
 // editQuotation.php/updateQuotation.php: requireRole('Super Admin'). Loosened so the submitting
 // Marketer can also fix their own quotation while it's still Pending — ownership + status are
