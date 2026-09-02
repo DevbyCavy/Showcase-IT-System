@@ -27,6 +27,11 @@ const envSchema = z.object({
   // Region-pinned at account creation (shown in the Browserless dashboard) — not the same for
   // every account, so it's configurable rather than hardcoded.
   BROWSERLESS_WS_ENDPOINT: z.string().default('wss://production-sfo.browserless.io'),
+  // AI Takeoff / BOQ Generator's Path B (vision prediction) — optional, same "empty default, feature
+  // degrades gracefully if unset" pattern as the WhatsApp/Browserless config above. Path A (regex
+  // text-layer extraction) works with no key at all.
+  ANTHROPIC_API_KEY: z.string().default(''),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
 })
 
 export const env = envSchema.parse(process.env)

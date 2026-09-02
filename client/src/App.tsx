@@ -25,6 +25,10 @@ import MaintenanceLogs from '@/pages/MaintenanceLogs'
 import TripLogbook from '@/pages/TripLogbook'
 import VehicleDocuments from '@/pages/VehicleDocuments'
 import TrackingDashboard from '@/pages/TrackingDashboard'
+import TakeoffProjects from '@/pages/TakeoffProjects'
+import TakeoffProjectDetail from '@/pages/TakeoffProjectDetail'
+import TakeoffDesignReview from '@/pages/TakeoffDesignReview'
+import Materials from '@/pages/Materials'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
 import { useAuth } from '@/hooks/useAuth'
@@ -105,6 +109,16 @@ function App() {
           {/* My Design Jobs restricted to Graphic Designer + Super Admin (see MIGRATION_PLAN.md §22) */}
           <Route element={<ProtectedRoute roles={['GraphicDesigner', 'SuperAdmin']} />}>
             <Route path="/design-jobs/mine" element={<MyDesignJobs />} />
+          </Route>
+
+          {/* AI Takeoff / BOQ Generator + its Materials reference table — same audience as the
+              existing manual BOQ page (Super Admin, Stores Admin, Project Manager). New feature,
+              genuinely gated rather than left open like /boq's legacy no-requireRole precedent. */}
+          <Route element={<ProtectedRoute roles={['SuperAdmin', 'StoresAdmin', 'ProjectManager']} />}>
+            <Route path="/takeoff-projects" element={<TakeoffProjects />} />
+            <Route path="/takeoff-projects/:id" element={<TakeoffProjectDetail />} />
+            <Route path="/takeoff-projects/:id/designs/:designId" element={<TakeoffDesignReview />} />
+            <Route path="/materials" element={<Materials />} />
           </Route>
         </Route>
       </Route>
