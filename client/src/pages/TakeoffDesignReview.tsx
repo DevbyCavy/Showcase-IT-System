@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { FileDown, FileSpreadsheet, HelpCircle } from 'lucide-react'
+import { FileDown, FileSpreadsheet, HelpCircle, Send } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -111,7 +111,7 @@ export default function TakeoffDesignReview() {
       {downloadError && <div className="bg-destructive/10 text-destructive mb-4 rounded-md px-3 py-2 text-sm">{downloadError}</div>}
 
       {design.status === 'NeedsInput' && (
-        <ClarificationPanel
+        <ClarificationModal
           designId={id}
           clarifications={design.clarifications.filter((c) => c.status === 'Pending')}
           onSubmitted={() => queryClient.invalidateQueries({ queryKey: ['takeoffDesigns', id] })}
@@ -177,7 +177,12 @@ export default function TakeoffDesignReview() {
   )
 }
 
-function ClarificationPanel({
+// A centered modal that steps through one open clarifying question at a time (chat-style: a
+// question, an input, a round send button) rather than a long form of every question at once.
+// Answers are held locally and only POSTed as one batch after the last question — the backend's
+// one-clarification-round finalization pass expects a single complete set of answers, not a
+// trickle of partial submissions.
+function ClarificationModal({
   designId,
   clarifications,
   onSubmitted,
@@ -186,14 +191,16 @@ function ClarificationPanel({
   clarifications: TakeoffClarification[]
   onSubmitted: () => void
 }) {
+  const [index, setIndex] = useState(0)
+  const [value, setValue] = useState('')
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (finalAnswers: Record<number, string>) =>
       takeoffDesignsApi.answerClarifications(
         designId,
-        clarifications.map((c) => ({ clarificationId: c.id, answer: (answers[c.id] ?? '').trim() })),
+        clarifications.map((c) => ({ clarificationId: c.id, answer: finalAnswers[c.id] })),
       ),
     onSuccess: () => {
       setError(null)
@@ -204,40 +211,62 @@ function ClarificationPanel({
     },
   })
 
-  const allAnswered = clarifications.every((c) => (answers[c.id] ?? '').trim().length > 0)
-
   if (clarifications.length === 0) return null
 
+  const current = clarifications[index]
+  const isLast = index === clarifications.length - 1
+
+  function handleSend() {
+    const trimmed = value.trim()
+    if (!trimmed || mutation.isPending) return
+    const nextAnswers = { ...answers, [current.id]: trimmed }
+    setAnswers(nextAnswers)
+    if (isLast) {
+      mutation.mutate(nextAnswers)
+    } else {
+      setValue('')
+      setIndex((i) => i + 1)
+    }
+  }
+
   return (
-    <div className="border-brand-orange/40 bg-brand-orange/5 mb-8 rounded-2xl border p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <HelpCircle className="text-brand-orange h-4 w-4" />
-        <h2 className="font-semibold">A few things the design didn't make clear</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6">
+        <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium">
+          <HelpCircle className="text-brand-orange h-4 w-4" />
+          Question {index + 1} of {clarifications.length} — {current.topic}
+        </div>
+        <p className="mb-4 text-base font-medium">{current.question}</p>
+
+        {error && <div className="bg-destructive/10 text-destructive mb-3 rounded-md px-3 py-2 text-sm">{error}</div>}
+
+        <div className="flex items-center gap-2">
+          <Input
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSend()
+            }}
+            placeholder="Your answer…"
+            disabled={mutation.isPending}
+          />
+          <Button
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-full"
+            onClick={handleSend}
+            disabled={mutation.isPending || !value.trim()}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <p className="text-muted-foreground mt-3 text-xs">
+          {mutation.isPending
+            ? 'Finalizing the BOQ with your answers…'
+            : 'Answers help finalize this design and teach the system for future ones.'}
+        </p>
       </div>
-      <p className="text-muted-foreground mb-4 text-sm">
-        The items below are provisional — answer these to get a finalized BOQ. Answers here also teach the system for future designs.
-      </p>
-
-      {error && <div className="bg-destructive/10 text-destructive mb-3 rounded-md px-3 py-2 text-sm">{error}</div>}
-
-      <div className="space-y-3">
-        {clarifications.map((c) => (
-          <div key={c.id} className="space-y-1">
-            <label className="text-sm font-medium">
-              {c.question} <span className="text-muted-foreground text-xs">({c.topic})</span>
-            </label>
-            <Input
-              value={answers[c.id] ?? ''}
-              onChange={(e) => setAnswers((prev) => ({ ...prev, [c.id]: e.target.value }))}
-              placeholder="Your answer…"
-            />
-          </div>
-        ))}
-      </div>
-
-      <Button className="mt-4" onClick={() => mutation.mutate()} disabled={mutation.isPending || !allAnswered}>
-        {mutation.isPending ? 'Submitting…' : 'Submit Answers'}
-      </Button>
     </div>
   )
 }
