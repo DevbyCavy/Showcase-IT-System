@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileDown, FileSpreadsheet } from 'lucide-react'
+import { isAxiosError } from 'axios'
+import { FileDown, FileSpreadsheet, HelpCircle } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import * as takeoffDesignsApi from '@/api/takeoffDesigns'
-import type { TakeoffItem, TakeoffItemCategory } from '@/api/takeoffDesigns'
+import type { TakeoffClarification, TakeoffItem, TakeoffItemCategory } from '@/api/takeoffDesigns'
 
 const CATEGORIES: TakeoffItemCategory[] = ['Structure', 'Cladding', 'Electrical', 'Furniture', 'Other']
 
@@ -109,6 +110,14 @@ export default function TakeoffDesignReview() {
       />
       {downloadError && <div className="bg-destructive/10 text-destructive mb-4 rounded-md px-3 py-2 text-sm">{downloadError}</div>}
 
+      {design.status === 'NeedsInput' && (
+        <ClarificationPanel
+          designId={id}
+          clarifications={design.clarifications.filter((c) => c.status === 'Pending')}
+          onSubmitted={() => queryClient.invalidateQueries({ queryKey: ['takeoffDesigns', id] })}
+        />
+      )}
+
       {categoryData.length > 0 && (
         <div className="mb-8 rounded-2xl border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">Line Items by Category</h2>
@@ -164,6 +173,71 @@ export default function TakeoffDesignReview() {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+function ClarificationPanel({
+  designId,
+  clarifications,
+  onSubmitted,
+}: {
+  designId: number
+  clarifications: TakeoffClarification[]
+  onSubmitted: () => void
+}) {
+  const [answers, setAnswers] = useState<Record<number, string>>({})
+  const [error, setError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      takeoffDesignsApi.answerClarifications(
+        designId,
+        clarifications.map((c) => ({ clarificationId: c.id, answer: (answers[c.id] ?? '').trim() })),
+      ),
+    onSuccess: () => {
+      setError(null)
+      onSubmitted()
+    },
+    onError: (err) => {
+      setError(isAxiosError(err) ? (err.response?.data?.error ?? 'Failed to submit answers') : 'Failed to submit answers')
+    },
+  })
+
+  const allAnswered = clarifications.every((c) => (answers[c.id] ?? '').trim().length > 0)
+
+  if (clarifications.length === 0) return null
+
+  return (
+    <div className="border-brand-orange/40 bg-brand-orange/5 mb-8 rounded-2xl border p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <HelpCircle className="text-brand-orange h-4 w-4" />
+        <h2 className="font-semibold">A few things the design didn't make clear</h2>
+      </div>
+      <p className="text-muted-foreground mb-4 text-sm">
+        The items below are provisional — answer these to get a finalized BOQ. Answers here also teach the system for future designs.
+      </p>
+
+      {error && <div className="bg-destructive/10 text-destructive mb-3 rounded-md px-3 py-2 text-sm">{error}</div>}
+
+      <div className="space-y-3">
+        {clarifications.map((c) => (
+          <div key={c.id} className="space-y-1">
+            <label className="text-sm font-medium">
+              {c.question} <span className="text-muted-foreground text-xs">({c.topic})</span>
+            </label>
+            <Input
+              value={answers[c.id] ?? ''}
+              onChange={(e) => setAnswers((prev) => ({ ...prev, [c.id]: e.target.value }))}
+              placeholder="Your answer…"
+            />
+          </div>
+        ))}
+      </div>
+
+      <Button className="mt-4" onClick={() => mutation.mutate()} disabled={mutation.isPending || !allAnswered}>
+        {mutation.isPending ? 'Submitting…' : 'Submit Answers'}
+      </Button>
     </div>
   )
 }

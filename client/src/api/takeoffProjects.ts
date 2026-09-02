@@ -1,6 +1,6 @@
 import { api } from './client'
 
-export type TakeoffDesignStatus = 'Pending' | 'Processing' | 'Ready' | 'Failed'
+export type TakeoffDesignStatus = 'Pending' | 'Processing' | 'NeedsInput' | 'Ready' | 'Failed'
 export type TakeoffPdfType = 'Cad' | 'Rendered' | 'Mixed'
 
 export interface TakeoffDesignSummary {

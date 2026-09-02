@@ -13,12 +13,19 @@ import type { TakeoffDesignStatus, TakeoffDesignSummary } from '@/api/takeoffPro
 const STATUS_STYLES: Record<TakeoffDesignStatus, string> = {
   Pending: 'bg-amber-500',
   Processing: 'bg-amber-500',
+  NeedsInput: 'bg-blue-500',
   Ready: 'bg-green-600',
   Failed: 'bg-destructive',
 }
 
 function isTerminal(status: TakeoffDesignStatus) {
   return status === 'Ready' || status === 'Failed'
+}
+
+// NeedsInput has something to see (provisional items + open questions to answer), unlike
+// Pending/Processing which have nothing yet — so it's clickable even though it isn't terminal.
+function hasReviewPage(status: TakeoffDesignStatus) {
+  return status !== 'Pending' && status !== 'Processing'
 }
 
 export default function TakeoffProjectDetail() {
@@ -40,7 +47,7 @@ export default function TakeoffProjectDetail() {
 
   const uploadMutation = useMutation({
     mutationFn: () => {
-      if (!file) throw new Error('Please choose a PDF design file.')
+      if (!file) throw new Error('Please choose a design file.')
       return takeoffProjectsApi.uploadDesign(projectId, file)
     },
     onSuccess: () => {
@@ -62,7 +69,7 @@ export default function TakeoffProjectDetail() {
           type="button"
           className="text-brand-orange font-medium underline-offset-2 hover:underline"
           onClick={() => navigate(`/takeoff-projects/${projectId}/designs/${d.id}`)}
-          disabled={!isTerminal(d.status)}
+          disabled={!hasReviewPage(d.status)}
         >
           {d.originalFilename}
         </button>
@@ -88,15 +95,16 @@ export default function TakeoffProjectDetail() {
           {error && <div className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">{error}</div>}
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Design PDF</label>
+            <label className="text-sm font-medium">Design File</label>
             <input
               type="file"
-              accept="application/pdf"
+              accept="application/pdf,image/jpeg,image/png"
               className="border-input w-full rounded-md border bg-transparent px-3 py-1.5 text-sm"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
             <p className="text-muted-foreground text-xs">
-              Either a labeled CAD-style export or a purely visual render — both are handled by the same pipeline.
+              A labeled CAD-style PDF, a purely visual render (PDF or a plain photo/JPEG/PNG), or a mix — all pages/views in one file are
+              treated as one design. If anything's missing or unclear, you'll be asked before the BOQ is finalized.
             </p>
           </div>
 

@@ -17,3 +17,17 @@ export const takeoffItemUpdateSchema = z.object({
 })
 
 export type TakeoffItemUpdateBody = z.infer<typeof takeoffItemUpdateSchema>
+
+// POST /:id/answers — one answer per open TakeoffClarification (see takeoffDesign.service.ts#submitAnswers).
+export const takeoffAnswersSchema = z.object({
+  answers: z
+    .array(
+      z.object({
+        clarificationId: z.coerce.number().int().positive(),
+        answer: z.string().trim().min(1, 'Please provide an answer.'),
+      }),
+    )
+    .min(1, 'Please answer at least one question.'),
+})
+
+export type TakeoffAnswersBody = z.infer<typeof takeoffAnswersSchema>

@@ -171,8 +171,24 @@ enum DesignJobStatus {
 enum TakeoffDesignStatus {
   Pending
   Processing
+  /// v0.2 — extraction paused with open clarifying questions (see TakeoffClarification). Treated
+  /// as non-terminal for polling purposes, same bucket as Pending/Processing.
+  NeedsInput
   Ready
   Failed
+}
+
+enum TakeoffClarificationStatus {
+  Pending
+  Answered
+}
+
+/// Drives the auto-grow-MaterialSpec behavior on answer (see takeoffDesign.service.ts) — only a
+/// Material-topic answer with a novel name creates a new MaterialSpec row.
+enum TakeoffClarificationTopic {
+  Material
+  Measurement
+  Other
 }
 
 /// Informational only — doesn't gate which extraction path(s) ran (both always run; see
@@ -244,6 +260,7 @@ model User {
   trackingLocations     TrackingLocation[]
   issuedToolsCollected  IssuedTool[]
   takeoffProjects       TakeoffProject[]
+  takeoffClarificationsAnswered TakeoffClarification[]
 
   @@map("users")
 }
@@ -773,8 +790,30 @@ model TakeoffDesign {
 
   project TakeoffProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   items   TakeoffItem[]
+  clarifications TakeoffClarification[]
 
   @@map("takeoff_designs")
+}
+
+/// v0.2 — a gap the extraction pipeline couldn't confidently fill on its own (see
+/// takeoffExtraction.service.ts's runExtraction/runFinalization). Answered rows double as the
+/// system's cross-design memory: every prompt queries the global set of Answered clarifications
+/// (not scoped to one design/project) so the same question isn't asked twice across designs.
+model TakeoffClarification {
+  id           Int                        @id @default(autoincrement())
+  designId     Int
+  topic        TakeoffClarificationTopic
+  question     String
+  status       TakeoffClarificationStatus @default(Pending)
+  answer       String?
+  answeredById Int?
+  answeredAt   DateTime?
+  createdAt    DateTime                   @default(now())
+
+  design     TakeoffDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+  answeredBy User?         @relation(fields: [answeredById], references: [id])
+
+  @@map("takeoff_clarifications")
 }
 
 model TakeoffItem {

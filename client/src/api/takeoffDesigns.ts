@@ -4,6 +4,16 @@ import type { TakeoffDesignStatus, TakeoffPdfType } from './takeoffProjects'
 export type TakeoffItemCategory = 'Structure' | 'Cladding' | 'Electrical' | 'Furniture' | 'Other'
 export type TakeoffItemSource = 'Extracted' | 'Predicted' | 'Inferred'
 export type TakeoffItemConfidence = 'High' | 'Medium' | 'Low'
+export type TakeoffClarificationTopic = 'Material' | 'Measurement' | 'Other'
+export type TakeoffClarificationStatus = 'Pending' | 'Answered'
+
+export interface TakeoffClarification {
+  id: number
+  topic: TakeoffClarificationTopic
+  question: string
+  status: TakeoffClarificationStatus
+  answer: string | null
+}
 
 export interface TakeoffItem {
   id: number
@@ -30,6 +40,7 @@ export interface TakeoffDesign {
   uploadedAt: string
   project: { id: number; name: string; clientName: string | null }
   items: TakeoffItem[]
+  clarifications: TakeoffClarification[]
 }
 
 interface TakeoffDesignResponse {
@@ -60,6 +71,10 @@ export interface TakeoffItemUpdateInput {
 
 export function updateItem(designId: number, itemId: number, input: TakeoffItemUpdateInput) {
   return api.patch<TakeoffItemResponse>(`/takeoff-designs/${designId}/items/${itemId}`, input).then((r) => r.data.data.item)
+}
+
+export function answerClarifications(designId: number, answers: { clarificationId: number; answer: string }[]) {
+  return api.post(`/takeoff-designs/${designId}/answers`, { answers })
 }
 
 // Plain <a href> wouldn't carry the Bearer token — same blob-download pattern as boqApi.downloadPdf.

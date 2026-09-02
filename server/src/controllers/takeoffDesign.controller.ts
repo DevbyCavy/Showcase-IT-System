@@ -3,6 +3,7 @@ import * as takeoffDesignService from '../services/takeoffDesign.service'
 import { ApiError } from '../middleware/errorHandler'
 import { renderTakeoffXlsx } from '../utils/takeoffXlsx'
 import { renderTakeoffQuotationPdf } from '../utils/takeoffQuotationPdf'
+import { runFinalization } from '../services/takeoffExtraction.service'
 
 function parseId(param: string | string[] | undefined, label: string): number {
   const id = Number(param)
@@ -25,6 +26,19 @@ export async function updateItem(req: Request, res: Response) {
     req.user!.id,
   )
   res.json({ success: true, data: { item } })
+}
+
+export async function answerClarifications(req: Request, res: Response) {
+  const designId = parseId(req.params.id, 'design')
+  await takeoffDesignService.submitAnswers(designId, req.user!.id, req.body)
+
+  setImmediate(() => {
+    runFinalization(designId).catch((err) => {
+      console.error(`Takeoff finalization failed for design ${designId}:`, err)
+    })
+  })
+
+  res.json({ success: true, data: null })
 }
 
 export async function exportXlsx(req: Request, res: Response) {

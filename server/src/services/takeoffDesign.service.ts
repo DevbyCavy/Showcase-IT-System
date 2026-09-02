@@ -1,6 +1,7 @@
 import { ApiError } from '../middleware/errorHandler'
 import * as takeoffDesignRepository from '../repositories/takeoffDesign.repository'
-import type { TakeoffItemUpdateBody } from '../validations/takeoffDesign.validation'
+import * as materialSpecRepository from '../repositories/materialSpec.repository'
+import type { TakeoffItemUpdateBody, TakeoffAnswersBody } from '../validations/takeoffDesign.validation'
 
 function toPublicDesign(d: NonNullable<Awaited<ReturnType<typeof takeoffDesignRepository.findById>>>) {
   return {
@@ -25,6 +26,13 @@ function toPublicDesign(d: NonNullable<Awaited<ReturnType<typeof takeoffDesignRe
       source: i.source,
       confidence: i.confidence,
       notes: i.notes,
+    })),
+    clarifications: d.clarifications.map((c) => ({
+      id: c.id,
+      topic: c.topic,
+      question: c.question,
+      status: c.status,
+      answer: c.answer,
     })),
   }
 }
@@ -66,6 +74,53 @@ export async function updateItem(designId: number, itemId: number, input: Takeof
     source: updated.source,
     confidence: updated.confidence,
     notes: updated.notes,
+  }
+}
+
+// Human-in-the-loop answer step for a NeedsInput design (see the v0.2 plan §2/§3). Validates
+// every answered clarification belongs to this design and is still Pending, saves the answers,
+// and — the "let the model learn from user input" mechanism — auto-creates a MaterialSpec row for
+// any Material-topic answer that names a material not already in the reference table, so the
+// vocabulary genuinely grows from usage instead of needing manual /materials curation. Does NOT
+// trigger the finalization pipeline itself — the controller does that via setImmediate, same
+// fire-and-forget pattern as the initial upload.
+export async function submitAnswers(designId: number, userId: number, input: TakeoffAnswersBody) {
+  const design = await findOwnedDesign(designId, userId)
+  if (design.status !== 'NeedsInput') {
+    throw new ApiError(400, 'This design has no open clarifying questions to answer.')
+  }
+
+  const clarificationIds = input.answers.map((a) => a.clarificationId)
+  const clarifications = await takeoffDesignRepository.findClarificationsByIds(clarificationIds)
+  const byId = new Map(clarifications.map((c) => [c.id, c]))
+
+  for (const { clarificationId } of input.answers) {
+    const clarification = byId.get(clarificationId)
+    if (!clarification || clarification.designId !== designId) {
+      throw new ApiError(404, `Clarification ${clarificationId} not found on this design.`)
+    }
+    if (clarification.status !== 'Pending') {
+      throw new ApiError(400, `Clarification ${clarificationId} has already been answered.`)
+    }
+  }
+
+  const existingMaterialNames = new Set((await materialSpecRepository.findAll()).map((m) => m.name.toLowerCase()))
+
+  for (const { clarificationId, answer } of input.answers) {
+    await takeoffDesignRepository.answerClarification(clarificationId, answer, userId)
+
+    const clarification = byId.get(clarificationId)!
+    const trimmedAnswer = answer.trim()
+    if (clarification.topic === 'Material' && trimmedAnswer && !existingMaterialNames.has(trimmedAnswer.toLowerCase())) {
+      await materialSpecRepository.create({
+        name: trimmedAnswer,
+        unit: 'each',
+        typicalThicknessMm: [],
+        standardLengthsMm: [],
+        wasteFactor: 1.1,
+      })
+      existingMaterialNames.add(trimmedAnswer.toLowerCase())
+    }
   }
 }
 

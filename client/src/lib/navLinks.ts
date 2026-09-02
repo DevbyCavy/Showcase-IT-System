@@ -97,9 +97,12 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2, group: 'Logistics' },
     { to: '/tracking', label: 'Tracking', icon: MapPin, group: 'Logistics' },
 
-    // AI Takeoff / BOQ Generator + its Materials reference table — additive alongside the existing
-    // manual BOQ feature (see App.tsx). Fills the 'Production' group this file's own header
-    // comment already names in the fixed group order but that no entry previously used.
+    // Manual BOQ — was missing from Super Admin's nav entirely (present for Stores Admin/Project
+    // Manager already; this file's own header comment names 'Production' as owning it, but no
+    // entry ever used that slot for Super Admin until now).
+    { to: '/boq', label: 'Make BOQ', icon: FileText, group: 'Production' },
+    // AI Takeoff / BOQ Generator + its Materials reference table — additive alongside the manual
+    // BOQ feature above (see App.tsx).
     { to: '/takeoff-projects', label: 'AI Takeoff', icon: Ruler, group: 'Production' },
     { to: '/materials', label: 'Materials', icon: Layers, group: 'Production' },
   ],

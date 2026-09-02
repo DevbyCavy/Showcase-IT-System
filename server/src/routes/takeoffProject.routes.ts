@@ -11,7 +11,9 @@ import { takeoffProjectSchema } from '../validations/takeoffProject.validation'
 // BOQ nav link rather than left open like the legacy no-requireRole modules.
 export const takeoffProjectRouter = Router()
 
-const upload = createUploader('takeoff-designs', ['pdf'])
+// v0.2 — accepts a plain photo/render image too, not just a PDF (see the v0.2 plan §5). A raster
+// upload skips Path A entirely (no text layer) and goes straight to Path B as a single image.
+const upload = createUploader('takeoff-designs', ['pdf', 'jpg', 'jpeg', 'png'])
 
 takeoffProjectRouter.use(authenticate)
 takeoffProjectRouter.use(requireRole(Role.SuperAdmin, Role.StoresAdmin, Role.ProjectManager))
