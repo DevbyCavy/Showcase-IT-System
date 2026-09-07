@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import { FileDown } from 'lucide-react'
+import { FileDown, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,6 +27,7 @@ const emptyItem: BoqItemInput = { productId: 0, description: '', unit: '', quant
 // filtered suggestion dropdown instead (§31) — same underlying productId, just a faster way to
 // land on it.
 export default function BOQ() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: orders } = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list })
   const { data: products } = useQuery({ queryKey: ['products'], queryFn: productsApi.list })
@@ -303,6 +305,16 @@ export default function BOQ() {
       <h2 className="mb-3 font-semibold">Saved Bills Of Quantities</h2>
       {downloadError && <div className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{downloadError}</div>}
       <DataTable columns={columns} data={boqs ?? []} keyExtractor={(b) => b.id} emptyMessage="No BOQs saved yet." />
+
+      <Button
+        size="icon"
+        className="fixed right-4 bottom-6 z-50 h-14 w-14 rounded-full shadow-lg lg:right-[416px]"
+        onClick={() => navigate('/takeoff-projects')}
+        title="Generate a BOQ with AI Takeoff"
+        aria-label="Generate a BOQ with AI Takeoff"
+      >
+        <Sparkles className="h-6 w-6" />
+      </Button>
     </div>
   )
 }

@@ -163,6 +163,67 @@ enum DesignJobStatus {
   Done
 }
 
+/// AI Takeoff / BOQ Generator — new feature, additive alongside the existing manual Boq/BoqItem
+/// module (which stays tied to Order/stock deduction). See MIGRATION_PLAN.md-adjacent design doc:
+/// upload a design PDF, extract/predict quantities, review, export. Naming is prefixed `Takeoff`
+/// throughout specifically to avoid colliding with the existing Boq/BoqItem models below, which is
+/// a different, unrelated concept (manual line items tied to an Order).
+enum TakeoffDesignStatus {
+  Pending
+  Processing
+  /// v0.2 — extraction paused with open clarifying questions (see TakeoffClarification). Treated
+  /// as non-terminal for polling purposes, same bucket as Pending/Processing.
+  NeedsInput
+  Ready
+  Failed
+}
+
+enum TakeoffClarificationStatus {
+  Pending
+  Answered
+}
+
+/// Drives the auto-grow-MaterialSpec behavior on answer (see takeoffDesign.service.ts) — only a
+/// Material-topic answer with a novel name creates a new MaterialSpec row.
+enum TakeoffClarificationTopic {
+  Material
+  Measurement
+  Other
+}
+
+/// Informational only — doesn't gate which extraction path(s) ran (both always run; see
+/// takeoffExtraction.service.ts). Cad = a usable embedded text layer was found, Rendered = none
+/// found, Mixed = some found but sparse.
+enum TakeoffPdfType {
+  Cad
+  Rendered
+  Mixed
+}
+
+enum TakeoffItemCategory {
+  Structure
+  Cladding
+  Electrical
+  Furniture
+  Other
+}
+
+/// Extracted = read directly from the PDF's embedded text layer (Path A, high-confidence by
+/// nature). Predicted = a vision-model best guess at an unlabeled item (e.g. furniture/electrical)
+/// with no source text to anchor it. Inferred = a vision-model guess at a labeled surface's
+/// material when no explicit callout exists in the text layer.
+enum TakeoffItemSource {
+  Extracted
+  Predicted
+  Inferred
+}
+
+enum TakeoffItemConfidence {
+  High
+  Medium
+  Low
+}
+
 // ---------------------------------------------------------------------------
 // Core / users
 // ---------------------------------------------------------------------------
@@ -198,6 +259,8 @@ model User {
   designJobsAssignedTo  DesignJob[]       @relation("DesignJobAssignedTo")
   trackingLocations     TrackingLocation[]
   issuedToolsCollected  IssuedTool[]
+  takeoffProjects       TakeoffProject[]
+  takeoffClarificationsAnswered TakeoffClarification[]
 
   @@map("users")
 }
@@ -692,4 +755,100 @@ model DesignJob {
   assignedTo User @relation("DesignJobAssignedTo", fields: [assignedToId], references: [id])
 
   @@map("design_jobs")
+}
+
+// ---------------------------------------------------------------------------
+// AI Takeoff / BOQ Generator — new feature, additive alongside Orders/BOQ above. A user's
+// standalone Project holds design PDF uploads (Design); each upload runs an async
+// extraction/prediction pipeline producing reviewable, editable Item rows. Single-owner projects,
+// one active pipeline run per uploaded Design — no team sharing or design revisioning in v0.1.
+// ---------------------------------------------------------------------------
+
+model TakeoffProject {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  name       String
+  clientName String?
+  createdAt  DateTime @default(now())
+
+  user    User            @relation(fields: [userId], references: [id])
+  designs TakeoffDesign[]
+
+  @@map("takeoff_projects")
+}
+
+model TakeoffDesign {
+  id               Int                 @id @default(autoincrement())
+  projectId        Int
+  originalFilename String
+  storagePath      String
+  pdfType          TakeoffPdfType?
+  status           TakeoffDesignStatus @default(Pending)
+  /// Set when status flips to Failed — the error message from the extraction pipeline.
+  failureReason    String?
+  uploadedAt       DateTime            @default(now())
+
+  project TakeoffProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   TakeoffItem[]
+  clarifications TakeoffClarification[]
+
+  @@map("takeoff_designs")
+}
+
+/// v0.2 — a gap the extraction pipeline couldn't confidently fill on its own (see
+/// takeoffExtraction.service.ts's runExtraction/runFinalization). Answered rows double as the
+/// system's cross-design memory: every prompt queries the global set of Answered clarifications
+/// (not scoped to one design/project) so the same question isn't asked twice across designs.
+model TakeoffClarification {
+  id           Int                        @id @default(autoincrement())
+  designId     Int
+  topic        TakeoffClarificationTopic
+  question     String
+  status       TakeoffClarificationStatus @default(Pending)
+  answer       String?
+  answeredById Int?
+  answeredAt   DateTime?
+  createdAt    DateTime                   @default(now())
+
+  design     TakeoffDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+  answeredBy User?         @relation(fields: [answeredById], references: [id])
+
+  @@map("takeoff_clarifications")
+}
+
+model TakeoffItem {
+  id          Int                   @id @default(autoincrement())
+  designId    Int
+  description String
+  category    TakeoffItemCategory
+  material    String?
+  widthMm     Decimal?              @db.Decimal(10, 2)
+  heightMm    Decimal?              @db.Decimal(10, 2)
+  lengthMm    Decimal?              @db.Decimal(10, 2)
+  unit        String
+  quantity    Decimal               @db.Decimal(12, 2)
+  source      TakeoffItemSource
+  confidence  TakeoffItemConfidence
+  notes       String?
+
+  design TakeoffDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@map("takeoff_items")
+}
+
+/// Reference table of known build materials (sheet sizes, thicknesses, waste factor) used by Path
+/// A's material-name matching and shown for editing on the /materials admin screen. unitCost stays
+/// nullable/unused in v0.1 — reserved for a future priced-BOQ phase, not populated by anything yet.
+model MaterialSpec {
+  id                 Int      @id @default(autoincrement())
+  name               String   @unique
+  unit               String
+  standardSheetWmm   Decimal? @db.Decimal(10, 2)
+  standardSheetHmm   Decimal? @db.Decimal(10, 2)
+  typicalThicknessMm Float[]
+  standardLengthsMm  Float[]
+  wasteFactor        Decimal  @default(1.10) @db.Decimal(4, 2)
+  unitCost           Decimal? @db.Decimal(12, 2)
+
+  @@map("material_specs")
 }

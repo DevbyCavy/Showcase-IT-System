@@ -21,6 +21,8 @@ import {
   CalendarClock,
   Palette,
   MapPin,
+  Ruler,
+  Layers,
 } from 'lucide-react'
 
 export interface NavLink {
@@ -64,7 +66,8 @@ export interface NavLink {
 // department; Office Task Calendar — same; Manage Users — Super Admin-only account
 // administration); Marketing owns Orders/Quotations/Memos (§21's Marketer-restricted set); Design
 // owns Assign Design Job; Stores owns the catalog/stock pages; Logistics owns the vehicle module;
-// Production owns BOQ.
+// Production owns BOQ, plus AI Takeoff / Materials (added alongside the AI Takeoff / BOQ
+// Generator feature — see App.tsx) — the first entries to actually use this group.
 export const roleNavLinks: Record<Role, NavLink[]> = {
   SuperAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -93,11 +96,22 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/trip-logbook', label: 'Trip Logbook', icon: Route, group: 'Logistics' },
     { to: '/vehicle-documents', label: 'Vehicle Documents', icon: FileBadge2, group: 'Logistics' },
     { to: '/tracking', label: 'Tracking', icon: MapPin, group: 'Logistics' },
+
+    // Manual BOQ — was missing from Super Admin's nav entirely (present for Stores Admin/Project
+    // Manager already; this file's own header comment names 'Production' as owning it, but no
+    // entry ever used that slot for Super Admin until now).
+    { to: '/boq', label: 'Make BOQ', icon: FileText, group: 'Production' },
+    // AI Takeoff / BOQ Generator + its Materials reference table — additive alongside the manual
+    // BOQ feature above (see App.tsx).
+    { to: '/takeoff-projects', label: 'AI Takeoff', icon: Ruler, group: 'Production' },
+    { to: '/materials', label: 'Materials', icon: Layers, group: 'Production' },
   ],
   StoresAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
     { to: '/boq', label: 'BOQ', icon: FileText },
+    { to: '/takeoff-projects', label: 'AI Takeoff', icon: Ruler },
+    { to: '/materials', label: 'Materials', icon: Layers },
 
     { to: '/categories', label: 'Categories', icon: Tag, group: 'Stores' },
     { to: '/brands', label: 'Brands', icon: Bookmark, group: 'Stores' },
@@ -116,6 +130,8 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList },
     { to: '/boq', label: 'BOQ', icon: FileText },
+    { to: '/takeoff-projects', label: 'AI Takeoff', icon: Ruler },
+    { to: '/materials', label: 'Materials', icon: Layers },
     { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],

@@ -77,6 +77,30 @@ async function main() {
     })
   }
 
+  // AI Takeoff / BOQ Generator — starting material vocabulary, per the feature's design doc §4.
+  const materialSpecs: {
+    name: string
+    unit: string
+    standardSheetWmm?: number
+    standardSheetHmm?: number
+    typicalThicknessMm: number[]
+    standardLengthsMm: number[]
+    wasteFactor: number
+  }[] = [
+    { name: 'Supawood', unit: 'm2', standardSheetWmm: 2440, standardSheetHmm: 1220, typicalThicknessMm: [12, 16, 18], standardLengthsMm: [], wasteFactor: 1.1 },
+    { name: 'Dibond', unit: 'm2', standardSheetWmm: 3050, standardSheetHmm: 1500, typicalThicknessMm: [3, 4], standardLengthsMm: [], wasteFactor: 1.1 },
+    { name: 'Timber', unit: 'linear_m', typicalThicknessMm: [], standardLengthsMm: [1800, 2400, 3000, 3600], wasteFactor: 1.05 },
+    { name: 'MDF', unit: 'm2', standardSheetWmm: 2440, standardSheetHmm: 1220, typicalThicknessMm: [6, 9, 12, 18], standardLengthsMm: [], wasteFactor: 1.1 },
+  ]
+
+  for (const m of materialSpecs) {
+    await prisma.materialSpec.upsert({
+      where: { name: m.name },
+      update: {},
+      create: m,
+    })
+  }
+
   console.log(`Seed complete. All seeded users share the placeholder password: ${PLACEHOLDER_PASSWORD}`)
 }
 
