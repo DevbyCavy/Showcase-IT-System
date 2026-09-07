@@ -67,7 +67,7 @@ body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
 <table class="header">
     <tr>
         <td style="width:55%;">
-            ${logoSrc ? `<img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:55px; margin-bottom:8px;">` : ''}
+            ${logoSrc ? `<img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:90px; margin-bottom:8px;">` : ''}
             <div class="company-info">
                 32 Jacana Drive, Greystone Park, Harare<br>
                 Phone: +263 772 548792<br>
