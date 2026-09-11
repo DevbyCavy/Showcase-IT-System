@@ -2,8 +2,15 @@ node_modules
 dist
 src/generated
 .env
+.env.local
 uploads/*
 !uploads/.gitkeep
+
+# Certs/keys — never committed even if one ends up in the project dir
+*.pem
+*.key
+*.cert
+*.crt
 
 # Editor / OS
 .vscode/*

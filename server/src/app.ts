@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
 import { env } from './config/env'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
+import { globalLimiter } from './middleware/rateLimit'
 import { authRouter } from './routes/auth.routes'
 import { userRouter } from './routes/user.routes'
 import { categoryRouter } from './routes/category.routes'
@@ -45,6 +46,8 @@ app.use('/uploads', express.static(env.UPLOADS_DIR))
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, status: 'ok' })
 })
+
+app.use('/api', globalLimiter)
 
 app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter)
