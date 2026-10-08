@@ -134,7 +134,7 @@ ${rows}
             <strong style="color:#ff7b00;">Bank Details</strong>
             ${bankAccount('NEDBANK (USD)', [
               ['Account Name', 'SHOWCASE IT PVT LTD'],
-              ['Account Number', '11992308223'],
+              ['Account Number', '11992508223'],
               ['Branch', 'BORROWDALE, 18101'],
               ['Address', 'BORROWDALE, HARARE'],
               ['Swift Code', 'MBCA2WHX'],
