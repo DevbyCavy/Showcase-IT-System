@@ -4,6 +4,7 @@
 // confidence: 'High', because the numbers came straight from the file.
 
 import fs from 'node:fs/promises'
+import path from 'node:path'
 import type { TakeoffExtractedItem } from '../types/takeoff.types'
 
 // pdfjs-dist v6 ships ESM-only while the server is CommonJS, same reason pdfBrowser.ts dynamic-
@@ -15,6 +16,17 @@ import type { TakeoffExtractedItem } from '../types/takeoff.types'
 // warning), which is sufficient here; wiring a real worker thread isn't worth the extra machinery
 // for a request-triggered background job like this one.
 const loadPdfjs = () => import('pdfjs-dist/legacy/build/pdf.mjs')
+
+// Same asset-path fix as takeoffRasterize.ts — pdfjs-dist needs to be told where its own
+// cmaps/standard_fonts/wasm folders live or it silently degrades (CID-font text can come back
+// garbled/empty without cMapUrl+standardFontDataUrl). This file doesn't render pages so it can't
+// hit the wasm-dependent JPX/JBIG2 image bug takeoffRasterize.ts had, but getTextContent() still
+// goes through pdfjs-dist's font/encoding machinery, so it gets the same three params for
+// consistency and correctness.
+function pdfjsAssetUrl(subdir: 'cmaps' | 'standard_fonts' | 'wasm'): string {
+  const pdfjsRoot = path.dirname(require.resolve('pdfjs-dist/package.json'))
+  return `${path.join(pdfjsRoot, subdir)}/`
+}
 
 // Matches "1200x800x2400", "1200 x 800 x 2400", "W1200 x H800 x L2400", "1200mm x 800mm", with or
 // without a third (length) dimension and with or without "mm" units.
@@ -47,17 +59,41 @@ export async function extractPathA(
 ): Promise<{ items: TakeoffExtractedItem[]; textFound: boolean }> {
   const pdfjs = await loadPdfjs()
   const buffer = await fs.readFile(pdfPath)
-  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) })
+  const loadingTask = pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    cMapUrl: pdfjsAssetUrl('cmaps'),
+    cMapPacked: true,
+    standardFontDataUrl: pdfjsAssetUrl('standard_fonts'),
+    wasmUrl: pdfjsAssetUrl('wasm'),
+  })
   const doc = await loadingTask.promise
 
   let fullText = ''
   const items: TakeoffExtractedItem[] = []
 
   try {
+    // Guard: pull every page's text content up front and tally how many text items exist across
+    // the whole document before doing any regex work. A purely visual/rendered PDF (a scanned
+    // design, a flattened export with no real text layer) has next to none — running the
+    // dimension/material regexes against that can never match anything, so bail out early rather
+    // than doing pointless work; Path B's vision extraction handles the design instead.
+    const pages: { pageNum: number; pageText: string }[] = []
+    let totalTextItems = 0
     for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
       const page = await doc.getPage(pageNum)
       const content = await page.getTextContent()
-      const pageText = content.items.map((it) => ('str' in it ? it.str : '')).join(' ')
+      totalTextItems += content.items.length
+      pages.push({ pageNum, pageText: content.items.map((it) => ('str' in it ? it.str : '')).join(' ') })
+    }
+
+    if (totalTextItems < 10) {
+      console.warn(
+        'Path A: No meaningful text layer detected — this appears to be a purely visual PDF. Path A yielding zero items, Path B vision extraction will handle all items.',
+      )
+      return { items: [], textFound: false }
+    }
+
+    for (const { pageNum, pageText } of pages) {
       fullText += `\n${pageText}`
 
       const dimensions = extractDimensions(pageText)

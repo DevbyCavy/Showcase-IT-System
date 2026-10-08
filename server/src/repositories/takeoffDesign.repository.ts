@@ -100,9 +100,17 @@ export function findAnsweredClarificationsForDesign(designId: number) {
 // Cross-design memory (see the v0.2 plan §4) — every prior Answered clarification across the
 // whole app, not scoped to one project, so the same gap isn't asked about twice. excludeDesignId
 // keeps a design's own answers (already injected separately as designAnswers) out of this list.
+//
+// Excludes topic: 'Measurement' entirely — a stand's physical dimensions (footprint, wall
+// heights, etc.) are unique to that design and must never be treated as reusable precedent from a
+// *different* design. Without this filter, one design's answered "what's the footprint?" question
+// would get fed into every later design's prompt as a "known fact — do not ask about this again",
+// which is exactly the standard-size-inheritance bug takeoffPathB.ts's system prompt now
+// explicitly warns the model against. 'Material'/'Other' answers (naming conventions,
+// terminology) are legitimately reusable across designs and still come through.
 export function findGlobalAnsweredClarifications(excludeDesignId: number, limit: number) {
   return prisma.takeoffClarification.findMany({
-    where: { status: 'Answered', designId: { not: excludeDesignId } },
+    where: { status: 'Answered', designId: { not: excludeDesignId }, topic: { not: 'Measurement' } },
     orderBy: { answeredAt: 'desc' },
     take: limit,
   })

@@ -27,11 +27,21 @@ function isPdf(storagePath: string): boolean {
 
 async function loadImages(storagePath: string): Promise<TakeoffPageImage[]> {
   if (isPdf(storagePath)) {
-    return rasterizePdf(storagePath)
+    const pages = await rasterizePdf(storagePath)
+    // Simple v1 heuristic (per the AI Takeoff design doc) — exhibition stand presentation PDFs
+    // conventionally put the dimensioned floor plan last, after the render pages. This will
+    // mis-tag any design that doesn't follow that convention (floor plan first, a single-page
+    // render-only PDF, etc.) — revisit with a content-based signal (e.g. detecting dimension
+    // arrows/callouts on the rendered page) if that turns out too common in practice.
+    return pages.map((page, i) => ({
+      ...page,
+      pageRole: i === pages.length - 1 ? 'floorplan' : 'render',
+    }))
   }
   const mediaType = path.extname(storagePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg'
   const data = await fs.readFile(storagePath)
-  return [{ data, mediaType }]
+  // A single raw image upload (no PDF, so no floor-plan-vs-render page order to reason about).
+  return [{ data, mediaType, pageRole: 'unknown' }]
 }
 
 async function loadKnownFacts(excludeDesignId: number): Promise<TakeoffKnownFact[]> {
