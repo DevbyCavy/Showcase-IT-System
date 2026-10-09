@@ -39,6 +39,9 @@ function toPublicQuotation(q: Awaited<ReturnType<typeof quotationRepository.find
     rejectedBy: q.rejectedBy ? toPublicUser(q.rejectedBy) : null,
     rejectedAt: q.rejectedAt,
     rejectionReason: q.rejectionReason,
+    clientApprovedBy: q.clientApprovedBy ? toPublicUser(q.clientApprovedBy) : null,
+    clientApprovedAt: q.clientApprovedAt,
+    proformaInvoice: q.proformaInvoice,
     createdAt: q.createdAt,
     items: q.items.map((i) => ({
       id: i.id,

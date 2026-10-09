@@ -8,7 +8,7 @@ import { loadLogoDataUri } from './logo'
 
 type QuotationWithRelations = Quotation & { items: QuotationItem[]; submittedBy: User }
 
-function escapeHtml(value: string) {
+export function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -16,13 +16,54 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;')
 }
 
-const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export const money = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 // Trims trailing zeroes off a quantity the same way the legacy's
 // `rtrim(rtrim(number_format($q,2),'0'),'.')` did (e.g. "2.00" -> "2", "1.50" -> "1.5").
-function formatQuantity(n: number) {
+export function formatQuantity(n: number) {
   return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
+
+// Shared with proformaInvoicePdf.ts / receiptPdf.ts so every client-facing document carries the
+// same, single copy of the company's bank details.
+function bankAccount(heading: string, rows: [string, string][]) {
+  return `
+            <div style="font-weight:bold; font-size:10.5px; color:#333; margin-top:8px;">${heading}</div>
+            <table style="width:100%; font-size:10px; margin-top:2px;">
+                ${rows.map(([label, value]) => `<tr><td style="color:#888;">${label}</td><td style="text-align:right;">${value}</td></tr>`).join('')}
+            </table>`
+}
+
+export function bankDetailsHtml() {
+  return `
+            ${bankAccount('NEDBANK (USD)', [
+              ['Account Name', 'SHOWCASE IT PVT LTD'],
+              ['Account Number', '11992508223'],
+              ['Branch', 'BORROWDALE, 18101'],
+              ['Address', 'BORROWDALE, HARARE'],
+              ['Swift Code', 'MBCA2WHX'],
+            ])}
+            ${bankAccount('CBZ BANK (USD)', [
+              ['Account Name', 'SHOWCASE IT PVT LTD'],
+              ['Account Number', '029 26159120023'],
+              ['Branch', 'BORROWDALE, 029'],
+              ['Address', 'BORROWDALE, HARARE'],
+              ['Swift Code', 'COBZZWHA'],
+            ])}
+            ${bankAccount('CBZ BANK (ZWG)', [
+              ['Account Name', 'SHOWCASE IT PVT LTD'],
+              ['Account Number', '029 26159120013'],
+              ['Branch', 'BORROWDALE, 029'],
+              ['Address', 'BORROWDALE, HARARE'],
+              ['Swift Code', 'COBZZWHA'],
+            ])}`
+}
+
+// Same company block every document's header uses (address/phone/VAT/TIN).
+export const COMPANY_INFO_HTML = `32 Jacana Drive, Greystone Park, Harare<br>
+                Phone: +263 772 548792<br>
+                VAT Number: 220097572<br>
+                TIN Number: 2001387234`
 
 function buildHtml(quotation: QuotationWithRelations): string {
   const preparedBy = `${quotation.submittedBy.name} ${quotation.submittedBy.surname}`.trim()
@@ -39,12 +80,6 @@ function buildHtml(quotation: QuotationWithRelations): string {
         </tr>`,
     )
     .join('')
-
-  const bankAccount = (heading: string, rows: [string, string][]) => `
-            <div style="font-weight:bold; font-size:10.5px; color:#333; margin-top:8px;">${heading}</div>
-            <table style="width:100%; font-size:10px; margin-top:2px;">
-                ${rows.map(([label, value]) => `<tr><td style="color:#888;">${label}</td><td style="text-align:right;">${value}</td></tr>`).join('')}
-            </table>`
 
   return `
 <style>
@@ -69,10 +104,7 @@ body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         <td style="width:55%;">
             ${logoSrc ? `<img src="${logoSrc}" alt="ShowcaseIT Logo" style="height:90px; margin-bottom:8px;">` : ''}
             <div class="company-info">
-                32 Jacana Drive, Greystone Park, Harare<br>
-                Phone: +263 772 548792<br>
-                VAT Number: 220097572<br>
-                TIN Number: 2001387234<br>
+                ${COMPANY_INFO_HTML}<br>
                 Prepared by: ${escapeHtml(preparedBy || '-')}
             </div>
         </td>
@@ -132,27 +164,7 @@ ${rows}
         </td>
         <td style="width:42%;">
             <strong style="color:#ff7b00;">Bank Details</strong>
-            ${bankAccount('NEDBANK (USD)', [
-              ['Account Name', 'SHOWCASE IT PVT LTD'],
-              ['Account Number', '11992508223'],
-              ['Branch', 'BORROWDALE, 18101'],
-              ['Address', 'BORROWDALE, HARARE'],
-              ['Swift Code', 'MBCA2WHX'],
-            ])}
-            ${bankAccount('CBZ BANK (USD)', [
-              ['Account Name', 'SHOWCASE IT PVT LTD'],
-              ['Account Number', '029 26159120023'],
-              ['Branch', 'BORROWDALE, 029'],
-              ['Address', 'BORROWDALE, HARARE'],
-              ['Swift Code', 'COBZZWHA'],
-            ])}
-            ${bankAccount('CBZ BANK (ZWG)', [
-              ['Account Name', 'SHOWCASE IT PVT LTD'],
-              ['Account Number', '029 26159120013'],
-              ['Branch', 'BORROWDALE, 029'],
-              ['Address', 'BORROWDALE, HARARE'],
-              ['Swift Code', 'COBZZWHA'],
-            ])}
+            ${bankDetailsHtml()}
         </td>
     </tr>
 </table>
@@ -163,11 +175,11 @@ ${rows}
 `
 }
 
-export async function renderQuotationPdf(quotation: QuotationWithRelations): Promise<Buffer> {
+export async function htmlToPdf(html: string): Promise<Buffer> {
   const browser = await getBrowser()
   const page = await browser.newPage()
   try {
-    await page.setContent(buildHtml(quotation), { waitUntil: 'load' })
+    await page.setContent(html, { waitUntil: 'load' })
     const pdf = await page.pdf({ format: 'a4', printBackground: true })
     return Buffer.from(pdf)
   } finally {
@@ -175,15 +187,23 @@ export async function renderQuotationPdf(quotation: QuotationWithRelations): Pro
   }
 }
 
+export function renderQuotationPdf(quotation: QuotationWithRelations): Promise<Buffer> {
+  return htmlToPdf(buildHtml(quotation))
+}
+
 // Standalone HTML version of the same layout, for opening directly in a browser tab so the user
 // can preview it or print it (Ctrl+P -> Save as PDF) without going through server-side PDF
 // rendering at all.
 export function renderQuotationHtml(quotation: QuotationWithRelations): string {
+  return standaloneHtml(`Quotation ${quotation.quotationNumber}`, buildHtml(quotation))
+}
+
+export function standaloneHtml(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quotation ${escapeHtml(quotation.quotationNumber)}</title>
+<title>${escapeHtml(title)}</title>
 <style>
   @page { size: A4; margin: 12mm; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -191,7 +211,7 @@ export function renderQuotationHtml(quotation: QuotationWithRelations): string {
 </style>
 </head>
 <body>
-${buildHtml(quotation)}
+${body}
 </body>
 </html>`
 }

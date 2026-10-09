@@ -4,6 +4,8 @@ const include = {
   submittedBy: true,
   approvedBy: true,
   rejectedBy: true,
+  clientApprovedBy: true,
+  proformaInvoice: { select: { id: true, invoiceNumber: true } },
   items: { orderBy: { sortOrder: 'asc' as const } },
 }
 

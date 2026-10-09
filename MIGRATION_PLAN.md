@@ -1219,3 +1219,61 @@ browser flow before committing.
     unchanged). Test data cleaned up and stock restored afterward. `tsc --noEmit` and `oxlint`
     clean in both `client/` and `server/`. The actual popup/toggle UI is unverified without a
     browser (none available this session).
+
+34. **Proforma invoices & payment tracking (done, 2026-10-09; branch `feature/proforma-invoices`).**
+    Built from Calvin's architecture brief (`showcase_it_proforma_invoice_architecture.md`). Scope
+    decisions made against the existing codebase:
+
+    - **"Finance" = the existing `Accountant` role** (no Finance role exists). `/api/finance/*` is
+      `requireRole(Accountant, SuperAdmin)`; nav + `ProtectedRoute` mirror it.
+    - **Client approval is separate from the existing internal approval.** `Quotation.status =
+      Approved` is Super Admin's sign-off that gates sending the PDF (§10); client approval is a new
+      step on top of it (`clientApprovedAt`/`clientApprovedById`). Only an internally Approved
+      quotation is eligible. Super Admin can confirm any quotation; a Marketer only their own (same
+      ownership rule as quotation editing). `POST /quotations/:id/confirm-client-approval`.
+    - **One invoice per quotation, atomically.** A conditional `updateMany` (Approved AND
+      `clientApprovedAt IS NULL`) claims the quotation, then the invoice is snapshotted from it in
+      the same transaction; the unique index on `proforma_invoices.quotationId` is the backstop.
+      Retries/concurrent clicks get the existing invoice back (200, `created: false`) instead of
+      an error or a duplicate. The invoice copies customer/terms/totals and its own line items, so
+      later quotation edits don't change an issued invoice.
+    - **Numbering:** `PI-###` / `RCT-###` (zero-padded like `QUO-###`) from a new
+      `document_counters` table bumped with `INSERT … ON CONFLICT DO UPDATE … RETURNING` — row
+      locked until commit, unlike the max+1 pattern quotations/requisitions use.
+    - **Payments:** actual amount received (no fixed deposit %), 2-decimal string validated before
+      becoming a `Prisma.Decimal` (no float money math). The invoice row is locked with
+      `SELECT … FOR UPDATE` before summing prior payments, so concurrent payments can't overpay;
+      overpayments are rejected. `amountPaid`/`paymentStatus` (Unpaid / Deposited / Fully Paid) are
+      recalculated from the payment rows inside that transaction — a derived cache for filtering,
+      never user-set. A client-generated `idempotencyKey` (unique) makes double-submits return the
+      original payment. DB check constraint `amount > 0` as belt-and-braces.
+    - **Receipts** are one per payment (`receiptNumber` on `Payment`, plus a `balanceAfter`
+      snapshot). Like quotation/BOQ PDFs, invoice and receipt documents are rendered on demand
+      (Browserless) and never stored, so a rendering failure can't affect a saved payment and
+      retrying is always safe. HTML `/view` variants exist for preview/print. Company block and bank
+      details are imported from `quotationPdf.ts` (now exported), not copied.
+    - **Audit:** no audit log existed, so a minimal append-only `audit_logs` table was added and is
+      written by this module only (client approval, invoice creation, payment recorded, document /
+      receipt generated). Nothing in the module is deletable; no void/reversal workflow yet (per
+      the brief, not built until explicitly needed).
+    - **Payment methods** are a controlled enum (`Cash`, `Bank Transfer`, `Mobile Money`, `Card`,
+      `Cheque`, `Other`) — no existing list in the app to reuse. Currency defaults to `USD` (terms
+      say "Payable in USD"; quotations have no currency field). No lifecycle status
+      (draft/issued/cancelled) — nothing in the brief's agreed workflow needs one yet.
+
+    UI: "Client Approved" button + confirmation modal in the Status column of Make Quotation /
+    Process Quotations (becomes a "Client approved · PI-###" badge afterwards); new Finance pages
+    `/finance/proforma-invoices` (All / Unpaid / Deposited / Fully Paid tabs with counts, search)
+    and `/finance/proforma-invoices/:id` (totals, line items, payments & receipts, audit history,
+    Record Payment modal).
+
+    Verified against a throwaway Postgres cluster (all migrations applied cleanly; `migrate diff`
+    showed zero drift): a 52-check API script covering access control (401/403 per role), invalid
+    state, concurrent approvals (5 parallel → 1 invoice), snapshot isolation, amount validation,
+    overpayment, idempotent + concurrent same-key submits, concurrent payments (3×300 against 650 →
+    2 accepted), status transitions, receipt contents, and list filters — all passing. Invoice and
+    receipt PDFs rendered through Browserless and were checked visually. In the browser, the
+    client-approval modal (Cancel, Escape, Confirm → PI number) was exercised as a Marketer; the
+    Finance list/detail pages were not browser-verified (Chrome automation became unresponsive).
+    `tsc --noEmit` clean in `client/` and `server/`; `oxlint` clean apart from 2 pre-existing
+    client warnings.

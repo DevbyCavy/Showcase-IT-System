@@ -33,6 +33,9 @@ export interface Quotation {
   rejectedBy: AuthUser | null
   rejectedAt: string | null
   rejectionReason: string | null
+  clientApprovedBy: AuthUser | null
+  clientApprovedAt: string | null
+  proformaInvoice: { id: number; invoiceNumber: string } | null
   createdAt: string
   items: QuotationItem[]
 }
@@ -104,6 +107,16 @@ export function approve(id: number) {
 
 export function reject(id: number, reason: string) {
   return api.put<QuotationResponse>(`/quotations/${id}/reject`, { reason }).then((r) => r.data.data.quotation)
+}
+
+// MIGRATION_PLAN.md §34: records the client's approval and creates (or, on a retry, returns) the
+// quotation's one proforma invoice.
+export function confirmClientApproval(id: number) {
+  return api
+    .post<{ success: true; data: { created: boolean; invoice: { id: number; invoiceNumber: string } } }>(
+      `/quotations/${id}/confirm-client-approval`,
+    )
+    .then((r) => r.data.data)
 }
 
 // A plain <a href> wouldn't send the Bearer token (unlike the legacy's cookie-based PHP session,

@@ -30,6 +30,7 @@ import { trackingRouter } from './routes/tracking.routes'
 import { takeoffProjectRouter } from './routes/takeoffProject.routes'
 import { takeoffDesignRouter } from './routes/takeoffDesign.routes'
 import { materialSpecRouter } from './routes/materialSpec.routes'
+import { financeRouter } from './routes/finance.routes'
 
 export const app = express()
 
@@ -72,6 +73,7 @@ app.use('/api/tracking', trackingRouter)
 app.use('/api/takeoff-projects', takeoffProjectRouter)
 app.use('/api/takeoff-designs', takeoffDesignRouter)
 app.use('/api/material-specs', materialSpecRouter)
+app.use('/api/finance', financeRouter)
 
 // Further module routers mount here as they land
 

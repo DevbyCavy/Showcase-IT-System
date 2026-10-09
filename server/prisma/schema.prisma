@@ -143,6 +143,26 @@ enum QuotationStatus {
   Rejected
 }
 
+/// Proforma invoice payment status — always derived from the invoice's recorded payments (see
+/// proformaInvoice.repository.ts#recordPayment), never set by a user. See MIGRATION_PLAN.md §34.
+enum InvoicePaymentStatus {
+  Unpaid
+  Deposited
+  FullyPaid @map("Fully Paid")
+}
+
+/// Controlled list of payment methods Finance can record against a proforma invoice (§34). No
+/// pre-existing list existed anywhere in the app; extend here (plus a migration) if the business
+/// needs another option.
+enum PaymentMethod {
+  Cash
+  BankTransfer @map("Bank Transfer")
+  MobileMoney  @map("Mobile Money")
+  Card
+  Cheque
+  Other
+}
+
 enum MemoStatus {
   Pending
   Done
@@ -229,38 +249,42 @@ enum TakeoffItemConfidence {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  name         String
-  surname      String
-  userType     Role
-  department   String
-  passwordHash String
-  email        String
+  id             Int      @id @default(autoincrement())
+  username       String   @unique
+  name           String
+  surname        String
+  userType       Role
+  department     String
+  passwordHash   String
+  email          String
   whatsappNumber String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  orderAssignments      OrderAssignment[]
-  requisitionsSubmitted Requisition[]     @relation("RequisitionSubmittedBy")
-  requisitionsProcessed Requisition[]     @relation("RequisitionProcessedBy")
-  boqsCreated           Boq[]
-  vehiclesAssigned      Vehicle[]
-  vehicleTrips          VehicleTrip[]
-  workShifts            WorkShift[]
-  workTasks             WorkTask[]
-  quotationsSubmitted   Quotation[]       @relation("QuotationSubmittedBy")
-  quotationsApproved    Quotation[]       @relation("QuotationApprovedBy")
-  quotationsRejected    Quotation[]       @relation("QuotationRejectedBy")
-  memosCreated          Memo[]
-  officeTasksAssignedBy OfficeTask[]      @relation("OfficeTaskAssignedBy")
-  officeTasksAssignedTo OfficeTask[]      @relation("OfficeTaskAssignedTo")
-  designJobsAssignedBy  DesignJob[]       @relation("DesignJobAssignedBy")
-  designJobsAssignedTo  DesignJob[]       @relation("DesignJobAssignedTo")
-  trackingLocations     TrackingLocation[]
-  issuedToolsCollected  IssuedTool[]
-  takeoffProjects       TakeoffProject[]
+  orderAssignments              OrderAssignment[]
+  requisitionsSubmitted         Requisition[]          @relation("RequisitionSubmittedBy")
+  requisitionsProcessed         Requisition[]          @relation("RequisitionProcessedBy")
+  boqsCreated                   Boq[]
+  vehiclesAssigned              Vehicle[]
+  vehicleTrips                  VehicleTrip[]
+  workShifts                    WorkShift[]
+  workTasks                     WorkTask[]
+  quotationsSubmitted           Quotation[]            @relation("QuotationSubmittedBy")
+  quotationsApproved            Quotation[]            @relation("QuotationApprovedBy")
+  quotationsRejected            Quotation[]            @relation("QuotationRejectedBy")
+  memosCreated                  Memo[]
+  officeTasksAssignedBy         OfficeTask[]           @relation("OfficeTaskAssignedBy")
+  officeTasksAssignedTo         OfficeTask[]           @relation("OfficeTaskAssignedTo")
+  designJobsAssignedBy          DesignJob[]            @relation("DesignJobAssignedBy")
+  designJobsAssignedTo          DesignJob[]            @relation("DesignJobAssignedTo")
+  trackingLocations             TrackingLocation[]
+  issuedToolsCollected          IssuedTool[]
+  takeoffProjects               TakeoffProject[]
   takeoffClarificationsAnswered TakeoffClarification[]
+  quotationsClientApproved      Quotation[]            @relation("QuotationClientApprovedBy")
+  proformaInvoicesCreated       ProformaInvoice[]
+  paymentsRecorded              Payment[]
+  auditLogs                     AuditLog[]
 
   @@map("users")
 }
@@ -414,7 +438,7 @@ model Boq {
 }
 
 model BoqItem {
-  id          Int     @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   boqId       Int
   /// Now catalog-linked (was free-text) so filling a BOQ can deduct real Store stock — see
   /// MIGRATION_PLAN.md §29. Nullable at the DB level only because pre-existing rows predate this
@@ -647,35 +671,42 @@ model WorkTask {
 // ---------------------------------------------------------------------------
 
 model Quotation {
-  id              Int             @id @default(autoincrement())
-  quotationNumber String          @unique
-  customerName    String
-  customerId      String?
-  projectName     String?
-  orderNumber     String?
-  quoteDate       DateTime        @db.Date
-  termsConditions String
-  designFile      String?
-  subtotal        Decimal         @db.Decimal(12, 2)
+  id                 Int             @id @default(autoincrement())
+  quotationNumber    String          @unique
+  customerName       String
+  customerId         String?
+  projectName        String?
+  orderNumber        String?
+  quoteDate          DateTime        @db.Date
+  termsConditions    String
+  designFile         String?
+  subtotal           Decimal         @db.Decimal(12, 2)
   /// Optional 15.5% VAT, on top of subtotal. Stored (not just derived from a flag) so a
   /// quotation's PDF stays accurate even if the VAT rate itself changes later — total is always
   /// subtotal + vatAmount, vatAmount is 0 when applyVat is false.
-  applyVat        Boolean         @default(false)
-  vatAmount       Decimal         @db.Decimal(12, 2) @default(0)
-  total           Decimal         @db.Decimal(12, 2)
-  status          QuotationStatus @default(Pending)
-  submittedById   Int
-  approvedById    Int?
-  approvedAt      DateTime?
-  rejectedById    Int?
-  rejectedAt      DateTime?
-  rejectionReason String?
-  createdAt       DateTime        @default(now())
+  applyVat           Boolean         @default(false)
+  vatAmount          Decimal         @default(0) @db.Decimal(12, 2)
+  total              Decimal         @db.Decimal(12, 2)
+  status             QuotationStatus @default(Pending)
+  submittedById      Int
+  approvedById       Int?
+  approvedAt         DateTime?
+  rejectedById       Int?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+  /// Client approval (§34) — separate from approvedById/approvedAt above, which is the *internal*
+  /// Super Admin sign-off that gates sending the PDF out. Only an internally-Approved quotation
+  /// can be marked client-approved; doing so creates its one ProformaInvoice.
+  clientApprovedById Int?
+  clientApprovedAt   DateTime?
+  createdAt          DateTime        @default(now())
 
-  submittedBy User            @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
-  approvedBy  User?           @relation("QuotationApprovedBy", fields: [approvedById], references: [id])
-  rejectedBy  User?           @relation("QuotationRejectedBy", fields: [rejectedById], references: [id])
-  items       QuotationItem[]
+  submittedBy      User             @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
+  approvedBy       User?            @relation("QuotationApprovedBy", fields: [approvedById], references: [id])
+  rejectedBy       User?            @relation("QuotationRejectedBy", fields: [rejectedById], references: [id])
+  clientApprovedBy User?            @relation("QuotationClientApprovedBy", fields: [clientApprovedById], references: [id])
+  items            QuotationItem[]
+  proformaInvoice  ProformaInvoice?
 
   @@map("quotations")
 }
@@ -788,8 +819,8 @@ model TakeoffDesign {
   failureReason    String?
   uploadedAt       DateTime            @default(now())
 
-  project TakeoffProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  items   TakeoffItem[]
+  project        TakeoffProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items          TakeoffItem[]
   clarifications TakeoffClarification[]
 
   @@map("takeoff_designs")
@@ -851,4 +882,118 @@ model MaterialSpec {
   unitCost           Decimal? @db.Decimal(12, 2)
 
   @@map("material_specs")
+}
+
+// ---------------------------------------------------------------------------
+// Proforma invoices & payments — new feature, see MIGRATION_PLAN.md §34. Confirming a client
+// approval on an (internally Approved) Quotation creates exactly one ProformaInvoice from a
+// snapshot of it; Finance (Accountant role) + Super Admin record Payments against the invoice,
+// each with its own receipt number. Nothing here is ever hard-deleted.
+// ---------------------------------------------------------------------------
+
+/// Concurrency-safe document numbering for PI-### / RCT-### (§34). Bumped with a single
+/// `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`, which row-locks the counter until the
+/// surrounding transaction commits — unlike the max+1 pattern quotations/requisitions use, two
+/// simultaneous requests can't be handed the same number.
+model DocumentCounter {
+  key       String @id
+  lastValue Int    @default(0)
+
+  @@map("document_counters")
+}
+
+model ProformaInvoice {
+  id              Int                  @id @default(autoincrement())
+  invoiceNumber   String               @unique
+  /// Unique: one quotation creates at most one proforma invoice (DB-enforced, not just app-level).
+  quotationId     Int                  @unique
+  /// Snapshot of the quotation's commercial details at client-approval time, so a later edit to
+  /// the quotation can't silently change an already-issued invoice.
+  customerName    String
+  customerId      String?
+  projectName     String?
+  orderNumber     String?
+  termsConditions String
+  currency        String               @default("USD")
+  subtotal        Decimal              @db.Decimal(12, 2)
+  applyVat        Boolean              @default(false)
+  vatAmount       Decimal              @default(0) @db.Decimal(12, 2)
+  total           Decimal              @db.Decimal(12, 2)
+  /// Derived cache, recalculated from Payment rows inside the same locked transaction that
+  /// inserts each payment — never user-editable. Kept on the row so the Finance list can filter
+  /// by status in the database.
+  amountPaid      Decimal              @default(0) @db.Decimal(12, 2)
+  paymentStatus   InvoicePaymentStatus @default(Unpaid)
+  issuedAt        DateTime             @default(now())
+  createdById     Int
+
+  quotation Quotation             @relation(fields: [quotationId], references: [id])
+  createdBy User                  @relation(fields: [createdById], references: [id])
+  items     ProformaInvoiceItem[]
+  payments  Payment[]
+
+  @@index([paymentStatus])
+  @@map("proforma_invoices")
+}
+
+/// Snapshot of each quotation line. No FK back to QuotationItem — quotation edits delete and
+/// reinsert their items, so a reference would dangle.
+model ProformaInvoiceItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  description String
+  quantity    Decimal @db.Decimal(12, 2)
+  unitPrice   Decimal @db.Decimal(12, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  invoice ProformaInvoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("proforma_invoice_items")
+}
+
+/// One received payment (deposit/partial or settlement). receiptNumber is its durable unique
+/// reference; the receipt document itself is rendered on demand from this row (same as
+/// quotation/BOQ PDFs, nothing stored on disk), so a rendering failure never touches the payment
+/// and simply retrying the download is safe.
+model Payment {
+  id             Int           @id @default(autoincrement())
+  receiptNumber  String        @unique
+  invoiceId      Int
+  amount         Decimal       @db.Decimal(12, 2)
+  paymentDate    DateTime      @db.Date
+  method         PaymentMethod
+  reference      String?
+  notes          String?
+  /// Invoice balance remaining right after this payment — a snapshot so the receipt reads the
+  /// same forever, even after later payments.
+  balanceAfter   Decimal       @db.Decimal(12, 2)
+  /// Client-generated per form submission; a retried/double-submitted request with the same key
+  /// returns the original payment instead of recording a second one.
+  idempotencyKey String        @unique
+  recordedById   Int
+  createdAt      DateTime      @default(now())
+
+  invoice    ProformaInvoice @relation(fields: [invoiceId], references: [id])
+  recordedBy User            @relation(fields: [recordedById], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+/// Minimal append-only audit trail (no prior audit log existed in the app). Written by the
+/// proforma invoice module only; metadata holds identifiers/amounts, never credentials.
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int
+  action     String
+  entityType String
+  entityId   Int
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }

@@ -29,6 +29,8 @@ import TakeoffProjects from '@/pages/TakeoffProjects'
 import TakeoffProjectDetail from '@/pages/TakeoffProjectDetail'
 import TakeoffDesignReview from '@/pages/TakeoffDesignReview'
 import Materials from '@/pages/Materials'
+import ProformaInvoices from '@/pages/ProformaInvoices'
+import ProformaInvoiceDetail from '@/pages/ProformaInvoiceDetail'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
 import { useAuth } from '@/hooks/useAuth'
@@ -119,6 +121,12 @@ function App() {
             <Route path="/takeoff-projects/:id" element={<TakeoffProjectDetail />} />
             <Route path="/takeoff-projects/:id/designs/:designId" element={<TakeoffDesignReview />} />
             <Route path="/materials" element={<Materials />} />
+          </Route>
+
+          {/* Proforma invoices & payments (MIGRATION_PLAN.md §34) — Finance is the Accountant role. */}
+          <Route element={<ProtectedRoute roles={['Accountant', 'SuperAdmin']} />}>
+            <Route path="/finance/proforma-invoices" element={<ProformaInvoices />} />
+            <Route path="/finance/proforma-invoices/:id" element={<ProformaInvoiceDetail />} />
           </Route>
         </Route>
       </Route>

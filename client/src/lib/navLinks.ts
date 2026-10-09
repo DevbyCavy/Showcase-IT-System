@@ -23,6 +23,7 @@ import {
   MapPin,
   Ruler,
   Layers,
+  Receipt,
 } from 'lucide-react'
 
 export interface NavLink {
@@ -68,6 +69,10 @@ export interface NavLink {
 // owns Assign Design Job; Stores owns the catalog/stock pages; Logistics owns the vehicle module;
 // Production owns BOQ, plus AI Takeoff / Materials (added alongside the AI Takeoff / BOQ
 // Generator feature — see App.tsx) — the first entries to actually use this group.
+//
+// "Proforma Invoices" (Accountant + Super Admin) added per MIGRATION_PLAN.md §34 — Finance in the
+// feature brief is the existing Accountant role. Super Admin gets it under a new Finance group,
+// placed after Admin since it isn't tied to any one production department.
 export const roleNavLinks: Record<Role, NavLink[]> = {
   SuperAdmin: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -76,6 +81,8 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
     { to: '/requisitions/process', label: 'Process Requisitions', icon: FileCheck2, group: 'Admin' },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock, group: 'Admin' },
     { to: '/users', label: 'Manage Users', icon: Users, group: 'Admin' },
+
+    { to: '/finance/proforma-invoices', label: 'Proforma Invoices', icon: Receipt, group: 'Finance' },
 
     { to: '/orders/manage', label: 'Manage Orders', icon: ClipboardList, group: 'Marketing' },
     { to: '/quotations', label: 'Make Quotation', icon: FileSpreadsheet, group: 'Marketing' },
@@ -137,6 +144,7 @@ export const roleNavLinks: Record<Role, NavLink[]> = {
   ],
   Accountant: [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/finance/proforma-invoices', label: 'Proforma Invoices', icon: Receipt },
     { to: '/requisitions', label: 'Requisitions', icon: FileCheck2 },
     { to: '/task-calendar', label: 'Office Task Calendar', icon: CalendarClock },
   ],

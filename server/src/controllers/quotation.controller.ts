@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express'
 import * as quotationService from '../services/quotation.service'
+import * as proformaInvoiceService from '../services/proformaInvoice.service'
 import { ApiError } from '../middleware/errorHandler'
 import { publicUploadPath } from '../middleware/upload'
 import { renderQuotationPdf, renderQuotationHtml } from '../utils/quotationPdf'
@@ -45,6 +46,13 @@ export async function approve(req: Request, res: Response) {
 export async function reject(req: Request, res: Response) {
   const quotation = await quotationService.reject(parseId(req), req.user!.id, req.body.reason)
   res.json({ success: true, data: { quotation } })
+}
+
+// 201 when this call created the invoice; 200 when it already existed (a retry / double click /
+// concurrent duplicate), returning that same invoice instead of making a second one.
+export async function confirmClientApproval(req: Request, res: Response) {
+  const result = await proformaInvoiceService.confirmClientApproval(parseId(req), req.user!)
+  res.status(result.created ? 201 : 200).json({ success: true, data: result })
 }
 
 export async function downloadPdf(req: Request, res: Response) {

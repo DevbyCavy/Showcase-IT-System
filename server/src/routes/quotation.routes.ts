@@ -27,3 +27,6 @@ quotationRouter.put('/:id', upload.single('designFile'), validateBody(quotationS
 // processQuotation.php: hardcoded `$_SESSION['user_type'] !== 'Super Admin'` check.
 quotationRouter.put('/:id/approve', requireRole(Role.SuperAdmin), quotationController.approve)
 quotationRouter.put('/:id/reject', requireRole(Role.SuperAdmin), validateBody(quotationRejectSchema), quotationController.reject)
+// MIGRATION_PLAN.md §34: client approval -> one proforma invoice for Finance. Super Admin any
+// quotation, Marketer only their own (ownership enforced in proformaInvoice.service.ts).
+quotationRouter.post('/:id/confirm-client-approval', quotationController.confirmClientApproval)

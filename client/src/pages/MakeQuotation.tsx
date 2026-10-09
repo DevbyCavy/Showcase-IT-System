@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { ToastStack, type ToastItem } from '@/components/ui/toast'
 import { QuotationEditModal } from '@/components/QuotationEditModal'
+import { ClientApprovalAction } from '@/components/ClientApproval'
 import { useAuth } from '@/hooks/useAuth'
 import * as quotationsApi from '@/api/quotations'
 import type { Quotation, QuotationItemInput } from '@/api/quotations'
@@ -192,13 +193,16 @@ export default function MakeQuotation() {
       key: 'status',
       header: 'Status',
       render: (q) => (
-        <span
-          className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
-            q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
-          }`}
-        >
-          {q.status}
-        </span>
+        <div className="flex flex-col items-start gap-1.5">
+          <span
+            className={`rounded px-2 py-0.5 text-xs font-medium text-white ${
+              q.status === 'Approved' ? 'bg-green-600' : q.status === 'Rejected' ? 'bg-destructive' : 'bg-amber-500'
+            }`}
+          >
+            {q.status}
+          </span>
+          <ClientApprovalAction quotation={q} />
+        </div>
       ),
     },
     {
