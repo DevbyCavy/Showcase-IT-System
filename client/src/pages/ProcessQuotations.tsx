@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileDown, Eye, Check, Pencil, X, XCircle } from 'lucide-react'
+import { FileDown, Eye, Check, Pencil, Search, X, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { ToastStack, type ToastItem } from '@/components/ui/toast'
@@ -27,6 +28,7 @@ export default function ProcessQuotations() {
   const [rejectReason, setRejectReason] = useState('')
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Quotation | null>(null)
+  const [search, setSearch] = useState('')
 
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set())
@@ -92,7 +94,15 @@ export default function ProcessQuotations() {
     }
   }
 
-  const rows = tab === 'pending' ? pending : (quotations ?? [])
+  const tabRows = tab === 'pending' ? pending : (quotations ?? [])
+  const searchTerm = search.trim().toLowerCase()
+  const rows = searchTerm
+    ? tabRows.filter((q) =>
+        [q.quotationNumber, q.customerName, q.projectName, q.orderNumber, `${q.submittedBy.name} ${q.submittedBy.surname}`].some((field) =>
+          field?.toLowerCase().includes(searchTerm),
+        ),
+      )
+    : tabRows
 
   const actionsColumn: DataTableColumn<Quotation> = {
     key: 'actions',
@@ -183,13 +193,25 @@ export default function ProcessQuotations() {
         ))}
       </div>
 
+      <div className="relative mb-3 max-w-sm">
+        <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by quotation #, customer, project, order #…"
+          className="pl-9"
+        />
+      </div>
+
       {downloadError && <div className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{downloadError}</div>}
 
       <DataTable
         columns={columns}
         data={rows}
         keyExtractor={(q) => q.id}
-        emptyMessage={tab === 'pending' ? 'All quotations have been approved.' : 'No quotations found.'}
+        emptyMessage={
+          searchTerm ? 'No quotations match your search.' : tab === 'pending' ? 'All quotations have been approved.' : 'No quotations found.'
+        }
         rowClassName={(q) => (highlightedIds.has(q.id) ? 'bg-amber-50 animate-pulse' : '')}
       />
 
